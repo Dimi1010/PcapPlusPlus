@@ -67,10 +67,10 @@ namespace pcpp
 				IteratorConcept& operator++() override;
 				// TODO - This has the issue of introducing object slicing as it returns by value.
 				// IteratorConcept operator++(int) override;
-				
+
 				bool operator==(IteratorConcept const& other) const noexcept override
 				try
-				{ 
+				{
 					auto const& modelCast = dynamic_cast<IteratorModel<IteratorType> const&>(other);
 					return m_BaseIterator == modelCast.m_BaseIterator;
 				}
