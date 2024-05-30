@@ -53,7 +53,7 @@ namespace pcpp
 
 			/*
 			 * @class IteratorModel
-			 * 
+			 *
 			 */
 			template <class IteratorType>
 			struct IteratorModel : IteratorConcept
@@ -108,7 +108,7 @@ namespace pcpp
 			}
 			bool operator==(DereferenceWrapperConstIterator const& other) const noexcept
 			{
-				// There is the situation where the base iterator model might be nullptr, 
+				// There is the situation where the base iterator model might be nullptr,
 				// but the main class should ensure that does not happen.
 				return *m_BaseIteratorModel == *other.m_BaseIteratorModel;
 			};
