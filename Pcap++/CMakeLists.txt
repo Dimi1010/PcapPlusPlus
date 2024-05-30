@@ -27,6 +27,7 @@ add_library(
 set(public_headers
     header/Device.h
     header/DeviceUtils.h
+    header/IteratorUtils.h
     header/MemoryUtils.h
     header/NetworkUtils.h
     header/PcapDevice.h
