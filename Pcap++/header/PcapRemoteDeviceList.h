@@ -58,6 +58,9 @@ namespace pcpp
 			template <class IteratorType>
 			struct IteratorModel : IteratorConcept
 			{
+				// Type of the iterator that the model holds.
+				using iterator_type = IteratorType;
+
 				explicit IteratorModel(IteratorType const& it) : m_BaseIterator(it) {}
 
 				// TODO
