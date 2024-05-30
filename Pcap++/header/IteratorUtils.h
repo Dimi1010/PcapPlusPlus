@@ -7,7 +7,7 @@ namespace pcpp
 {
 	namespace internal
 	{
-		template <class T> 
+		template <class T>
 		class DereferenceWrapperConstIterator
 		{
 		  public:
@@ -42,7 +42,7 @@ namespace pcpp
 			 * @class IteratorModel
 			 *
 			 */
-			template <class IteratorType> 
+			template <class IteratorType>
 			struct IteratorModel : IteratorConcept
 			{
 				// Type of the iterator that the model holds.
