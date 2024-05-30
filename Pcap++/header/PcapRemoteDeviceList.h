@@ -79,8 +79,10 @@ namespace pcpp
 					return false;
 				}
 
-				// TODO
-				std::unique_ptr<IteratorConcept> clone() const override;
+				std::unique_ptr<IteratorConcept> clone() const override
+				{
+					return std::unique_ptr<IteratorModel<IteratorType>>(new IteratorModel<IteratorType>(*this));
+				}
 			private:
 				IteratorType m_BaseIterator;
 			};
