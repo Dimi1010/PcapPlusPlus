@@ -59,7 +59,8 @@ namespace pcpp
 		 * @return A vector containing pointers to all live devices currently installed on the machine
 		 * @deprecated This method is deprecated in favor of the SmartPtrAPI overload.
 		 */
-		PCPP_DEPRECATED_RAW_PTR_API const std::vector<PcapLiveDevice*>& getPcapLiveDevicesList() const;
+		PCPP_DEPRECATED("This method is deprecated in favor of the SmartPtrAPI overload.")
+		const std::vector<PcapLiveDevice*>& getPcapLiveDevicesList() const;
 		/**
 		 * @param[in] apiTag Disambiguating tag for SmartPtrAPI.
 		 * @return A reference to a vector containing shared pointers to all live devices currently installed on the machine.
