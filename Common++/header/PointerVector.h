@@ -46,7 +46,7 @@ namespace pcpp
 	/// vector, the element responsibility moves to the vector, meaning the PointerVector will free the object once it's
 	/// removed from the vector This class wraps std::vector and adds the capability of freeing objects once they're
 	/// removed from it
-	template <typename T> class PointerVector
+	template <typename T, typename Deleter = std::default_delete<T>> class PointerVector
 	{
 	public:
 		/// Iterator object that is used for iterating all elements in the vector
@@ -114,6 +114,11 @@ namespace pcpp
 		/// @return A reference to the current object.
 		PointerVector& operator=(PointerVector&& other) noexcept
 		{
+			if (this == &other)
+			{
+				return *this;
+			}
+
 			// Releases all current elements.
 			clear();
 			// Moves the elements of the other vector.
@@ -153,7 +158,7 @@ namespace pcpp
 			{
 				if (freeElementOnError)
 				{
-					delete element;
+					Deleter{}(element);
 				}
 				throw;
 			}
@@ -213,25 +218,13 @@ namespace pcpp
 		}
 
 		/// @return A pointer of the first element in the vector
-		T* front()
-		{
-			return m_Vector.front();
-		}
-
-		/// @return A pointer to the first element in the vector
-		T const* front() const
+		T* front() const
 		{
 			return m_Vector.front();
 		}
 
 		/// @return A pointer to the last element in the vector
-		T* back()
-		{
-			return m_Vector.back();
-		}
-
-		/// @return A pointer to the last element in the vector.
-		T const* back() const
+		T* back() const
 		{
 			return m_Vector.back();
 		}
@@ -242,7 +235,7 @@ namespace pcpp
 		/// function call
 		VectorIterator erase(VectorIterator position)
 		{
-			delete (*position);
+			Deleter{}(*position);
 			return m_Vector.erase(position);
 		}
 
@@ -292,15 +285,7 @@ namespace pcpp
 		/// Return a pointer to the element in a certain index
 		/// @param[in] index The index to retrieve the element from
 		/// @return The element at the specified position in the vector
-		T* at(int index)
-		{
-			return m_Vector.at(index);
-		}
-
-		/// Return a const pointer to the element in a certain index
-		/// @param[in] index The index to retrieve the element from
-		/// @return The element at the specified position in the vector
-		const T* at(int index) const
+		T* at(int index) const
 		{
 			return m_Vector.at(index);
 		}
@@ -326,10 +311,7 @@ namespace pcpp
 			}
 			catch (const std::exception&)
 			{
-				for (auto obj : copyVec)
-				{
-					delete obj;
-				}
+				freeVectorUnsafe(copyVec);
 				throw;
 			}
 
@@ -344,7 +326,7 @@ namespace pcpp
 		{
 			for (auto& obj : origin)
 			{
-				delete obj;
+				Deleter{}(obj);
 			}
 		}
 
