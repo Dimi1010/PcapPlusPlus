@@ -54,6 +54,24 @@ class MemPlumber {
         }
 
         /**
+         * Pause collecting information about memory allocations. This method is useful when you want to temporarily stop collecting information
+         * without stopping the entire MemPlumber library. When the library is paused, no information is collected, but the memory that was already
+         * allocated and collected is still available.
+         */
+        static void pause() {
+            __pause();
+	    }
+
+        /**
+         * Resume collecting information about memory allocations after it was paused. This method is useful when you want to temporarily stop collecting
+         * information without stopping the entire MemPlumber library. When the library is resumed, it continues to collect information about memory allocations
+         * from the point it was paused.
+	     */
+        static void resume() {
+            __resume();
+	    }
+
+        /**
          * Stop collecting information about memory allocations and also free all the memory that was already allocated and collected.
          */
         static void stopAndFreeAllMemory() {
@@ -87,6 +105,34 @@ class MemPlumber {
          */
         static void staticMemCheck(size_t& memCount, uint64_t& memSize, bool verbose = false, const char* fileDumperName = "", bool append = false) {
             __static_mem_check(memCount, memSize, verbose, fileDumperName, append);
+        }
+};
+
+/**
+ * @class MemPlumberNoTrackScope
+ * This class is used to disable memory tracking for a certain scope. When this class is created, it pauses the memory tracking,
+ * and when it is destroyed, it resumes the memory tracking.
+ * 
+ * Limitations:
+ *   Does not support nested scopes. If you create a new MemPlumberNoTrackScope inside an existing one, the
+ *   inner scope will resume tracking when it is destroyed.
+ */
+class MemPlumberNoTrackScope
+{
+    public:
+        /**
+         * Constructor for MemPlumberNoTrackScope. This class is used to disable memory tracking for a certain scope.
+         * When this class is created, it pauses the memory tracking, and when it is destroyed, it resumes the memory tracking.
+         */
+        MemPlumberNoTrackScope() {
+            MemPlumber::pause();
+        }
+        /**
+         * Destructor for MemPlumberNoTrackScope. This class is used to disable memory tracking for a certain scope.
+         * When this class is destroyed, it resumes the memory tracking.
+         */
+        ~MemPlumberNoTrackScope() {
+            MemPlumber::resume();
         }
 };
 

@@ -39,6 +39,7 @@ class MemPlumberInternal {
     new_ptr_list_t* m_StaticPointerListHashtable[MEMPLUMBER_HASHTABLE_SIZE];
 
     bool m_Started;
+	bool m_Paused;
     int m_ProgramStarted;
     bool m_Verbose;
     FILE* m_Dumper;
@@ -46,6 +47,7 @@ class MemPlumberInternal {
     // private c'tor
     MemPlumberInternal() {
         m_Started = false;
+		m_Paused = false;
         m_Verbose = false;
 
         // zero the hashtables
@@ -113,6 +115,15 @@ class MemPlumberInternal {
                 fprintf(m_Dumper, "Request for memory allocation before program started\n");
             }
             return malloc(size);
+        }
+
+        // if memory tracking is paused, allocate memory and exit
+        if(m_Paused)
+        {
+            if(isVerbose()) {
+				fprintf(m_Dumper, "Request for memory allocation while paused\n");
+            }
+			return malloc(size);
         }
 
         // total memory to allocated is the requested size + metadata size
@@ -219,12 +230,22 @@ class MemPlumberInternal {
 
     void start(bool verbose, const char* fileDumperName, bool append) {
         m_Started = true;
+		m_Paused = false;
         m_Verbose = verbose;
         m_Dumper = openFile(fileDumperName, append);
     }
 
+    void pause() {
+        m_Paused = true;
+	}
+
+    void resume() {
+        m_Paused = false;
+	}
+
     void stop(bool closeDumper = true) {
         m_Started = false;
+		m_Paused = false;
         if (closeDumper) {
             closeFile(m_Dumper);
             m_Dumper = NULL;
@@ -449,6 +470,14 @@ void __start(bool verbose, const char* fileDumperName, bool append) {
 
 void __stop() {
     MemPlumberInternal::getInstance().stop();
+}
+
+void __pause() {
+    MemPlumberInternal::getInstance().pause();
+}
+
+void __resume() {
+    MemPlumberInternal::getInstance().resume();
 }
 
 void __stop_and_free_all_mem() {
