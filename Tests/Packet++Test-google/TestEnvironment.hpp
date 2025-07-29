@@ -45,14 +45,23 @@ namespace pcpp
 		public:
 			static PacketTestEnvironment const& getCurrent();
 
+			PacketTestEnvironment(TestDataLoader dataLoader);
+
 			void SetUp() override;
 
 			void TearDown() override;
+
+			TestDataLoader const& getDataLoader() const
+			{
+				return m_DataLoader;
+			}
 
 		private:
 			// Pointer to the current test environment instance
 			// As only one instance of this class should be active at a time, we can use a static pointer.
 			static PacketTestEnvironment* currentEnvironment;
+
+			TestDataLoader m_DataLoader;
 		};
 	}  // namespace testing
 }  // namespace pcpp

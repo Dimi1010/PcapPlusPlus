@@ -47,21 +47,26 @@ namespace pcpp
 		}  // namespace
 
 		TestDataLoader::TestDataLoader(std::string dataRoot) : m_DataRoot(std::move(dataRoot))
-		{
-			if (m_DataRoot.empty())
-			{
-				throw std::invalid_argument("Data root cannot be empty");
-			}
-		}
+		{}
 
 		std::vector<uint8_t> TestDataLoader::loadResource(const char* filename, ResourceType resourceType) const
 		{
+			std::string fullPath;
+			if (!m_DataRoot.empty())
+			{
+				fullPath = m_DataRoot + '/' + filename;
+			}
+			else
+			{
+				fullPath = filename;
+			}
+
 			switch (resourceType)
 			{
 			case ResourceType::HexData:
 			{
 				// The file is expected to contain text data in hexadecimal format
-				std::ifstream fileStream(m_DataRoot + '/' + filename);
+				std::ifstream fileStream(fullPath);
 				if (!fileStream)
 				{
 					throw std::runtime_error(std::string("Failed to open file: ") + filename);
@@ -97,6 +102,9 @@ namespace pcpp
 			}
 			return *currentEnvironment;
 		}
+
+		PacketTestEnvironment::PacketTestEnvironment(TestDataLoader dataLoader) : m_DataLoader(std::move(dataLoader))
+		{}
 
 		void PacketTestEnvironment::SetUp()
 		{
