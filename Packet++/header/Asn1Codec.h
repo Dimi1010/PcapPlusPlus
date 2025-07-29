@@ -7,6 +7,7 @@
 #include <sstream>
 #include <chrono>
 #include <bitset>
+#include <atomic>
 #include "PointerVector.h"
 
 /// @file
@@ -235,10 +236,23 @@ namespace pcpp
 		friend class Asn1ConstructedRecord;
 
 	private:
+		enum class Asn1DecodeState : int
+		{
+			/// The record is not decoded yet
+			NotDecoded = 0,
+			/// The record is being decoded
+			Decoding = 1,
+			/// The record is fully decoded
+			Decoded = 2,
+			/// The record failed to decode
+			FailedToDecode = 3
+		};
+
 		void setEncodedValue(uint8_t const* dataSource,
 		                     internal::Asn1LoadPolicy loadPolicy = internal::Asn1LoadPolicy::Lazy);
 
-		mutable uint8_t const* m_EncodedValue = nullptr;
+		mutable std::atomic<Asn1DecodeState> m_ValueDecodeState{ Asn1DecodeState::Decoded };
+		uint8_t const* m_EncodedValue = nullptr;
 	};
 
 	/// @class Asn1GenericRecord

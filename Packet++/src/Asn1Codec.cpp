@@ -12,6 +12,7 @@
 #include <sstream>
 #include <cmath>
 #include <limits>
+#include <thread>
 #include <cstring>
 
 #if defined(_WIN32)
@@ -413,11 +414,59 @@ namespace pcpp
 
 	void Asn1Record::decodeValueIfNeeded() const
 	{
-		// TODO: This is not thread-safe and can cause issues in a multiple reader scenario.
-		if (m_EncodedValue != nullptr)
+		// If the value has not been decoded yet, atomically set the state to Decoding
+		// Memory orders:
+		// - On success - acquire-release semantics to ensure the most recent value is available and immediately
+		// visible after modification.
+		// - On failure - acquire semantics to ensure that the value is not modified by another thread while we
+		// are checking the state.
+		Asn1DecodeState expected = Asn1DecodeState::NotDecoded;
+		if (m_ValueDecodeState.compare_exchange_strong(expected, Asn1DecodeState::Decoding, std::memory_order_acq_rel,
+		                                               std::memory_order_acquire))
 		{
-			decodeValue(m_EncodedValue);
-			m_EncodedValue = nullptr;  // Clear the encoded value after decoding
+			// The value was not decoded yet, so we are decoding it.
+
+			try
+			{
+				// Call the decoder to decode the value
+				decodeValue(m_EncodedValue);
+			}
+			catch (...)
+			{
+				// If an exception occurs during decoding, we set the state to FailedToDecode
+				m_ValueDecodeState.store(Asn1DecodeState::FailedToDecode, std::memory_order_release);
+				throw;
+			}
+
+			// If the decoding was successful, we set the state to Decoded
+			m_ValueDecodeState.store(Asn1DecodeState::Decoded, std::memory_order_release);
+		}
+		else
+		{
+			// The value is in the process of being decoded by another thread, or it has already been decoded.
+
+			// Todo Cpp20: Replace with 'm_ValueDecodeState.wait(LazyState::Evaluating, std::memory_order_acquire)'
+			while (m_ValueDecodeState.load(std::memory_order_acquire) == Asn1DecodeState::Decoding)
+			{
+				// The value is being decoded by another thread, so we wait until it is done.
+				// Yield the time slice to allow other threads to proceed.
+				std::this_thread::yield();
+			}
+		}
+
+		// The value is now either decoded or failed to decode.
+		Asn1DecodeState finalState = m_ValueDecodeState.load(std::memory_order_acquire);
+		switch (finalState)
+		{
+		case Asn1DecodeState::Decoded:
+			// The value is now decoded and can be accessed safely.
+			return;
+		case Asn1DecodeState::FailedToDecode:
+			// If the state is Failed, it means that the value could not be decoded.
+			throw std::runtime_error("Failed to evaluate the value!");
+		default:
+			// The state should be either Decoded or FailedToDecode at this point.
+			throw std::logic_error("Unexpected state after decoding: " + std::to_string(static_cast<int>(finalState)));
 		}
 	}
 
@@ -461,6 +510,7 @@ namespace pcpp
 	void Asn1Record::setEncodedValue(uint8_t const* dataSource, internal::Asn1LoadPolicy loadPolicy)
 	{
 		m_EncodedValue = dataSource;
+		m_ValueDecodeState.store(Asn1DecodeState::NotDecoded, std::memory_order_release);
 
 		if (loadPolicy == internal::Asn1LoadPolicy::Eager)
 		{
