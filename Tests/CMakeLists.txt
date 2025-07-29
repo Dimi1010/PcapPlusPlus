@@ -2,6 +2,7 @@ if(PCAPPP_BUILD_TESTS)
   add_subdirectory(PcppTestFramework)
   add_subdirectory(Common++Test)
   add_subdirectory(Packet++Test)
+  add_subdirectory(Packet++Test-Google)
 
   if(PCAPPP_BUILD_PCAPPP)
     add_subdirectory(Pcap++Test)
