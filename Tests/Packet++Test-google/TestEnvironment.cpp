@@ -61,16 +61,30 @@ namespace pcpp
 				fullPath = filename;
 			}
 
-			switch (resourceType)
-			{
-			case ResourceType::HexData:
-			{
-				// The file is expected to contain text data in hexadecimal format
-				std::ifstream fileStream(fullPath);
+			auto const requireOpen = [filename](std::ifstream& fileStream) {
 				if (!fileStream)
 				{
 					throw std::runtime_error(std::string("Failed to open file: ") + filename);
 				}
+			};
+
+			switch (resourceType)
+			{
+			case ResourceType::BinaryData:
+			{
+				std::ifstream fileStream(fullPath, std::ios::binary);
+				requireOpen(fileStream);
+
+				size_t fileLength = getFileLength(fileStream);
+				std::vector<uint8_t> buffer(fileLength);
+				fileStream.read(reinterpret_cast<char*>(buffer.data()), fileLength);
+				return buffer;
+			}
+			case ResourceType::HexData:
+			{
+				// The file is expected to contain text data in hexadecimal format
+				std::ifstream fileStream(fullPath);
+				requireOpen(fileStream);
 
 				return readHexResource(fileStream);
 			}
