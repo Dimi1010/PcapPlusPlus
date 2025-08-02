@@ -4,11 +4,10 @@
 
 #include "PcapPlusPlusVersion.h"
 
-#include "TestEnvironment.hpp"
 
 int main(int argc, char* argv[])
 {
-	using namespace pcpp::testing;
+	using namespace pcpp::test;
 
 	std::cout << "PcapPlusPlus Packet++Test"
 	             "\nPcapPlusPlus version: "

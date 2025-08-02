@@ -1,11 +1,15 @@
 #pragma once
 
-#include "pch.h"
+#include <memory>
+#include <vector>
+#include <string>
+
+#include <gtest/gtest.h>
 
 namespace pcpp
 {
 	/// @brief The namespace for PcapPlusPlus testing utilities
-	namespace testing
+	namespace test
 	{
 		enum class ResourceType
 		{

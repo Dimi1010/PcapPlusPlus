@@ -4,7 +4,7 @@
 
 namespace pcpp
 {
-	namespace testing
+	namespace test
 	{
 		namespace
 		{
