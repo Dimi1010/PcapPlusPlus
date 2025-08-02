@@ -17,6 +17,7 @@ add_executable(
   "main.cpp"
   "TestEnvironment.cpp"
   "Tests/PacketUtilsTests.cpp"
+  "Tests/PacketTests.cpp"
   "Utils/PacketFactory.cpp"
 )
 
