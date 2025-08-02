@@ -17,6 +17,7 @@ add_executable(
   "main.cpp"
   "TestEnvironment.cpp"
   "Tests/PacketUtilsTests.cpp"
+  "Utils/PacketFactory.cpp"
 )
 
 target_compile_features(Packet++Test-Google PUBLIC cxx_std_14)
