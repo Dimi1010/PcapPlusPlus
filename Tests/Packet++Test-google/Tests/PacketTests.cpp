@@ -352,7 +352,36 @@ namespace pcpp
 	// TODO: Move test above PacketTest fixture
 	TEST(RawPacketTest, RawPacketTimeStampSetter)
 	{
-		FAIL() << "This test is not implemented yet";
+		auto rawPacket1 = test::createPacketFromHexResource("PacketExamples/IPv6UdpPacket.dat");
+
+		timespec expected_ts;
+
+		{
+			SCOPED_TRACE("Testing usec-precision setter");
+			timeval usec_test_time;
+
+			usec_test_time.tv_sec = 1583840642;  // 10.03.2020 15:44
+			usec_test_time.tv_usec = 111222;
+			expected_ts.tv_sec = usec_test_time.tv_sec;
+			expected_ts.tv_nsec = usec_test_time.tv_usec * 1000;
+
+			EXPECT_TRUE(rawPacket1->setPacketTimeStamp(usec_test_time));
+			EXPECT_EQ(rawPacket1->getPacketTimeStamp().tv_sec, expected_ts.tv_sec);
+			EXPECT_EQ(rawPacket1->getPacketTimeStamp().tv_nsec, expected_ts.tv_nsec);
+		}
+
+		{
+			SCOPED_TRACE("Testing nsec-precision setter");
+			timespec nsec_test_time;
+
+			nsec_test_time.tv_sec = 1583842105;  // 10.03.2020 16:08
+			nsec_test_time.tv_nsec = 111222987;
+			expected_ts = nsec_test_time;
+
+			ASSERT_TRUE(rawPacket1->setPacketTimeStamp(nsec_test_time));
+			EXPECT_EQ(rawPacket1->getPacketTimeStamp().tv_sec, expected_ts.tv_sec);
+			EXPECT_EQ(rawPacket1->getPacketTimeStamp().tv_nsec, expected_ts.tv_nsec);
+		}
 	}
 
 	TEST(PacketTest, ParsePartialPacket)
