@@ -357,7 +357,92 @@ namespace pcpp
 
 	TEST(PacketTest, ParsePartialPacket)
 	{
-		FAIL() << "This test is not implemented yet";
+		auto rawPacket1 = test::createPacketFromHexResource("PacketExamples/SSL-ClientHello1.dat");
+		auto rawPacket2 = test::createPacketFromHexResource("PacketExamples/IGMPv1_1.dat");
+		auto rawPacket3 = test::createPacketFromHexResource("PacketExamples/TwoHttpRequests1.dat");
+		auto rawPacket4 = test::createPacketFromHexResource("PacketExamples/PPPoESession2.dat");
+		auto rawPacket5 = test::createPacketFromHexResource("PacketExamples/TwoHttpRequests2.dat");
+		auto rawPacket6 = test::createPacketFromHexResource("PacketExamples/IcmpTimestampRequest.dat");
+		auto rawPacket7 = test::createPacketFromHexResource("PacketExamples/GREv0_2.dat");
+
+		Packet sslPacket(rawPacket1.get(), TCP);
+		Packet igmpPacket(rawPacket2.get(), IP);
+		Packet httpPacket(rawPacket3.get(), OsiModelTransportLayer);
+		Packet pppoePacket(rawPacket4.get(), OsiModelDataLinkLayer);
+		Packet httpPacket2(rawPacket5.get(), OsiModelPresentationLayer);
+		Packet icmpPacket(rawPacket6.get(), OsiModelNetworkLayer);
+		Packet grePacket(rawPacket7.get(), GRE);
+
+		EXPECT_TRUE(sslPacket.isPacketOfType(IPv4));
+		EXPECT_TRUE(sslPacket.isPacketOfType(TCP));
+		EXPECT_FALSE(sslPacket.isPacketOfType(SSL));
+		EXPECT_NE(sslPacket.getLayerOfType<EthLayer>(), nullptr);
+		EXPECT_NE(sslPacket.getLayerOfType<IPv4Layer>(), nullptr);
+		EXPECT_NE(sslPacket.getLayerOfType<TcpLayer>(), nullptr);
+		EXPECT_EQ(sslPacket.getLayerOfType<TcpLayer>()->getNextLayer(), nullptr);
+		EXPECT_EQ(sslPacket.getLayerOfType<SSLHandshakeLayer>(), nullptr);
+		EXPECT_EQ(sslPacket.getLayerOfType<PayloadLayer>(), nullptr);
+
+		EXPECT_TRUE(igmpPacket.isPacketOfType(IPv4));
+		EXPECT_TRUE(igmpPacket.isPacketOfType(Ethernet));
+		EXPECT_FALSE(igmpPacket.isPacketOfType(IGMP));
+		EXPECT_NE(igmpPacket.getLayerOfType<EthLayer>(), nullptr);
+		EXPECT_NE(igmpPacket.getLayerOfType<IPv4Layer>(), nullptr);
+		EXPECT_EQ(igmpPacket.getLayerOfType<IgmpV1Layer>(), nullptr);
+		EXPECT_EQ(igmpPacket.getLayerOfType<PayloadLayer>(), nullptr);
+
+		EXPECT_TRUE(httpPacket.isPacketOfType(IPv4));
+		EXPECT_TRUE(httpPacket.isPacketOfType(Ethernet));
+		EXPECT_TRUE(httpPacket.isPacketOfType(TCP));
+		EXPECT_FALSE(httpPacket.isPacketOfType(HTTP));
+		EXPECT_NE(httpPacket.getLayerOfType<EthLayer>(), nullptr);
+		EXPECT_NE(httpPacket.getLayerOfType<IPv4Layer>(), nullptr);
+		EXPECT_NE(httpPacket.getLayerOfType<TcpLayer>(), nullptr);
+		EXPECT_EQ(httpPacket.getLayerOfType<HttpRequestLayer>(), nullptr);
+		EXPECT_EQ(httpPacket.getLayerOfType<PayloadLayer>(), nullptr);
+
+		EXPECT_TRUE(pppoePacket.isPacketOfType(Ethernet));
+		EXPECT_TRUE(pppoePacket.isPacketOfType(PPPoESession));
+		EXPECT_FALSE(pppoePacket.isPacketOfType(IPv6));
+		EXPECT_FALSE(pppoePacket.isPacketOfType(UDP));
+		EXPECT_NE(pppoePacket.getLayerOfType<EthLayer>(), nullptr);
+		EXPECT_NE(pppoePacket.getLayerOfType<PPPoESessionLayer>(), nullptr);
+		EXPECT_EQ(pppoePacket.getLayerOfType<IPv6Layer>(), nullptr);
+
+		EXPECT_TRUE(httpPacket2.isPacketOfType(IPv4));
+		EXPECT_TRUE(httpPacket2.isPacketOfType(Ethernet));
+		EXPECT_TRUE(httpPacket2.isPacketOfType(TCP));
+		EXPECT_FALSE(httpPacket2.isPacketOfType(HTTP));
+		EXPECT_NE(httpPacket2.getLayerOfType<EthLayer>(), nullptr);
+		EXPECT_NE(httpPacket2.getLayerOfType<IPv4Layer>(), nullptr);
+		EXPECT_NE(httpPacket2.getLayerOfType<TcpLayer>(), nullptr);
+		EXPECT_EQ(httpPacket2.getLayerOfType<TcpLayer>()->getNextLayer(), nullptr);
+		EXPECT_EQ(httpPacket2.getLastLayer()->getProtocol(), TCP);
+		EXPECT_EQ(httpPacket2.getLayerOfType<HttpRequestLayer>(), nullptr);
+		EXPECT_EQ(httpPacket2.getLayerOfType<PayloadLayer>(), nullptr);
+
+		EXPECT_TRUE(icmpPacket.isPacketOfType(IPv4));
+		EXPECT_TRUE(icmpPacket.isPacketOfType(Ethernet));
+		EXPECT_TRUE(icmpPacket.isPacketOfType(ICMP));
+		EXPECT_NE(icmpPacket.getLayerOfType<EthLayer>(), nullptr);
+		EXPECT_NE(icmpPacket.getLayerOfType<IPv4Layer>(), nullptr);
+		EXPECT_NE(icmpPacket.getLayerOfType<IcmpLayer>(), nullptr);
+
+		EXPECT_TRUE(grePacket.isPacketOfType(Ethernet));
+		EXPECT_TRUE(grePacket.isPacketOfType(IPv4));
+		EXPECT_TRUE(grePacket.isPacketOfType(GREv0));
+		EXPECT_FALSE(grePacket.isPacketOfType(UDP));
+		Layer* curLayer = grePacket.getFirstLayer();
+		ASSERT_NE(curLayer, nullptr);
+		EXPECT_EQ(curLayer->getProtocol(), Ethernet);
+		curLayer = curLayer->getNextLayer();
+		ASSERT_NE(curLayer, nullptr);
+		EXPECT_EQ(curLayer->getProtocol(), IPv4);
+		curLayer = curLayer->getNextLayer();
+		ASSERT_NE(curLayer, nullptr);
+		EXPECT_EQ(curLayer->getProtocol(), GREv0);
+		curLayer = curLayer->getNextLayer();
+		EXPECT_EQ(curLayer, nullptr);
 	}
 
 	TEST(PacketTest, PacketTrailer)
