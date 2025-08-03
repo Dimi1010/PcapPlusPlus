@@ -346,7 +346,51 @@ namespace pcpp
 
 	TEST(PacketTest, PacketLayerLookup)
 	{
-		FAIL() << "This test is not implemented yet";
+		{
+			auto rawPacket1 = test::createPacketFromHexResource("PacketExamples/radius_1.dat");
+			Packet radiusPacket(rawPacket1.get());
+
+			RadiusLayer* radiusLayer = radiusPacket.getLayerOfType<RadiusLayer>(true);
+			EXPECT_NE(radiusLayer, nullptr);
+
+			EthLayer* ethLayer = radiusPacket.getLayerOfType<EthLayer>(true);
+			EXPECT_NE(ethLayer, nullptr);
+
+			IPv4Layer* ipLayer = radiusPacket.getPrevLayerOfType<IPv4Layer>(radiusLayer);
+			EXPECT_NE(ipLayer, nullptr);
+
+			TcpLayer* tcpLayer = radiusPacket.getPrevLayerOfType<TcpLayer>(ipLayer);
+			EXPECT_EQ(tcpLayer, nullptr);
+		}
+
+		{
+			auto rawPacket2 = test::createPacketFromHexResource("PacketExamples/Vxlan1.dat");
+			Packet vxlanPacket(rawPacket2.get());
+
+			// get the last IPv4 layer
+			IPv4Layer* ipLayer = vxlanPacket.getLayerOfType<IPv4Layer>(true);
+			ASSERT_NE(ipLayer, nullptr);
+			EXPECT_EQ(ipLayer->getSrcIPAddress(), IPv4Address("192.168.203.3"));
+			EXPECT_EQ(ipLayer->getDstIPAddress(), IPv4Address("192.168.203.5"));
+
+			// get the first IPv4 layer
+			ipLayer = vxlanPacket.getPrevLayerOfType<IPv4Layer>(ipLayer);
+			ASSERT_NE(ipLayer, nullptr);
+			EXPECT_EQ(ipLayer->getSrcIPAddress(), IPv4Address("192.168.203.1"));
+			EXPECT_EQ(ipLayer->getDstIPAddress(), IPv4Address("192.168.202.1"));
+
+			// try to get one more IPv4 layer
+			EXPECT_EQ(vxlanPacket.getPrevLayerOfType<IPv4Layer>(ipLayer), nullptr);
+
+			// get the first layer
+			EthLayer* ethLayer = vxlanPacket.getPrevLayerOfType<EthLayer>(ipLayer);
+			ASSERT_NE(ethLayer, nullptr);
+			EXPECT_EQ(vxlanPacket.getPrevLayerOfType<EthLayer>(ethLayer), nullptr);
+			EXPECT_EQ(vxlanPacket.getPrevLayerOfType<EthLayer>(vxlanPacket.getFirstLayer()), nullptr);
+
+			// try to get nonexistent layer
+			EXPECT_EQ(vxlanPacket.getLayerOfType<RadiusLayer>(true), nullptr);
+		}
 	}
 
 	// TODO: Move test above PacketTest fixture
