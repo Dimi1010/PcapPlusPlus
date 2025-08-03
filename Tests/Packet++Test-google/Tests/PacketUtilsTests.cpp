@@ -97,15 +97,15 @@ namespace pcpp
 		dstSrcPacket.computeCalculateFields();
 
 		// Test default behaviour where hash of SRC->DST == DST->SRC
-		EXPECT_EQ(hash5Tuple(&srcDstPacket), hash5Tuple(&dstSrcPacket)) 
-			<< "Undirected hashing of SRC->DST and DST->SRC packets is not equal.";
+		EXPECT_EQ(hash5Tuple(&srcDstPacket), hash5Tuple(&dstSrcPacket))
+		    << "Undirected hashing of SRC->DST and DST->SRC packets is not equal.";
 
 		// Test of direction-unique-hash where SRC->DST != DST->SRC
 		EXPECT_NE(hash5Tuple(&srcDstPacket, true), hash5Tuple(&dstSrcPacket, true))
 		    << "Direction-unique hashing is equal for symmetric packets.";
 
-		EXPECT_EQ(hash5Tuple(&srcDstPacket, false), 1576639238) 
-			<< "Hash of SRC->DST packet with direction-unique-hash set to false is not equal to expected value.";
+		EXPECT_EQ(hash5Tuple(&srcDstPacket, false), 1576639238)
+		    << "Hash of SRC->DST packet with direction-unique-hash set to false is not equal to expected value.";
 		EXPECT_EQ(hash5Tuple(&srcDstPacket, true), 2243556734)
 		    << "Hash of SRC->DST packet with direction-unique-hash set to true is not equal to expected value.";
 		EXPECT_EQ(hash5Tuple(&dstSrcPacket, false), 1576639238)
@@ -119,8 +119,8 @@ namespace pcpp
 		tcpLayer2.getTcpHeader()->portDst = 80;
 		tcpLayer2.getTcpHeader()->portSrc = 80;
 
-		EXPECT_EQ(hash5Tuple(&srcDstPacket), hash5Tuple(&dstSrcPacket)) 
-			<< "Hash of SRC->DST packet with same ports is not equal to hash of DST->SRC packet with same ports.";
+		EXPECT_EQ(hash5Tuple(&srcDstPacket), hash5Tuple(&dstSrcPacket))
+		    << "Hash of SRC->DST packet with same ports is not equal to hash of DST->SRC packet with same ports.";
 		EXPECT_NE(hash5Tuple(&srcDstPacket, true), hash5Tuple(&dstSrcPacket, true))
 		    << "Direction-unique hash of SRC->DST packet with same ports is equal to hash of DST->SRC packet with same ports.";
 	}
