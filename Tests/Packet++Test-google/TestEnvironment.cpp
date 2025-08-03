@@ -132,8 +132,8 @@ namespace pcpp
 		void PacketTestEnvironment::TearDown()
 		{
 			// Unregister the environment as the current active test environment
-			ASSERT_TRUE(currentEnvironment == nullptr || currentEnvironment == this)
-			    << "PacketTestEnvironment points to a different environment object";
+			ASSERT_NE(currentEnvironment, nullptr) << "PacketTestEnvironment was not set up before TearDown";
+			ASSERT_EQ(currentEnvironment, this) << "PacketTestEnvironment points to a different environment object";
 			currentEnvironment = nullptr;  // Reset the current environment pointer
 		}
 
