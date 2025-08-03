@@ -19,6 +19,10 @@ namespace pcpp
 			/// @brief Creates a new PacketFactory instance with the current time as factoryTime.
 			PacketFactory();
 
+			PacketFactory& withTime(timespec time);
+			PacketFactory& withTime(timeval time);
+			PacketFactory& withLinkType(LinkLayerType linkType);
+
 			// TODO: RawPacket requires a move constructor to return by value efficiently.
 			/// @brief Creates a RawPacket from a vector of bytes.
 			/// @param buffer A unique pointer to a buffer containing the raw packet data.

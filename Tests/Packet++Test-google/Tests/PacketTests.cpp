@@ -339,7 +339,228 @@ namespace pcpp
 
 	TEST(PacketTest, CopyLayerAndPacket)
 	{
-		FAIL() << "This test is not implemented yet";
+		auto rawPacket1 = test::createPacketFromHexResource("PacketExamples/TwoHttpResponses1.dat");
+
+		Packet sampleHttpPacket(rawPacket1.get());
+
+		// RawPacket copy c'tor / assignment operator test
+		//-----------------------------------------------
+		RawPacket copyRawPacket;
+		copyRawPacket = *rawPacket1;
+		EXPECT_EQ(copyRawPacket.getRawDataLen(), rawPacket1->getRawDataLen());
+		EXPECT_NE(copyRawPacket.getRawData(), rawPacket1->getRawData());
+		EXPECT_TRUE(test::BuffersMatch(copyRawPacket.getRawData(), copyRawPacket.getRawDataLen(),
+		                               rawPacket1->getRawData(), rawPacket1->getRawDataLen()));
+
+		// EthLayer copy c'tor test
+		//------------------------
+		EthLayer ethLayer = *sampleHttpPacket.getLayerOfType<EthLayer>();
+		EXPECT_NE(sampleHttpPacket.getLayerOfType<EthLayer>()->getLayerPayload(), ethLayer.getLayerPayload());
+		EXPECT_TRUE(test::BuffersMatch(ethLayer.getLayerPayload(),
+		                               sampleHttpPacket.getLayerOfType<EthLayer>()->getLayerPayload(),
+		                               sampleHttpPacket.getLayerOfType<EthLayer>()->getLayerPayloadSize()));
+
+		// TcpLayer copy c'tor test
+		//------------------------
+		auto rawPacket2 = test::createPacketFromHexResource("PacketExamples/TcpPacketWithOptions2.dat");
+
+		Packet sampleTcpPacketWithOptions(rawPacket2.get());
+		TcpLayer tcpLayer = *sampleTcpPacketWithOptions.getLayerOfType<TcpLayer>();
+		EXPECT_NE(sampleTcpPacketWithOptions.getLayerOfType<TcpLayer>()->getData(), tcpLayer.getData());
+		EXPECT_TRUE(test::BuffersMatch(sampleTcpPacketWithOptions.getLayerOfType<TcpLayer>()->getData(),
+		                               tcpLayer.getData(),
+		                               sampleTcpPacketWithOptions.getLayerOfType<TcpLayer>()->getDataLen()));
+
+		EXPECT_EQ(tcpLayer.getTcpOptionCount(),
+		          sampleTcpPacketWithOptions.getLayerOfType<TcpLayer>()->getTcpOptionCount());
+
+		EXPECT_NE(sampleTcpPacketWithOptions.getLayerOfType<TcpLayer>()
+		              ->getTcpOption(TcpOptionEnumType::Timestamp)
+		              .getRecordBasePtr(),
+		          tcpLayer.getTcpOption(TcpOptionEnumType::Timestamp).getRecordBasePtr());
+
+		EXPECT_EQ(sampleTcpPacketWithOptions.getLayerOfType<TcpLayer>()->getTcpOption(TcpOptionEnumType::Timestamp),
+		          tcpLayer.getTcpOption(TcpOptionEnumType::Timestamp));
+
+		// HttpLayer copy c'tor test
+		//--------------------------
+
+		HttpResponseLayer* sampleHttpLayer = sampleHttpPacket.getLayerOfType<HttpResponseLayer>();
+		HttpResponseLayer httpResLayer = *sampleHttpPacket.getLayerOfType<HttpResponseLayer>();
+		EXPECT_TRUE(sampleHttpLayer->getFirstLine() != httpResLayer.getFirstLine());
+		EXPECT_EQ(sampleHttpLayer->getFirstLine()->getStatusCode(), httpResLayer.getFirstLine()->getStatusCode());
+		EXPECT_EQ(sampleHttpLayer->getFirstLine()->getSize(), httpResLayer.getFirstLine()->getSize());
+		EXPECT_EQ(sampleHttpLayer->getFirstLine()->getVersion(), httpResLayer.getFirstLine()->getVersion());
+
+		HeaderField* curFieldInSample = sampleHttpLayer->getFirstField();
+		HeaderField* curFieldInCopy = httpResLayer.getFirstField();
+		while (curFieldInSample != nullptr && curFieldInCopy != nullptr)
+		{
+			EXPECT_TRUE(curFieldInCopy != curFieldInSample);
+			EXPECT_EQ(curFieldInSample->getFieldName(), curFieldInCopy->getFieldName());
+			EXPECT_EQ(curFieldInSample->getFieldValue(), curFieldInCopy->getFieldValue());
+			EXPECT_EQ(curFieldInSample->getFieldSize(), curFieldInCopy->getFieldSize());
+
+			curFieldInSample = sampleHttpLayer->getNextField(curFieldInSample);
+			curFieldInCopy = sampleHttpLayer->getNextField(curFieldInCopy);
+		}
+
+		EXPECT_EQ(curFieldInSample, nullptr);
+		EXPECT_EQ(curFieldInCopy, nullptr);
+
+		// Packet copy c'tor test - Ethernet
+		//---------------------------------
+
+		Packet samplePacketCopy(sampleHttpPacket);
+		EXPECT_TRUE(samplePacketCopy.getFirstLayer() != sampleHttpPacket.getFirstLayer());
+		EXPECT_TRUE(samplePacketCopy.getLastLayer() != sampleHttpPacket.getLastLayer());
+		EXPECT_TRUE(samplePacketCopy.getRawPacket() != sampleHttpPacket.getRawPacket());
+
+		EXPECT_EQ(samplePacketCopy.getRawPacket()->getRawDataLen(), sampleHttpPacket.getRawPacket()->getRawDataLen());
+		EXPECT_TRUE(test::BuffersMatch(
+		    samplePacketCopy.getRawPacket()->getRawData(), samplePacketCopy.getRawPacket()->getRawDataLen(),
+		    sampleHttpPacket.getRawPacket()->getRawData(), sampleHttpPacket.getRawPacket()->getRawDataLen()));
+
+		EXPECT_TRUE(samplePacketCopy.isPacketOfType(Ethernet));
+		EXPECT_TRUE(samplePacketCopy.isPacketOfType(IPv4));
+		EXPECT_TRUE(samplePacketCopy.isPacketOfType(TCP));
+		EXPECT_TRUE(samplePacketCopy.isPacketOfType(HTTPResponse));
+		Layer* curSamplePacketLayer = sampleHttpPacket.getFirstLayer();
+		Layer* curPacketCopyLayer = samplePacketCopy.getFirstLayer();
+		while (curSamplePacketLayer != nullptr && curPacketCopyLayer != nullptr)
+		{
+			EXPECT_EQ(curSamplePacketLayer->getProtocol(), curPacketCopyLayer->getProtocol());
+			EXPECT_EQ(curSamplePacketLayer->getHeaderLen(), curPacketCopyLayer->getHeaderLen());
+			EXPECT_EQ(curSamplePacketLayer->getLayerPayloadSize(), curPacketCopyLayer->getLayerPayloadSize());
+			EXPECT_EQ(curSamplePacketLayer->getDataLen(), curPacketCopyLayer->getDataLen());
+			EXPECT_TRUE(test::BuffersMatch(curSamplePacketLayer->getData(), curPacketCopyLayer->getData(),
+			                               curSamplePacketLayer->getDataLen()));
+			curSamplePacketLayer = curSamplePacketLayer->getNextLayer();
+			curPacketCopyLayer = curPacketCopyLayer->getNextLayer();
+		}
+
+		auto samplePacketCopyHttpResponseLayer = samplePacketCopy.getLayerOfType<HttpResponseLayer>();
+		auto contentTypeField = samplePacketCopyHttpResponseLayer->getFieldByName(PCPP_HTTP_CONTENT_TYPE_FIELD);
+		ASSERT_NE(samplePacketCopyHttpResponseLayer->insertField(contentTypeField, "X-Forwarded-For", "10.20.30.40"),
+		          nullptr);
+
+		samplePacketCopy = sampleHttpPacket;
+		samplePacketCopyHttpResponseLayer = samplePacketCopy.getLayerOfType<HttpResponseLayer>();
+		contentTypeField = samplePacketCopyHttpResponseLayer->getFieldByName(PCPP_HTTP_CONTENT_TYPE_FIELD);
+		ASSERT_NE(samplePacketCopyHttpResponseLayer->insertField(contentTypeField, "X-Forwarded-For", "10.20.30.40"),
+		          nullptr);
+
+		EXPECT_EQ(curSamplePacketLayer, nullptr);
+		EXPECT_EQ(curPacketCopyLayer, nullptr);
+
+		// Packet copy c'tor test - Null/Loopback
+		//--------------------------------------
+
+		auto rawPacket3 = test::createPacketFromHexResource(
+		    "PacketExamples/NullLoopback1.dat", test::PacketFactory().withLinkType(LinkLayerType::LINKTYPE_NULL));
+
+		Packet nullLoopbackPacket(rawPacket3.get());
+
+		Packet nullLoopbackPacketCopy(nullLoopbackPacket);
+
+		EXPECT_TRUE(nullLoopbackPacketCopy.getFirstLayer() != nullLoopbackPacket.getFirstLayer());
+		EXPECT_TRUE(nullLoopbackPacketCopy.getLastLayer() != nullLoopbackPacket.getLastLayer());
+		EXPECT_TRUE(nullLoopbackPacketCopy.getRawPacket() != nullLoopbackPacket.getRawPacket());
+
+		EXPECT_EQ(nullLoopbackPacketCopy.getRawPacket()->getRawDataLen(),
+		          nullLoopbackPacket.getRawPacket()->getRawDataLen());
+		EXPECT_TRUE(test::BuffersMatch(
+		    nullLoopbackPacketCopy.getRawPacket()->getRawData(), nullLoopbackPacketCopy.getRawPacket()->getRawDataLen(),
+		    nullLoopbackPacket.getRawPacket()->getRawData(), nullLoopbackPacket.getRawPacket()->getRawDataLen()));
+
+		EXPECT_EQ(nullLoopbackPacketCopy.getRawPacket()->getLinkLayerType(), LINKTYPE_NULL);
+		EXPECT_EQ(nullLoopbackPacketCopy.getFirstLayer()->getProtocol(), NULL_LOOPBACK);
+
+		curSamplePacketLayer = nullLoopbackPacket.getFirstLayer();
+		curPacketCopyLayer = nullLoopbackPacketCopy.getFirstLayer();
+		while (curSamplePacketLayer != nullptr && curPacketCopyLayer != nullptr)
+		{
+			EXPECT_EQ(curSamplePacketLayer->getProtocol(), curPacketCopyLayer->getProtocol());
+			EXPECT_EQ(curSamplePacketLayer->getHeaderLen(), curPacketCopyLayer->getHeaderLen());
+			EXPECT_EQ(curSamplePacketLayer->getLayerPayloadSize(), curPacketCopyLayer->getLayerPayloadSize());
+			EXPECT_EQ(curSamplePacketLayer->getDataLen(), curPacketCopyLayer->getDataLen());
+			curSamplePacketLayer = curSamplePacketLayer->getNextLayer();
+			curPacketCopyLayer = curPacketCopyLayer->getNextLayer();
+		}
+
+		// Packet copy c'tor test - SLL
+		//----------------------------
+
+		auto rawPacket4 = test::createPacketFromHexResource(
+		    "PacketExamples/SllPacket2.dat", test::PacketFactory().withLinkType(LinkLayerType::LINKTYPE_LINUX_SLL));
+
+		Packet sllPacket(rawPacket4.get());
+
+		Packet sllPacketCopy(sllPacket);
+
+		EXPECT_TRUE(sllPacketCopy.getFirstLayer() != sllPacket.getFirstLayer());
+		EXPECT_TRUE(sllPacketCopy.getLastLayer() != sllPacket.getLastLayer());
+		EXPECT_TRUE(sllPacketCopy.getRawPacket() != sllPacket.getRawPacket());
+
+		EXPECT_EQ(sllPacketCopy.getRawPacket()->getRawDataLen(), sllPacket.getRawPacket()->getRawDataLen());
+		EXPECT_TRUE(test::BuffersMatch(
+		    sllPacketCopy.getRawPacket()->getRawData(), sllPacketCopy.getRawPacket()->getRawDataLen(),
+		    sllPacket.getRawPacket()->getRawData(), sllPacket.getRawPacket()->getRawDataLen()));
+
+		EXPECT_EQ(sllPacketCopy.getRawPacket()->getLinkLayerType(), LINKTYPE_LINUX_SLL);
+		EXPECT_EQ(sllPacketCopy.getFirstLayer()->getProtocol(), SLL);
+
+		curSamplePacketLayer = sllPacket.getFirstLayer();
+		curPacketCopyLayer = sllPacketCopy.getFirstLayer();
+		while (curSamplePacketLayer != nullptr && curPacketCopyLayer != nullptr)
+		{
+			EXPECT_EQ(curSamplePacketLayer->getProtocol(), curPacketCopyLayer->getProtocol());
+			EXPECT_EQ(curSamplePacketLayer->getHeaderLen(), curPacketCopyLayer->getHeaderLen());
+			EXPECT_EQ(curSamplePacketLayer->getLayerPayloadSize(), curPacketCopyLayer->getLayerPayloadSize());
+			EXPECT_EQ(curSamplePacketLayer->getDataLen(), curPacketCopyLayer->getDataLen());
+			curSamplePacketLayer = curSamplePacketLayer->getNextLayer();
+			curPacketCopyLayer = curPacketCopyLayer->getNextLayer();
+		}
+
+		// DnsLayer copy c'tor and operator= test
+		//--------------------------------------
+
+		auto rawPacket5 = test::createPacketFromHexResource("PacketExamples/Dns2.dat");
+
+		Packet sampleDnsPacket(rawPacket5.get());
+
+		DnsLayer* origDnsLayer = sampleDnsPacket.getLayerOfType<DnsLayer>();
+		ASSERT_NE(origDnsLayer, nullptr);
+		DnsLayer copyDnsLayer(*origDnsLayer);
+		EXPECT_EQ(copyDnsLayer.getQueryCount(), origDnsLayer->getQueryCount());
+		EXPECT_EQ(copyDnsLayer.getFirstQuery()->getName(), origDnsLayer->getFirstQuery()->getName());
+		EXPECT_EQ(copyDnsLayer.getFirstQuery()->getDnsType(), origDnsLayer->getFirstQuery()->getDnsType());
+
+		EXPECT_EQ(copyDnsLayer.getAuthorityCount(), origDnsLayer->getAuthorityCount());
+		EXPECT_EQ(copyDnsLayer.getAuthority("Yaels-iPhone.local", true)->getData()->toString(),
+		          origDnsLayer->getAuthority("Yaels-iPhone.local", true)->getData()->toString());
+
+		EXPECT_EQ(copyDnsLayer.getAdditionalRecord("", true)->getData()->toString(),
+		          origDnsLayer->getAdditionalRecord("", true)->getData()->toString());
+
+		copyDnsLayer.addQuery("bla", DNS_TYPE_A, DNS_CLASS_ANY);
+		IPv4DnsResourceData ipv4DnsData(std::string("1.1.1.1"));
+		copyDnsLayer.addAnswer("bla", DNS_TYPE_A, DNS_CLASS_ANY, 123, &ipv4DnsData);
+
+		copyDnsLayer = *origDnsLayer;
+
+		EXPECT_EQ(copyDnsLayer.getQueryCount(), origDnsLayer->getQueryCount());
+		EXPECT_EQ(copyDnsLayer.getFirstQuery()->getName(), origDnsLayer->getFirstQuery()->getName());
+		EXPECT_EQ(copyDnsLayer.getFirstQuery()->getDnsType(), origDnsLayer->getFirstQuery()->getDnsType(), enum);
+
+		EXPECT_EQ(copyDnsLayer.getAuthorityCount(), origDnsLayer->getAuthorityCount());
+		EXPECT_EQ(copyDnsLayer.getAuthority(".local", false)->getData()->toString(),
+		          origDnsLayer->getAuthority("iPhone.local", false)->getData()->toString());
+
+		EXPECT_EQ(copyDnsLayer.getAnswerCount(), origDnsLayer->getAnswerCount());
+
+		EXPECT_EQ(copyDnsLayer.getAdditionalRecord("", true)->getData()->toString(),
+		          origDnsLayer->getAdditionalRecord("", true)->getData()->toString());
 	}
 
 	TEST(PacketTest, PacketLayerLookup)

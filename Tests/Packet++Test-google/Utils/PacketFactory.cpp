@@ -15,6 +15,24 @@ namespace pcpp
 			factoryTime = internal::toTimespec(factoryTimeTV);
 		}
 
+		PacketFactory& PacketFactory::withTime(timespec time)
+		{
+			// TODO: insert return statement here
+			factoryTime = time;
+			return *this;
+		}
+
+		PacketFactory& PacketFactory::withTime(timeval time)
+		{
+			return withTime(internal::toTimespec(time));
+		}
+
+		PacketFactory& PacketFactory::withLinkType(LinkLayerType linkType)
+		{
+			defaultLinkType = linkType;
+			return *this;
+		}
+
 		std::unique_ptr<RawPacket> PacketFactory::createFromBuffer(std::unique_ptr<uint8_t[]> buffer,
 		                                                           size_t bufferLen) const
 		{
