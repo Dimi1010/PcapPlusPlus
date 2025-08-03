@@ -40,12 +40,14 @@ namespace pcpp
 
 			if (actual == nullptr && actualLen > 0)
 			{
-				return ::testing::AssertionFailure() << "Actual buffer is null but actual buffer length is " << actualLen;
+				return ::testing::AssertionFailure()
+				       << "Actual buffer is null but actual buffer length is " << actualLen;
 			}
 
 			if (expected == nullptr && expectedLen > 0)
 			{
-				return ::testing::AssertionFailure() << "Expected buffer is null but expected buffer length is " << expectedLen;
+				return ::testing::AssertionFailure()
+				       << "Expected buffer is null but expected buffer length is " << expectedLen;
 			}
 
 			if (actual == nullptr && expected == nullptr)
@@ -64,8 +66,7 @@ namespace pcpp
 			if (actualLen != expectedLen)
 			{
 				auto failure = ::testing::AssertionFailure();
-				failure << (::testing::Message()
-				            << "Buffers have different lengths: actual=" << actualLen << ", expected=" << expectedLen)
+				failure << "Buffers have different lengths: actual=" << actualLen << ", expected=" << expectedLen
 				        << '\n';
 
 				addActualBufferRepr(failure);
