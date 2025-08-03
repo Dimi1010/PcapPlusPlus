@@ -9,3 +9,4 @@
 #include <gmock/gmock.h>
 
 #include "TestEnvironment.hpp"
+#include "Utils\AssertionExtensions.hpp"

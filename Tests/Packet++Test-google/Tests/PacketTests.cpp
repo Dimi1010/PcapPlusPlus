@@ -333,10 +333,7 @@ namespace pcpp
 		    "PacketExamples/IcmpWithoutTunnel.dat", test::ResourceType::HexData);
 
 		ASSERT_EQ(packetWithoutTunnel.getRawPacket()->getRawDataLen(), buffer4.size());
-
-		// TODO: Improve this comparison
-		EXPECT_TRUE(std::memcmp(packetWithoutTunnel.getRawPacket()->getRawData(), buffer4.data(), buffer4.size()) == 0);
-		// ASSERT_BUF_COMPARE(packetWithoutTunnel.getRawPacket()->getRawData(), buffer4, bufferLength4);
+		EXPECT_TRUE(test::BuffersMatch(packetWithoutTunnel.getRawPacket()->getRawData(), buffer4.data(), buffer4.size()));
 	}
 
 	TEST(PacketTest, CopyLayerAndPacket)
