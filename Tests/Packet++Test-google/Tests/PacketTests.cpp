@@ -332,8 +332,9 @@ namespace pcpp
 		auto buffer4 = test::PacketTestEnvironment::getCurrent().getDataLoader().loadResourceToVector(
 		    "PacketExamples/IcmpWithoutTunnel.dat", test::ResourceType::HexData);
 
-		ASSERT_EQ(packetWithoutTunnel.getRawPacket()->getRawDataLen(), buffer4.size());
-		EXPECT_TRUE(test::BuffersMatch(packetWithoutTunnel.getRawPacket()->getRawData(), buffer4.data(), buffer4.size()));
+		EXPECT_TRUE(test::BuffersMatch(packetWithoutTunnel.getRawPacket()->getRawData(),
+		                               packetWithoutTunnel.getRawPacket()->getRawDataLen(), buffer4.data(),
+		                               buffer4.size()));
 	}
 
 	TEST(PacketTest, CopyLayerAndPacket)
