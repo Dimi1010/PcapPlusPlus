@@ -49,7 +49,20 @@ namespace pcpp
 		TestDataLoader::TestDataLoader(std::string dataRoot) : m_DataRoot(std::move(dataRoot))
 		{}
 
-		std::vector<uint8_t> TestDataLoader::loadResource(const char* filename, ResourceType resourceType) const
+		DataResource TestDataLoader::loadResource(const char* filename, ResourceType resourceType) const
+		{
+			// Somewhat inefficient as it copies the data into a vector first, but it should work for testing,
+			// as it saves on code duplication.
+			auto vecBuffer = loadResourceToVector(filename, resourceType);
+
+			DataResource resource;
+			resource.length = vecBuffer.size();
+			resource.data = std::make_unique<uint8_t[]>(vecBuffer.size());
+			std::copy(vecBuffer.begin(), vecBuffer.end(), resource.data.get());
+			return resource;
+		}
+
+		std::vector<uint8_t> TestDataLoader::loadResourceToVector(const char* filename, ResourceType resourceType) const
 		{
 			std::string fullPath;
 			if (!m_DataRoot.empty())
@@ -93,19 +106,6 @@ namespace pcpp
 			}
 		}
 
-		std::unique_ptr<uint8_t[]> TestDataLoader::loadResourceToNewBuffer(const char* filename, size_t& outBufferLen,
-		                                                                   ResourceType resourceType) const
-		{
-			// Somewhat inefficient as it copies the data into a vector first, but it should work for testing,
-			// as it saves on code duplication.
-			auto vecBuffer = loadResource(filename, resourceType);
-
-			auto buffer = std::make_unique<uint8_t[]>(vecBuffer.size());
-			std::copy(vecBuffer.begin(), vecBuffer.end(), buffer.get());
-			outBufferLen = vecBuffer.size();
-			return buffer;
-		}
-
 		PacketTestEnvironment* PacketTestEnvironment::currentEnvironment = nullptr;
 
 		PacketTestEnvironment const& PacketTestEnvironment::getCurrent()
@@ -137,5 +137,5 @@ namespace pcpp
 			currentEnvironment = nullptr;  // Reset the current environment pointer
 		}
 
-	}  // namespace testing
+	}  // namespace test
 }  // namespace pcpp

@@ -54,9 +54,8 @@ namespace pcpp
 				dataLoader = &PacketTestEnvironment::getCurrent().getDataLoader();
 			}
 
-			size_t bufferLen;
-			auto buffer = dataLoader->loadResourceToNewBuffer(resourceName, bufferLen, ResourceType::HexData);
-			return factory.createFromBuffer(std::move(buffer), bufferLen);
+			auto resource = dataLoader->loadResource(resourceName, ResourceType::HexData);
+			return factory.createFromBuffer(std::move(resource.data), resource.length);
 		}
 	}  // namespace test
 }  // namespace pcpp
