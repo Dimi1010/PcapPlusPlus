@@ -919,12 +919,130 @@ namespace pcpp
 	// TODO: Should this be in PacketTest fixture?
 	TEST(PacketTest, ResizeLayer)
 	{
-		FAIL() << "This test is not implemented yet";
+		uint8_t payload[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xa };
+		PayloadLayer payloadLayer(payload, 10);
+
+		// Creating a packet
+		Packet packet(1500);
+		ASSERT_TRUE(packet.addLayer(&payloadLayer));
+
+		// Starting Resize testing
+		ASSERT_EQ(packet.getRawPacket()->getRawDataLen(), 10);  // Size of packet before resizing is not correct
+
+		//
+		// test shortening of packet and layer
+		//
+		uint8_t payload2[] = { 0x05, 0x04, 0x03, 0x02, 0x01 };
+		size_t payload2_size = 5;
+		payloadLayer.setPayload(payload2, payload2_size);
+
+		// check that resizing worked in terms of data length
+		ASSERT_EQ(packet.getRawPacket()->getRawDataLen(),
+		          (int)payload2_size);  // Size of packet after first resizing (shortening) is not correct
+
+		// confirm that data has been correctly written to raw packet
+		const uint8_t* rawData =
+		    packet.getRawPacket()->getRawData() + (packet.getRawPacket()->getRawDataLen() - payload2_size);
+		EXPECT_EQ(rawData[0], 0x05);  // Setting payload to new payload has failed.
+		EXPECT_EQ(rawData[1], 0x04);
+		EXPECT_EQ(rawData[2], 0x03);
+		EXPECT_EQ(rawData[3], 0x02);
+		EXPECT_EQ(rawData[4], 0x01);
+
+		//
+		// test extension of packet and layer
+		//
+		uint8_t payload3[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xDE, 0xAD, 0xBE, 0xEF };
+		size_t payload3_size = 8;
+		payloadLayer.setPayload(payload3, payload3_size);
+
+		// check that resizing worked in terms of data length
+		ASSERT_EQ(packet.getRawPacket()->getRawDataLen(),
+		          (int)payload3_size);  // Size of packet after second resizing (extension) is not correct
+
+		// confirm that data has been correctly written to raw packet
+		const uint8_t* rawData2 =
+		    packet.getRawPacket()->getRawData() + (packet.getRawPacket()->getRawDataLen() - payload3_size);
+		EXPECT_EQ(rawData2[0], 0xDE);  // Setting payload to new payload has failed.
+		EXPECT_EQ(rawData2[1], 0xAD);
+		EXPECT_EQ(rawData2[2], 0xBE);
+		EXPECT_EQ(rawData2[3], 0xEF);
+		EXPECT_EQ(rawData2[4], 0xDE);
+		EXPECT_EQ(rawData2[5], 0xAD);
+		EXPECT_EQ(rawData2[6], 0xBE);
+		EXPECT_EQ(rawData2[7], 0xEF);
 	}
 
 	TEST(PacketTest, PrintPacketAndLayers)
 	{
-		FAIL() << "This test is not implemented yet";
+		timeval time;
+		time.tv_sec = 1634026009;
+		time.tv_usec = 0;
+
+		// convert the timestamp to a printable format
+		time_t nowtime = time.tv_sec;
+		struct tm* nowtm = nullptr;
+#if __cplusplus > 199711L && !defined(_WIN32)
+		// localtime_r is a thread-safe versions of localtime,
+		// but they're defined only in newer compilers (>= C++0x).
+		// on Windows localtime is already thread-safe so there is not need
+		// to use localtime_r
+		struct tm nowtm_r;
+		nowtm = localtime_r(&nowtime, &nowtm_r);
+#else
+		// on Window compilers localtime is already thread safe.
+		// in old compilers (< C++0x) localtime_r was not defined so we have to fall back to localtime
+		nowtm = localtime(&nowtime);
+#endif
+
+		char tmbuf[64];
+		strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", nowtm);
+
+		auto packetFactory = test::PacketFactory().withTime(time);
+
+		auto rawPacket1 = test::createPacketFromHexResource("PacketExamples/MplsPackets1.dat", packetFactory);
+		Packet packet(rawPacket1.get());
+
+		std::string expectedPacketHeaderString =
+		    "Packet length: 361 [Bytes], Arrival time: " + std::string(tmbuf) + ".000000000";
+		std::vector<std::string> expectedLayerStrings;
+		expectedLayerStrings.push_back("Ethernet II Layer, Src: 50:81:89:f9:d5:7b, Dst: 28:c2:ce:ba:97:e8");
+		expectedLayerStrings.push_back("VLAN Layer, Priority: 0, Vlan ID: 215, CFI: 0");
+		expectedLayerStrings.push_back("VLAN Layer, Priority: 0, Vlan ID: 11, CFI: 0");
+		expectedLayerStrings.push_back("MPLS Layer, Label: 16000, Exp: 0, TTL: 126, Bottom of stack: true");
+		expectedLayerStrings.push_back("IPv4 Layer, Src: 2.3.4.6, Dst: 12.13.14.15");
+		expectedLayerStrings.push_back("TCP Layer, [ACK], Src port: 20636, Dst port: 80");
+		expectedLayerStrings.push_back("HTTP request, GET /i/?tid=199&hash=8ktxrl&subid=0 HTTP/1.1");
+
+		// test print layers
+		std::vector<std::string>::iterator iter = expectedLayerStrings.begin();
+		for (Layer* layer = packet.getFirstLayer(); layer != nullptr; layer = layer->getNextLayer())
+		{
+			ASSERT_EQ(layer->toString(), *iter);
+			std::ostringstream layerStream;
+			layerStream << *layer;
+			ASSERT_EQ(layerStream.str(), *iter);
+			++iter;
+		}
+		ASSERT_EQ(iter, expectedLayerStrings.end());
+
+		// test print packet
+		std::ostringstream expectedStream;
+		expectedStream << expectedPacketHeaderString << std::endl;
+		for (const auto& it : expectedLayerStrings)
+		{
+			expectedStream << it << std::endl;
+		}
+
+		std::ostringstream packetStream;
+		packetStream << packet;
+		ASSERT_EQ(packetStream.str(), expectedStream.str());
+		ASSERT_EQ(packet.toString(), expectedStream.str());
+
+		expectedLayerStrings.insert(expectedLayerStrings.begin(), expectedPacketHeaderString);
+		std::vector<std::string> packetAsStringList;
+		packet.toStringList(packetAsStringList);
+		ASSERT_EQ(packetAsStringList, expectedLayerStrings);
 	}
 
 	// TODO: Should this be in PacketTest fixture?
