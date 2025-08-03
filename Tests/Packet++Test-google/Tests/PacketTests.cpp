@@ -159,7 +159,7 @@ namespace pcpp
 		EXPECT_EQ(vlanLayer.getNextLayer()->getProtocol(), IPv4);
 	}
 
-	TEST(PacketTest, RemoveLayerTest)
+	TEST(PacketTest, RemoveLayer)
 	{
 		// parse packet and remove layers
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -339,45 +339,45 @@ namespace pcpp
 		// ASSERT_BUF_COMPARE(packetWithoutTunnel.getRawPacket()->getRawData(), buffer4, bufferLength4);
 	}
 
-	TEST(PacketTest, CopyLayerAndPacketTest)
+	TEST(PacketTest, CopyLayerAndPacket)
 	{
 		FAIL() << "This test is not implemented yet";
 	}
 
-	TEST(PacketTest, PacketLayerLookupTest)
+	TEST(PacketTest, PacketLayerLookup)
 	{
 		FAIL() << "This test is not implemented yet";
 	}
 
 	// TODO: Move test above PacketTest fixture
-	TEST(RawPacketTest, RawPacketTimeStampSetterTest)
+	TEST(RawPacketTest, RawPacketTimeStampSetter)
 	{
 		FAIL() << "This test is not implemented yet";
 	}
 
-	TEST(PacketTest, ParsePartialPacketTest)
+	TEST(PacketTest, ParsePartialPacket)
 	{
 		FAIL() << "This test is not implemented yet";
 	}
 
-	TEST(PacketTest, PacketTrailerTest)
-	{
-		FAIL() << "This test is not implemented yet";
-	}
-
-	// TODO: Should this be in PacketTest fixture?
-	TEST(PacketTest, ResizeLayerTest)
-	{
-		FAIL() << "This test is not implemented yet";
-	}
-
-	TEST(PacketTest, PrintPacketAndLayersTest)
+	TEST(PacketTest, PacketTrailer)
 	{
 		FAIL() << "This test is not implemented yet";
 	}
 
 	// TODO: Should this be in PacketTest fixture?
-	TEST(PacketTest, ProtocolFamilyMembershipTest)
+	TEST(PacketTest, ResizeLayer)
+	{
+		FAIL() << "This test is not implemented yet";
+	}
+
+	TEST(PacketTest, PrintPacketAndLayers)
+	{
+		FAIL() << "This test is not implemented yet";
+	}
+
+	// TODO: Should this be in PacketTest fixture?
+	TEST(PacketTest, ProtocolFamilyMembership)
 	{
 		auto rawPacket = test::createPacketFromHexResource("PacketExamples/TwoHttpRequests1.dat");
 		Packet packet(rawPacket.get());
