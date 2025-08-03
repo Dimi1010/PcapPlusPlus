@@ -362,7 +362,181 @@ namespace pcpp
 
 	TEST(PacketTest, PacketTrailer)
 	{
-		FAIL() << "This test is not implemented yet";
+		auto rawPacket1 = test::createPacketFromHexResource("PacketExamples/packet_trailer_arp.dat");
+		auto rawPacket2 = test::createPacketFromHexResource("PacketExamples/packet_trailer_ipv4.dat");
+		auto rawPacket3 = test::createPacketFromHexResource("PacketExamples/packet_trailer_ipv6.dat");
+		auto rawPacket4 = test::createPacketFromHexResource("PacketExamples/packet_trailer_pppoed.dat");
+		auto rawPacket5 = test::createPacketFromHexResource("PacketExamples/packet_trailer_ipv6.dat");
+
+		Packet trailerArpPacket(rawPacket1.get());
+		Packet trailerIPv4Packet(rawPacket2.get());
+		Packet trailerIPv6Packet(rawPacket3.get());
+		Packet trailerPPPoEDPacket(rawPacket4.get());
+		Packet trailerIPv6Packet2(rawPacket5.get());
+
+		EXPECT_TRUE(trailerArpPacket.isPacketOfType(PacketTrailer));
+		EXPECT_TRUE(trailerIPv4Packet.isPacketOfType(PacketTrailer));
+		EXPECT_TRUE(trailerIPv6Packet.isPacketOfType(PacketTrailer));
+		EXPECT_TRUE(trailerPPPoEDPacket.isPacketOfType(PacketTrailer));
+
+		EXPECT_EQ(trailerArpPacket.getLayerOfType<PacketTrailerLayer>()->getTrailerLen(), 18);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<PacketTrailerLayer>()->getTrailerLen(), 6);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<PacketTrailerLayer>()->getTrailerLen(), 4);
+		EXPECT_EQ(trailerPPPoEDPacket.getLayerOfType<PacketTrailerLayer>()->getTrailerLen(), 28);
+
+		EXPECT_EQ(trailerArpPacket.getLayerOfType<PacketTrailerLayer>()->getTrailerDataAsHexString(),
+		          "742066726f6d2062726964676500203d3d20");
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<PacketTrailerLayer>()->getTrailerDataAsHexString(), "0101080a0000");
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<PacketTrailerLayer>()->getTrailerDataAsHexString(), "cdfcf105");
+		EXPECT_EQ(trailerPPPoEDPacket.getLayerOfType<PacketTrailerLayer>()->getTrailerDataAsHexString(),
+		          "00000000000000000000000000000000000000000000000000000000");
+
+		EXPECT_EQ(trailerArpPacket.getLayerOfType<PacketTrailerLayer>()->getTrailerData()[3], 0x72);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<PacketTrailerLayer>()->getTrailerData()[2], 0x8);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<PacketTrailerLayer>()->getTrailerData()[1], 0xfc);
+		EXPECT_EQ(trailerPPPoEDPacket.getLayerOfType<PacketTrailerLayer>()->getTrailerData()[12], 0);
+
+		EthLayer* ethLayer = trailerIPv4Packet.getLayerOfType<EthLayer>();
+		IPv4Layer* ip4Layer = trailerIPv4Packet.getLayerOfType<IPv4Layer>();
+		ASSERT_NE(ethLayer, nullptr);
+		ASSERT_NE(ip4Layer, nullptr);
+		EXPECT_GE(ethLayer->getDataLen() - ethLayer->getHeaderLen(), ip4Layer->getDataLen());
+		EXPECT_EQ(ip4Layer->getDataLen(), be16toh(ip4Layer->getIPv4Header()->totalLength));
+
+		ethLayer = trailerIPv6Packet.getLayerOfType<EthLayer>();
+		IPv6Layer* ip6Layer = trailerIPv6Packet.getLayerOfType<IPv6Layer>();
+		ASSERT_NE(ethLayer, nullptr);
+		ASSERT_NE(ip6Layer, nullptr);
+		EXPECT_GE(ethLayer->getDataLen() - ethLayer->getHeaderLen(), ip6Layer->getDataLen());
+		EXPECT_EQ(ip6Layer->getDataLen(), be16toh(ip6Layer->getIPv6Header()->payloadLength) + ip6Layer->getHeaderLen());
+
+		// add layer before trailer
+		auto newVlanLayer = new VlanLayer(123, true, 1, PCPP_ETHERTYPE_IPV6);
+		ASSERT_TRUE(trailerIPv6Packet.insertLayer(ethLayer, newVlanLayer, true));
+		trailerIPv6Packet.computeCalculateFields();
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<EthLayer>()->getDataLen(), 468);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<VlanLayer>()->getDataLen(), 454);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<IPv6Layer>()->getDataLen(), 446);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<UdpLayer>()->getDataLen(), 406);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<DnsLayer>()->getDataLen(), 398);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<PacketTrailerLayer>()->getDataLen(), 4);
+
+		// add layer just before trailer
+		auto httpReq = new HttpRequestLayer(HttpRequestLayer::HttpGET, "/main.html", OneDotOne);
+		httpReq->addEndOfHeader();
+		TcpLayer* tcpLayer = trailerIPv4Packet.getLayerOfType<TcpLayer>();
+		ASSERT_NE(tcpLayer, nullptr);
+		trailerIPv4Packet.insertLayer(tcpLayer, httpReq, true);
+		trailerIPv4Packet.computeCalculateFields();
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<EthLayer>()->getDataLen(), 87);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<IPv4Layer>()->getDataLen(), 67);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<TcpLayer>()->getDataLen(), 47);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<HttpRequestLayer>()->getDataLen(), 27);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<PacketTrailerLayer>()->getDataLen(), 6);
+
+		// add layer after trailer (result with an error)
+		uint8_t payload[4] = { 0x1, 0x2, 0x3, 0x4 };
+		std::unique_ptr<PayloadLayer> newPayloadLayer = std::make_unique<PayloadLayer>(payload, 4);
+		Logger::getInstance().suppressLogs();
+		ASSERT_FALSE(trailerIPv4Packet.addLayer(newPayloadLayer.get(), true));
+		Logger::getInstance().enableLogs();
+
+		// remove layer before trailer
+		EXPECT_TRUE(trailerIPv4Packet.removeLayer(TCP));
+		trailerIPv4Packet.computeCalculateFields();
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<EthLayer>()->getDataLen(), 67);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<IPv4Layer>()->getDataLen(), 47);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<HttpRequestLayer>()->getDataLen(), 27);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<PacketTrailerLayer>()->getDataLen(), 6);
+
+		// remove layer just before trailer
+		EXPECT_TRUE(trailerIPv4Packet.removeLayer(HTTPRequest));
+		trailerIPv4Packet.computeCalculateFields();
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<EthLayer>()->getDataLen(), 40);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<IPv4Layer>()->getDataLen(), 20);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<PacketTrailerLayer>()->getDataLen(), 6);
+
+		// remove trailer
+		ethLayer = trailerIPv6Packet2.getLayerOfType<EthLayer>();
+		auto newVlanLayer2 = new VlanLayer(456, true, 1, PCPP_ETHERTYPE_IPV6);
+		ASSERT_TRUE(trailerIPv6Packet2.insertLayer(ethLayer, newVlanLayer2, true));
+		PacketTrailerLayer* packetTrailer = trailerIPv6Packet2.getLayerOfType<PacketTrailerLayer>();
+		ASSERT_NE(packetTrailer, nullptr);
+		ASSERT_TRUE(trailerIPv6Packet2.removeLayer(PacketTrailer));
+		trailerIPv6Packet2.computeCalculateFields();
+		EXPECT_EQ(trailerIPv6Packet2.getLayerOfType<EthLayer>()->getDataLen(), 464);
+		EXPECT_EQ(trailerIPv6Packet2.getLayerOfType<VlanLayer>()->getDataLen(), 450);
+		EXPECT_EQ(trailerIPv6Packet2.getLayerOfType<IPv6Layer>()->getDataLen(), 446);
+		EXPECT_EQ(trailerIPv6Packet2.getLayerOfType<UdpLayer>()->getDataLen(), 406);
+		EXPECT_EQ(trailerIPv6Packet2.getLayerOfType<DnsLayer>()->getDataLen(), 398);
+
+		// remove all layers but the trailer
+		ASSERT_TRUE(trailerIPv4Packet.removeLayer(Ethernet));
+		trailerIPv4Packet.computeCalculateFields();
+		ASSERT_TRUE(trailerIPv4Packet.removeLayer(IPv4));
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<PacketTrailerLayer>()->getDataLen(), 6);
+
+		// rebuild packet starting from trailer
+		auto newEthLayer =
+		    new EthLayer(MacAddress("30:46:9a:23:fb:fa"), MacAddress("6c:f0:49:b2:de:6e"), PCPP_ETHERTYPE_IP);
+		ASSERT_TRUE(trailerIPv4Packet.insertLayer(nullptr, newEthLayer, true));
+		auto newIp4Layer = new IPv4Layer(IPv4Address("173.194.78.104"), IPv4Address("10.0.0.1"));
+		newIp4Layer->getIPv4Header()->ipId = htobe16(40382);
+		newIp4Layer->getIPv4Header()->timeToLive = 46;
+		trailerIPv4Packet.insertLayer(newEthLayer, newIp4Layer, true);
+		auto newTcpLayer = new TcpLayer(443, 55194);
+		newTcpLayer->getTcpHeader()->ackNumber = htobe32(0x807df56c);
+		newTcpLayer->getTcpHeader()->sequenceNumber = htobe32(0x46529f28);
+		newTcpLayer->getTcpHeader()->ackFlag = 1;
+		newTcpLayer->getTcpHeader()->windowSize = htobe16(344);
+		trailerIPv4Packet.insertLayer(newIp4Layer, newTcpLayer, true);
+		trailerIPv4Packet.computeCalculateFields();
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<EthLayer>()->getDataLen(), 60);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<IPv4Layer>()->getDataLen(), 40);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<TcpLayer>()->getDataLen(), 20);
+		EXPECT_EQ(trailerIPv4Packet.getLayerOfType<PacketTrailerLayer>()->getDataLen(), 6);
+
+		// extend layer before trailer
+		ip6Layer = trailerIPv6Packet.getLayerOfType<IPv6Layer>();
+		IPv6RoutingHeader routingExt(4, 3, nullptr, 0);
+		ip6Layer->addExtension<IPv6RoutingHeader>(routingExt);
+		trailerIPv6Packet.computeCalculateFields();
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<EthLayer>()->getDataLen(), 476);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<VlanLayer>()->getDataLen(), 462);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<IPv6Layer>()->getDataLen(), 454);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<UdpLayer>()->getDataLen(), 406);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<DnsLayer>()->getDataLen(), 398);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<PacketTrailerLayer>()->getDataLen(), 4);
+
+		// extend layer just before trailer
+		PPPoEDiscoveryLayer* pppoeDiscovery = trailerPPPoEDPacket.getLayerOfType<PPPoEDiscoveryLayer>();
+		ASSERT_NE(pppoeDiscovery, nullptr);
+		// clang-format off
+		ASSERT_FALSE(pppoeDiscovery->addTag(PPPoEDiscoveryLayer::PPPoETagBuilder(PPPoEDiscoveryLayer::PPPOE_TAG_AC_NAME, 0x42524153)).isNull());
+		// clang-format on
+		trailerPPPoEDPacket.computeCalculateFields();
+		EXPECT_EQ(trailerPPPoEDPacket.getLayerOfType<EthLayer>()->getDataLen(), 68);
+		EXPECT_EQ(trailerPPPoEDPacket.getLayerOfType<PPPoEDiscoveryLayer>()->getDataLen(), 26);
+		EXPECT_EQ(trailerPPPoEDPacket.getLayerOfType<PacketTrailerLayer>()->getDataLen(), 28);
+
+		// shorten layer before trailer
+		ip6Layer = trailerIPv6Packet.getLayerOfType<IPv6Layer>();
+		ip6Layer->removeAllExtensions();
+		trailerIPv6Packet.computeCalculateFields();
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<EthLayer>()->getDataLen(), 468);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<VlanLayer>()->getDataLen(), 454);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<IPv6Layer>()->getDataLen(), 446);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<UdpLayer>()->getDataLen(), 406);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<DnsLayer>()->getDataLen(), 398);
+		EXPECT_EQ(trailerIPv6Packet.getLayerOfType<PacketTrailerLayer>()->getDataLen(), 4);
+
+		// shorten layer just before trailer
+		pppoeDiscovery = trailerPPPoEDPacket.getLayerOfType<PPPoEDiscoveryLayer>();
+		ASSERT_TRUE(pppoeDiscovery->removeAllTags());
+		trailerPPPoEDPacket.computeCalculateFields();
+		EXPECT_EQ(trailerPPPoEDPacket.getLayerOfType<EthLayer>()->getDataLen(), 48);
+		EXPECT_EQ(trailerPPPoEDPacket.getLayerOfType<PPPoEDiscoveryLayer>()->getDataLen(), 6);
+		EXPECT_EQ(trailerPPPoEDPacket.getLayerOfType<PacketTrailerLayer>()->getDataLen(), 28);
 	}
 
 	// TODO: Should this be in PacketTest fixture?
@@ -383,16 +557,16 @@ namespace pcpp
 		Packet packet(rawPacket.get());
 
 		auto ipV4Layer = packet.getLayerOfType<IPv4Layer>();
-		EXPECT_TRUE(ipV4Layer->isMemberOfProtocolFamily(pcpp::IP));
-		EXPECT_TRUE(ipV4Layer->isMemberOfProtocolFamily(pcpp::IPv4));
-		EXPECT_FALSE(ipV4Layer->isMemberOfProtocolFamily(pcpp::IPv6));
-		EXPECT_FALSE(ipV4Layer->isMemberOfProtocolFamily(pcpp::HTTP));
+		EXPECT_TRUE(ipV4Layer->isMemberOfProtocolFamily(IP));
+		EXPECT_TRUE(ipV4Layer->isMemberOfProtocolFamily(IPv4));
+		EXPECT_FALSE(ipV4Layer->isMemberOfProtocolFamily(IPv6));
+		EXPECT_FALSE(ipV4Layer->isMemberOfProtocolFamily(HTTP));
 
 		auto httpLayer = packet.getLayerOfType<HttpRequestLayer>();
-		EXPECT_TRUE(httpLayer->isMemberOfProtocolFamily(pcpp::HTTP));
-		EXPECT_TRUE(httpLayer->isMemberOfProtocolFamily(pcpp::HTTPRequest));
-		EXPECT_FALSE(httpLayer->isMemberOfProtocolFamily(pcpp::HTTPResponse));
-		EXPECT_FALSE(httpLayer->isMemberOfProtocolFamily(pcpp::IP));
+		EXPECT_TRUE(httpLayer->isMemberOfProtocolFamily(HTTP));
+		EXPECT_TRUE(httpLayer->isMemberOfProtocolFamily(HTTPRequest));
+		EXPECT_FALSE(httpLayer->isMemberOfProtocolFamily(HTTPResponse));
+		EXPECT_FALSE(httpLayer->isMemberOfProtocolFamily(IP));
 	}
 
 	TEST(PacketTest, ParseUntilLayer)
