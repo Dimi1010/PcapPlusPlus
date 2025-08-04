@@ -457,7 +457,7 @@ namespace pcpp
 		//--------------------------------------
 
 		auto rawPacket3 = test::createPacketFromHexResource(
-		    "PacketExamples/NullLoopback1.dat", test::PacketFactory().withLinkType(LinkLayerType::LINKTYPE_NULL));
+		    "PacketExamples/NullLoopback1.dat", test::PacketFactory(LinkLayerType::LINKTYPE_NULL));
 
 		Packet nullLoopbackPacket(rawPacket3.get());
 
@@ -492,7 +492,7 @@ namespace pcpp
 		//----------------------------
 
 		auto rawPacket4 = test::createPacketFromHexResource(
-		    "PacketExamples/SllPacket2.dat", test::PacketFactory().withLinkType(LinkLayerType::LINKTYPE_LINUX_SLL));
+		    "PacketExamples/SllPacket2.dat", test::PacketFactory(LinkLayerType::LINKTYPE_LINUX_SLL));
 
 		Packet sllPacket(rawPacket4.get());
 
@@ -998,7 +998,7 @@ namespace pcpp
 		char tmbuf[64];
 		strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", nowtm);
 
-		auto packetFactory = test::PacketFactory().withTime(time);
+		test::PacketFactory packetFactory(time);
 
 		auto rawPacket1 = test::createPacketFromHexResource("PacketExamples/MplsPackets1.dat", packetFactory);
 		Packet packet(rawPacket1.get());
