@@ -35,6 +35,7 @@
 #Distribution folder
 Dist/
 build/
+out/
 
 #auto generated files
 setup_dpdk_settings.dat

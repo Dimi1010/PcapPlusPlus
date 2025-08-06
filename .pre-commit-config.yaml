@@ -7,6 +7,10 @@ repos:
         name: Check clang-format version
         entry: python3 ./ci/check-clang-format-version.py
         language: system
+      - id: prepare-cppcheck-cache-dir
+        name: Prepare cppcheck build cache directory
+        entry: python3 ./ci/prepare-cppcheck-cache-dir.py
+        language: python
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -36,7 +40,7 @@ repos:
         args: ["--style=file", "-i"]  # Use the .clang-format file for configuration and apply all fixes
         files: ^(Common\+\+|Packet\+\+|Pcap\+\+|Tests|Examples)/.*\.(cpp|h)$
       - id: cppcheck
-        args: ["--std=c++14", "--language=c++", "--suppressions-list=cppcheckSuppressions.txt", "--inline-suppr", "--force"]
+        args: ["--std=c++14", "--language=c++", "--suppressions-list=cppcheckSuppressions.txt", "--inline-suppr", "--force", "--cppcheck-build-dir=./out/cppcheck-cache"]
   - repo: https://github.com/BlankSpruce/gersemi
     rev: 0.19.3
     hooks:
