@@ -389,7 +389,7 @@ namespace pcpp
 			Layer* m_LastLayer = nullptr;
 
 			// RawPacket metadata
-			size_t m_MaxPacketLen = 0;
+			size_t m_RawPacketCapacity = 0;
 			bool m_OwnRawPacket = false;
 			bool m_CanReallocateData = false;
 		};
