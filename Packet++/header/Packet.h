@@ -337,6 +337,64 @@ namespace pcpp
 		static TLayer* searchLayerStackForType(Layer* startLayer, NextLayerFn nextLayerFn, bool skipFirst);
 	};  // class Packet
 
+	namespace experimental
+	{
+		struct ParseOptions
+		{
+			ProtocolTypeFamily parseUntil = UnknownProtocol;
+			OsiModelLayer parseUntilLayer = OsiModelLayerUnknown;
+		};
+
+		/// Arena allocation concept
+		///
+		/// Each packet already handles its own memory management for Layers. When a packet is created from a raw
+		/// packet, it allocates all the layers it needs using "new" and when the packet is destroyed it deletes all the
+		/// layers it has.
+		///
+		/// The problem with this approach is that each layer is allocated separately which means a lot of calls to
+		/// "new" and "delete" which are expensive. Also, each layer is a small object (usually less than 200 bytes).
+		///
+		/// The idea is that each packet will allocate an Arena and then each layer will be allocated from this arena.
+		/// The arena will hold a list of slabs or a pool. Each slab will be sized for a common layer size (for example
+		/// 64, 86, 128, 256 bytes). Choose just some sizes that are common and don't go overboard with the number of
+		/// slabs. Perhaps 4x64, 4x128, 2x256, 2x512 slabs are enough?
+		///
+		/// When a layer is created, it will request memory from the lowest slab that can hold it. If the slab has free
+		/// space, it will return a pointer to the layer. If not, fallback strategies can be next slab or allocating a
+		/// new slab.
+		///
+		/// When the packet is destroyed:
+		/// - The destructors of all layers are called manually.
+		/// - Slabs will attempt to deallocate their memory when they are destroyed, but the arena deallocation is a
+		/// no-op.
+		/// - The arena is destroyed.
+
+		class ArenaPacket
+		{
+		public:
+			explicit ArenaPacket(RawPacket* rawPacket, bool ownPacket = false,
+			                     LinkLayerType linkType = LinkLayerType::LINKTYPE_ETHERNET,
+			                     ParseOptions options = ParseOptions{});
+
+			void setRawPacket(RawPacket* rawPacket, bool ownPacket = false,
+			                  LinkLayerType linkType = LinkLayerType::LINKTYPE_ETHERNET,
+			                  ParseOptions options = ParseOptions{});
+
+		private:
+			// Memory arena would be here probably.
+			RawPacket* m_RawPacket = nullptr;
+
+			// Linked list of layers
+			Layer* m_FirstLayer = nullptr;
+			Layer* m_LastLayer = nullptr;
+
+			// RawPacket metadata
+			size_t m_MaxPacketLen = 0;
+			bool m_OwnRawPacket = false;
+			bool m_CanReallocateData = false;
+		};
+	}  // namespace experimental
+
 	// implementation of inline methods
 
 	template <class TLayer> TLayer* Packet::getLayerOfType(bool reverse) const

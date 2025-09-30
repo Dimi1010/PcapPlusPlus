@@ -845,4 +845,16 @@ namespace pcpp
 		}
 	}
 
+	namespace experimental
+	{
+		void ArenaPacket::setRawPacket(RawPacket* rawPacket, bool ownPacket, LinkLayerType linkType,
+		                               ParseOptions options)
+		{
+			// Destroy the existing packet data, if any
+
+			// Assign the new raw packet
+
+			// Parse the layers based on the provided options
+		}
+	}  // namespace experimental
 }  // namespace pcpp
