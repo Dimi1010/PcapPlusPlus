@@ -574,15 +574,73 @@ namespace pcpp
 		class ArenaPacket
 		{
 		public:
-			explicit ArenaPacket(RawPacket* rawPacket, bool ownPacket = false,
+			ArenaPacket() = default;
+
+			/// @brief Creates an empty packet with an associated memory arena for layer allocations.
+			/// @param arena The memory arena to use for layer allocations.
+			explicit ArenaPacket(MemoryArena arena) : m_Arena(std::move(arena))
+			{}
+
+			/// @brief Creates a packet from a raw packet with an associated memory arena for layer allocations.
+			/// @param rawPacket A pointer to the raw packet.
+			/// @param ownRawPacket If true, the packet takes ownership of the raw packet and will handle its deletion.
+			/// @param linkType The link layer type of the raw packet. Default is Ethernet.
+			/// @param options Parsing options for the packet.
+			explicit ArenaPacket(RawPacket* rawPacket, bool ownRawPacket = false,
 			                     LinkLayerType linkType = LinkLayerType::LINKTYPE_ETHERNET,
 			                     ParseOptions options = ParseOptions{});
 
-			void setRawPacket(RawPacket* rawPacket, bool ownPacket = false,
+			/// @brief Creates a packet from a raw packet with an associated memory arena for layer allocations.
+			/// @param arena The memory arena to use for layer allocations.
+			/// @param rawPacket A pointer to the raw packet.
+			/// @param ownRawPacket If true, the packet takes ownership of the raw packet and will handle its deletion.
+			/// @param linkType The link layer type of the raw packet. Default is Ethernet.
+			/// @param options Parsing options for the packet.
+			ArenaPacket(MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket = false,
+			            LinkLayerType linkType = LinkLayerType::LINKTYPE_ETHERNET,
+			            ParseOptions options = ParseOptions{});
+
+			~ArenaPacket()
+			{
+				clearPacketData();
+			}
+
+			void setRawPacket(RawPacket* rawPacket, bool ownRawPacket = false,
 			                  LinkLayerType linkType = LinkLayerType::LINKTYPE_ETHERNET,
 			                  ParseOptions options = ParseOptions{});
 
+			/// @brief Parses the packet.
+			/// @param options Options to use when parsing.
+			void parseLayers(ParseOptions options = ParseOptions{});
+
+			/// @brief Clears all parse data from the packet.
+			void clearParseData();
+
+			/// @brief Sets the memory arena used for layer allocations.
+			/// @param arena The memory arena to use.
+			/// @remarks Any parse layer data that has been allocated will be cleared by this operation and will require
+			/// a reparse. Use with care.
+			void setArena(MemoryArena arena);
+
+			/// @brief Detaches and returns the current memory arena.
+			///
+			/// This method detaches the current memory arena used for layer allocations and returns it.
+			/// This can be useful if the user wants to reuse the arena for another packet or for other purposes.
+			///
+			/// The packet will lose all its layer information and will require re-parsing if they are needed again.
+			/// The raw packet and its data will remain intact and attached to the packet.
+			///
+			/// After the detach operation, an arena with the same configuration will be created and set to the packet.
+			/// Said arena won't contain any allocated memory to it, but can be used for future allocations.
+			///
+			/// @return A MemoryArena object representing the detached memory arena.
+			MemoryArena detachArena();
+
 		private:
+			/// @brief Clears all data from the packet.
+			/// This will remove all parse data, detach / deallocate the raw packet and clear the arena.
+			void clearPacketData();
+
 			MemoryArena m_Arena;
 			RawPacket* m_RawPacket = nullptr;
 

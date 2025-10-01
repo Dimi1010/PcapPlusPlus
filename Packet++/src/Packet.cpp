@@ -1059,6 +1059,18 @@ namespace pcpp
 			::operator delete(block);
 		}
 
+		ArenaPacket::ArenaPacket(RawPacket* rawPacket, bool ownRawPacket, LinkLayerType linkType, ParseOptions options)
+		{
+			setRawPacket(rawPacket, ownRawPacket, linkType, std::move(options));
+		}
+
+		ArenaPacket::ArenaPacket(MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket, LinkLayerType linkType,
+		                         ParseOptions options)
+		    : ArenaPacket(std::move(arena))
+		{
+			setRawPacket(rawPacket, ownRawPacket, linkType, std::move(options));
+		}
+
 		void ArenaPacket::setRawPacket(RawPacket* rawPacket, bool ownPacket, LinkLayerType linkType,
 		                               ParseOptions options)
 		{
@@ -1067,6 +1079,80 @@ namespace pcpp
 			// Assign the new raw packet
 
 			// Parse the layers based on the provided options
+			parseLayers(options);
+		}
+
+		void ArenaPacket::parseLayers(ParseOptions options)
+		{}
+
+		void ArenaPacket::clearParseData()
+		{
+			MemoryArenaAllocator<Layer> allocator(m_Arena);
+			std::allocator_traits<MemoryArenaAllocator<Layer>> allocTraits;
+
+			Layer* curLayer = m_FirstLayer;
+			while (curLayer != nullptr)
+			{
+				Layer* nextLayer = curLayer->getNextLayer();
+
+				if (curLayer->m_IsAllocatedInPacket)
+				{
+					// This calls the layer destructor, but does not free the memory.
+					allocTraits.destroy(allocator, curLayer);
+
+					// Figure out how to get the derived layer type fast? Is this even needed?
+					// Arena is a noop for deallocation, so just use delete for now.
+					// allocTraits.deallocate(allocator, curLayer, 1);
+				}
+				else
+				{
+					// TODO: This might be valid use case or not?
+					throw std::logic_error("Handle layers that aren't in the packet?");
+				}
+
+				curLayer = nextLayer;
+			}
+
+			// Reset the layers linked list
+			m_FirstLayer = nullptr;
+			m_LastLayer = nullptr;
+
+			// Clears the arena as everything on it should be deallocated.
+			m_Arena.clear();
+		}
+
+		void ArenaPacket::setArena(MemoryArena arena)
+		{
+			clearParseData();
+			// Move-assign the new arena.
+			m_Arena = std::move(arena);
+		}
+
+		MemoryArena ArenaPacket::detachArena()
+		{
+			// Clears the data allocated on the arena. The function also marks the arena for reuse.
+			clearParseData();
+
+			// The move constructor keeps the arena configuration and just transfers the memory.
+			// The moved from arena is still valid, but will need to request memory from the free store again.
+			return std::move(m_Arena);
+		}
+
+		void ArenaPacket::clearPacketData()
+		{
+			clearParseData();
+
+			// Deallocates the raw packet if owned by the current instance.
+			if (m_RawPacket != nullptr && m_OwnRawPacket)
+			{
+				delete m_RawPacket;
+			}
+
+			// Resets the raw packet metadata.
+			m_RawPacket = nullptr;
+			m_OwnRawPacket = false;
+			m_CanReallocateData = false;
+			m_RawPacketCapacity = 0;
 		}
 	}  // namespace experimental
 }  // namespace pcpp
