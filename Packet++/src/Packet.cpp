@@ -1037,7 +1037,11 @@ namespace pcpp
 
 		MemoryArena::BlockHeader* MemoryArena::createBlock(BlockHeader* prevBlock) const
 		{
-			BlockHeader* newBlock = static_cast<BlockHeader*>(::operator new(sizeof(BlockHeader) + m_BlockSize));
+			// Operator ::new is expected by the standard to align the memory up to std::max_align_t
+			// This is sufficient for our BlockHeader structure, as it is a POD aggregate.
+			static_assert(alignof(BlockHeader) <= alignof(std::max_align_t),
+			              "BlockHeader alignment is greater than max_align_t");
+			BlockHeader* newBlock = static_cast<BlockHeader*>(::operator new(m_BlockSize));
 			newBlock->next = nullptr;
 			newBlock->usedBytes = 0;
 
