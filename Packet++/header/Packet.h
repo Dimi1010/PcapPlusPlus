@@ -10,6 +10,21 @@
 /// @brief The main namespace for the PcapPlusPlus lib
 namespace pcpp
 {
+	/// @brief An interface (virtual abstract class) for classes that can own layers.
+	/// The layer class has a pointer to an ILayerOwner instance which is the owner of this layer. The owner is usually
+	/// a Packet instance, but it can be also an experimental::ArenaPacket instance.
+	class ILayerOwner
+	{
+	public:
+		friend class Layer;
+
+		~ILayerOwner() = default;
+
+	protected:
+		virtual bool extendLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToExtend) = 0;
+		virtual bool shortenLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToShorten) = 0;
+	};
+
 	/// @class Packet
 	/// This class represents a parsed packet. It contains the raw data (RawPacket instance), and a linked list of
 	/// layers, each layer is a parsed protocol that this packet contains. The layers linked list is ordered where the
@@ -18,7 +33,7 @@ namespace pcpp
 	/// last layer in the linked list will be the highest in the packet. For example: for a standard HTTP request packet
 	/// the layer will look like this: EthLayer -> IPv4Layer -> TcpLayer -> HttpRequestLayer <BR> Packet instance isn't
 	/// read only. The user can add or remove layers, update current layer, etc.
-	class Packet
+	class Packet : public ILayerOwner
 	{
 		friend class Layer;
 
@@ -578,7 +593,7 @@ namespace pcpp
 
 		static constexpr NoParseTag NoParse = {};
 
-		class ArenaPacket
+		class ArenaPacket : public ILayerOwner
 		{
 		public:
 			ArenaPacket() = default;
@@ -618,7 +633,7 @@ namespace pcpp
 			ArenaPacket(MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket = false,
 			            ParseOptions options = ParseOptions{});
 
-			~ArenaPacket()
+			virtual ~ArenaPacket()
 			{
 				clearPacketData();
 			}
