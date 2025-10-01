@@ -71,7 +71,7 @@ namespace pcpp
 		/// @param[in] data A pointer to the raw data (will be casted to ether_header)
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		EthLayer(uint8_t* data, size_t dataLen, Packet* packet) : Layer(data, dataLen, nullptr, packet, Ethernet)
+		EthLayer(uint8_t* data, size_t dataLen, ILayerOwner* packet) : Layer(data, dataLen, nullptr, packet, Ethernet)
 		{}
 
 		/// A constructor that creates the layer from an existing packet raw data
@@ -79,7 +79,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		EthLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		EthLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : Layer(data, dataLen, prevLayer, packet, Ethernet)
 		{}
 

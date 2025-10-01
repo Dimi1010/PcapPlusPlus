@@ -54,7 +54,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		IPv6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		IPv6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// A constructor that allocates a new IPv6 header with empty fields
 		IPv6Layer();

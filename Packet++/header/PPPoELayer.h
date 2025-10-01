@@ -94,7 +94,7 @@ namespace pcpp
 
 	protected:
 		// protected c'tor as this class shouldn't be instantiated
-		PPPoELayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet, ProtocolType protocol)
+		PPPoELayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType protocol)
 		    : Layer(data, dataLen, prevLayer, packet, protocol)
 		{}
 
@@ -113,7 +113,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		PPPoESessionLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		PPPoESessionLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : PPPoELayer(data, dataLen, prevLayer, packet, PPPoESession)
 		{}
 
@@ -280,7 +280,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		PPPoEDiscoveryLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		PPPoEDiscoveryLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : PPPoELayer(data, dataLen, prevLayer, packet, PPPoEDiscovery)
 		{
 			m_DataLen = getHeaderLen();

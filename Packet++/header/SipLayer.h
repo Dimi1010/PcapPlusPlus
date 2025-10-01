@@ -115,7 +115,7 @@ namespace pcpp
 		}
 
 	protected:
-		SipLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet, ProtocolType protocol)
+		SipLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType protocol)
 		    : TextBasedProtocolMessage(data, dataLen, prevLayer, packet, protocol)
 		{}
 		SipLayer() : TextBasedProtocolMessage()
@@ -193,7 +193,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SipRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		SipRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// A constructor that allocates a new SIP request with only the first line filled. The request will be created
 		/// without further fields. The user can then add fields using addField() or insertField() methods
@@ -445,7 +445,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SipResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		SipResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// A constructor that allocates a new SIP response with only the first line filled. The request will be created
 		/// without further fields. The user can then add fields using addField() or insertField() methods

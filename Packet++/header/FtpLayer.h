@@ -13,7 +13,7 @@ namespace pcpp
 	class FtpLayer : public SingleCommandTextProtocol
 	{
 	protected:
-		FtpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		FtpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : SingleCommandTextProtocol(data, dataLen, prevLayer, packet, FTPControl) {};
 		FtpLayer(const std::string& command, const std::string& option)
 		    : SingleCommandTextProtocol(command, option, FTPControl) {};
@@ -216,7 +216,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		FtpRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		FtpRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : FtpLayer(data, dataLen, prevLayer, packet) {};
 
 		/// A constructor that creates layer with provided input values
@@ -392,7 +392,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		FtpResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		FtpResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : FtpLayer(data, dataLen, prevLayer, packet) {};
 
 		/// A constructor that creates layer with provided input values
@@ -444,7 +444,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		FtpDataLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		FtpDataLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : PayloadLayer(data, dataLen, prevLayer, packet)
 		{
 			m_Protocol = FTPData;

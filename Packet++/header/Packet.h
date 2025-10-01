@@ -10,20 +10,7 @@
 /// @brief The main namespace for the PcapPlusPlus lib
 namespace pcpp
 {
-	/// @brief An interface (virtual abstract class) for classes that can own layers.
-	/// The layer class has a pointer to an ILayerOwner instance which is the owner of this layer. The owner is usually
-	/// a Packet instance, but it can be also an experimental::ArenaPacket instance.
-	class ILayerOwner
-	{
-	public:
-		friend class Layer;
-
-		~ILayerOwner() = default;
-
-	protected:
-		virtual bool extendLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToExtend) = 0;
-		virtual bool shortenLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToShorten) = 0;
-	};
+	
 
 	/// @class Packet
 	/// This class represents a parsed packet. It contains the raw data (RawPacket instance), and a linked list of

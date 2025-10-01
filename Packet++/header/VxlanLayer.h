@@ -74,7 +74,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		VxlanLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		VxlanLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : Layer(data, dataLen, prevLayer, packet, VXLAN)
 		{}
 

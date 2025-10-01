@@ -14,7 +14,7 @@
 namespace pcpp
 {
 
-	Layer* IcmpV6Layer::parseIcmpV6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	Layer* IcmpV6Layer::parseIcmpV6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	{
 		if (dataLen < sizeof(icmpv6hdr))
 			return new PayloadLayer(data, dataLen, prevLayer, packet);

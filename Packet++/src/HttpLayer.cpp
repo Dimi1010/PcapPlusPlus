@@ -59,7 +59,7 @@ namespace pcpp
 
 	// -------- Class HttpRequestLayer -----------------
 
-	HttpRequestLayer::HttpRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	HttpRequestLayer::HttpRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	    : HttpMessage(data, dataLen, prevLayer, packet, HTTPRequest)
 	{
 		m_FirstLine = new HttpRequestFirstLine(this);
@@ -662,7 +662,7 @@ namespace pcpp
 		return statusCodeExplanationStringMap.at(m_Value);
 	}
 
-	HttpResponseLayer::HttpResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	HttpResponseLayer::HttpResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	    : HttpMessage(data, dataLen, prevLayer, packet, HTTPResponse)
 	{
 		m_FirstLine = new HttpResponseFirstLine(this);

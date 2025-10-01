@@ -27,7 +27,7 @@ namespace pcpp
 		return (size_t)messageLen;
 	}
 
-	BgpLayer* BgpLayer::parseBgpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	BgpLayer* BgpLayer::parseBgpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	{
 		if (data == nullptr || dataLen < sizeof(bgp_common_header))
 			return nullptr;

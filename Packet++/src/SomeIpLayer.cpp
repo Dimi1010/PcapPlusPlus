@@ -43,7 +43,7 @@ namespace pcpp
 		setReturnCode(returnCode);
 	}
 
-	Layer* SomeIpLayer::parseSomeIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	Layer* SomeIpLayer::parseSomeIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	{
 		// Ideas taken from wireshark some ip dissector
 		const size_t headerLen = sizeof(someiphdr);

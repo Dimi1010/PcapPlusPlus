@@ -18,7 +18,7 @@ namespace pcpp
 		bool hyphenRequired(const std::string& value);
 
 	protected:
-		SingleCommandTextProtocol(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet,
+		SingleCommandTextProtocol(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet,
 		                          ProtocolType protocol)
 		    : Layer(data, dataLen, prevLayer, packet, protocol) {};
 

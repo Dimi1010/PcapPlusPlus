@@ -67,7 +67,7 @@ namespace pcpp
 		return DhcpV6Option(recordBuffer);
 	}
 
-	DhcpV6Layer::DhcpV6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	DhcpV6Layer::DhcpV6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	    : Layer(data, dataLen, prevLayer, packet, DHCPv6)
 	{}
 

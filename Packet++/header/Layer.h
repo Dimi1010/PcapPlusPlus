@@ -28,6 +28,21 @@ namespace pcpp
 		virtual ~IDataContainer() = default;
 	};
 
+	/// @brief An interface (virtual abstract class) for classes that can own layers.
+	/// The layer class has a pointer to an ILayerOwner instance which is the owner of this layer.
+	/// The owner is responsible for managing the backing store of the layer (e.g. extending/shortening the layer data).
+	class ILayerOwner
+	{
+	public:
+		friend class Layer;
+
+		~ILayerOwner() = default;
+
+	protected:
+		virtual bool extendLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToExtend) = 0;
+		virtual bool shortenLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToShorten) = 0;
+	};
+
 	class Packet;
 	namespace experimental
 	{
@@ -165,7 +180,7 @@ namespace pcpp
 	protected:
 		uint8_t* m_Data;
 		size_t m_DataLen;
-		Packet* m_Packet;
+		ILayerOwner* m_Packet;
 		ProtocolType m_Protocol;
 		Layer* m_NextLayer;
 		Layer* m_PrevLayer;
@@ -176,7 +191,7 @@ namespace pcpp
 		      m_PrevLayer(nullptr), m_IsAllocatedInPacket(false)
 		{}
 
-		Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet, ProtocolType protocol = UnknownProtocol)
+		Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType protocol = UnknownProtocol)
 		    : m_Data(data), m_DataLen(dataLen), m_Packet(packet), m_Protocol(protocol), m_NextLayer(nullptr),
 		      m_PrevLayer(prevLayer), m_IsAllocatedInPacket(false)
 		{}
@@ -211,7 +226,7 @@ namespace pcpp
 		/// @param[in] extraArgs Extra arguments to be forwarded to the layer constructor
 		/// @return The constructed layer
 		template <typename T, typename... Args>
-		Layer* constructNextLayer(uint8_t* data, size_t dataLen, Packet* packet, Args&&... extraArgs)
+		Layer* constructNextLayer(uint8_t* data, size_t dataLen, ILayerOwner* packet, Args&&... extraArgs)
 		{
 			if (hasNextLayer())
 			{
@@ -237,7 +252,8 @@ namespace pcpp
 		///	@param[in] extraArgs Extra arguments to be forwarded to the layer constructor of T
 		/// @return The constructed layer of type T or TFallback
 		template <typename T, typename TFallback, typename... Args>
-		Layer* tryConstructNextLayerWithFallback(uint8_t* data, size_t dataLen, Packet* packet, Args&&... extraArgs)
+		Layer* tryConstructNextLayerWithFallback(uint8_t* data, size_t dataLen, ILayerOwner* packet,
+		                                         Args&&... extraArgs)
 		{
 			if (tryConstructNextLayer<T>(data, dataLen, packet, std::forward<Args>(extraArgs)...))
 			{
@@ -274,7 +290,7 @@ namespace pcpp
 		/// @param[in] extraArgs Extra arguments to be forwarded to the layer constructor
 		/// @return The constructed layer or nullptr if the data is invalid
 		template <typename T, typename... Args>
-		Layer* tryConstructNextLayer(uint8_t* data, size_t dataLen, Packet* packet, Args&&... extraArgs)
+		Layer* tryConstructNextLayer(uint8_t* data, size_t dataLen, ILayerOwner* packet, Args&&... extraArgs)
 		{
 			if (T::isDataValid(data, dataLen))
 			{

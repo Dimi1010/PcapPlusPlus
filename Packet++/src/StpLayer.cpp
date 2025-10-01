@@ -31,7 +31,7 @@ namespace pcpp
 		return data && dataLen;
 	}
 
-	StpLayer* StpLayer::parseStpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	StpLayer* StpLayer::parseStpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	{
 		if (dataLen >= sizeof(stp_tcn_bpdu))
 		{
