@@ -346,8 +346,6 @@ namespace pcpp
 
 		std::string printPacketInfo(bool timeAsLocalTime) const;
 
-		Layer* createFirstLayer(LinkLayerType linkType);
-
 		template <typename TLayer, typename NextLayerFn>
 		static TLayer* searchLayerStackForType(Layer* startLayer, NextLayerFn nextLayerFn, bool skipFirst);
 	};  // class Packet
