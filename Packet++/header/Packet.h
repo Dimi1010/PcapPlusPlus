@@ -369,6 +369,170 @@ namespace pcpp
 		/// no-op.
 		/// - The arena is destroyed.
 
+		/// @brief A memory arena that allocates memory in blocks and doesn't free memory until the arena is destroyed
+		class MemoryArena
+		{
+		public:
+			/// @brief Creates a memory arena with a specified block size
+			/// @param blockSize The size of each block in bytes. Default is 4096 bytes
+			explicit MemoryArena(size_t blockSize = 4096) : m_BlockSize(blockSize)
+			{}
+
+			MemoryArena(MemoryArena const&) = delete;
+			MemoryArena(MemoryArena&& other) noexcept;
+			MemoryArena& operator=(MemoryArena const&) = delete;
+			MemoryArena& operator=(MemoryArena&& other) noexcept;
+
+			~MemoryArena()
+			{
+				reset(0);
+			}
+
+			void* allocate(size_t bytes, size_t alignment = alignof(std::max_align_t));
+
+			/// @brief Deallocation is a no-op in the arena. Memory is only freed when the arena is destroyed or reset.
+			void deallocate(void* p, size_t bytes, size_t alignment = alignof(std::max_align_t))
+			{}
+
+			/// @brief Reserve a number of blocks in the arena.
+			///
+			/// This method can be used to reserve blocks in the arena before actual allocations are made.
+			/// If the requested number of blocks is less than or equal to the current number of blocks, this method
+			/// does nothing.
+			///
+			/// @param numBlocks The number of blocks to reserve
+			void reserve(size_t numBlocks);
+
+			/// @brief Clear all blocks in the arena but keep the blocks for future allocations.
+			void clear();
+
+			/// @brief Reset the arena, freeing all blocks except for a specified number of them.
+			/// @param keepBlocks The number of blocks to keep. Default is 1.
+			void reset(size_t keepBlocks = 1);
+
+			/// @brief Gets the block size of the arena
+			/// @return The block size in bytes
+			size_t getBlockSize() const
+			{
+				return m_BlockSize;
+			}
+
+			/// @brief Gets the number of blocks currently allocated in the arena
+			/// @return The number of blocks
+			/// @remarks This method is slow (O(n)) and should be used for debugging or testing purposes only
+			size_t getNumBlocks() const;
+
+		private:
+			/// @brief A header for each block in the arena, placed at the start of each block
+			struct BlockHeader
+			{
+				/// @brief Pointer to the next block in the linked list
+				BlockHeader* next = nullptr;
+				/// @brief Number of bytes used in the block
+				size_t usedBytes = 0;
+
+				/// @brief Gets a pointer to the start of the block data
+				void* getBlockData()
+				{
+					return reinterpret_cast<void*>(this + 1);
+				}
+				void const* getBlockData() const
+				{
+					return reinterpret_cast<void const*>(this + 1);
+				}
+
+				/// @brief Gets a pointer to the first unused byte in the block
+				void* getUnusedData()
+				{
+					return reinterpret_cast<uint8_t*>(getBlockData()) + usedBytes;
+				}
+				void const* getUnusedData() const
+				{
+					return reinterpret_cast<uint8_t const*>(getBlockData()) + usedBytes;
+				}
+
+				/// @brief Gets the number of unused bytes in the block
+				/// @param blockSize The total size of the block in bytes
+				/// @return The number of unused bytes in the block
+				size_t getUnusedBytes(size_t blockSize) const
+				{
+					return blockSize - usedBytes;
+				}
+			};
+
+			/// @brief Creates a new block and links it to the previous block
+			/// @param prevBlock The previous block in the linked list, or nullptr if this is the first block
+			/// @return A pointer to the newly created block
+			BlockHeader* createBlock(BlockHeader* prevBlock) const;
+
+			/// @brief Frees a block and all its memory.
+			/// @param block The block to free
+			/// @remarks This method doesn't unlink the block from the linked list, it only frees its memory.
+			void freeBlock(BlockHeader* block) const;
+
+			BlockHeader* m_FirstBlock = nullptr;  ///< The first block in the linked list
+			BlockHeader* m_AllocBlock = nullptr;  ///< The block currently used for allocations
+			size_t m_BlockSize;                   ///< Default block size
+		};
+
+		/// @brief An STL-compatible allocator (C++11) that allocates memory from a MemoryArena
+		/// @tparam T The type of object to allocate
+		template <typename T> class MemoryArenaAllocator
+		{
+		public:
+			using value_type = T;
+
+			explicit MemoryArenaAllocator(MemoryArena& arena) noexcept : m_Arena(&arena)
+			{}
+
+			template <typename U>
+			MemoryArenaAllocator(MemoryArenaAllocator<U> const& other) noexcept : m_Arena(other.m_Arena)
+			{}
+
+			template <typename U>
+			MemoryArenaAllocator(MemoryArenaAllocator<U>&& other) noexcept : m_Arena(other.m_Arena)
+			{}
+
+			T* allocate(size_t n)
+			{
+				if (m_Arena == nullptr)
+					return nullptr;
+
+				void* p = m_Arena->allocate(n * sizeof(T), alignof(T));
+				return reinterpret_cast<T*>(p);
+			}
+
+			void deallocate(T* p, size_t n) noexcept
+			{
+				if (m_Arena == nullptr)
+					return;
+
+				// Technically this is a no-op, as the arena deallocation is a no-op,
+				// but its good practice to call it anyway unless profiling shows otherwise.
+				m_Arena->deallocate(p, n * sizeof(T), alignof(T));
+			}
+
+			/// @brief Gets the maximum number of elements that can be allocated
+			/// @return The maximum number of elements
+			/// @remarks The arena allocations are limited by the block size, as an object cannot span multiple blocks.
+			size_t max_size() const noexcept
+			{
+				return m_Arena->getBlockSize() / sizeof(T);
+			}
+
+			bool operator==(MemoryArenaAllocator const& other) const noexcept
+			{
+				return m_Arena == other.m_Arena;
+			}
+			bool operator!=(MemoryArenaAllocator const& other) const noexcept
+			{
+				return !(*this == other);
+			}
+
+		private:
+			MemoryArena* m_Arena;
+		};
+
 		class ArenaPacket
 		{
 		public:
@@ -381,7 +545,7 @@ namespace pcpp
 			                  ParseOptions options = ParseOptions{});
 
 		private:
-			// Memory arena would be here probably.
+			MemoryArena m_Arena;
 			RawPacket* m_RawPacket = nullptr;
 
 			// Linked list of layers
