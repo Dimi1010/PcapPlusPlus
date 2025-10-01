@@ -877,7 +877,7 @@ namespace pcpp
 		{
 			if (bytes == 0)
 			{
-				// Allocator requirements are implementation defined. We choose to return nullptr.
+				// 0 bytes allocation requirements are implementation defined. We choose to return nullptr.
 				return nullptr;
 			}
 
