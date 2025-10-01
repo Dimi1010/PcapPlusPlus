@@ -29,6 +29,10 @@ namespace pcpp
 	};
 
 	class Packet;
+	namespace experimental
+	{
+		class ArenaPacket;
+	}
 
 	/// @class Layer
 	/// Layer is the base class for all protocol layers. Each protocol supported in PcapPlusPlus has a class that
