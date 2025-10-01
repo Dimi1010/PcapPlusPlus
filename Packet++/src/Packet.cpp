@@ -1116,7 +1116,7 @@ namespace pcpp
 					allocTraits.destroy(allocator, curLayer);
 
 					// Figure out how to get the derived layer type fast? Is this even needed?
-					// Arena is a noop for deallocation, so just use delete for now.
+					// Arena is a noop for deallocation, so just run the destructor for now.
 					// allocTraits.deallocate(allocator, curLayer, 1);
 				}
 				else
