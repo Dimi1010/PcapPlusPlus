@@ -499,7 +499,7 @@ namespace pcpp
 					return nullptr;
 
 				void* p = m_Arena->allocate(n * sizeof(T), alignof(T));
-				return reinterpret_cast<T*>(p);
+				return static_cast<T*>(p);
 			}
 
 			void deallocate(T* p, size_t n) noexcept
