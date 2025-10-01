@@ -971,6 +971,9 @@ namespace pcpp
 					m_FirstBlock = newBlock;
 					m_AllocBlock = newBlock;
 				}
+
+				// Advances to the next block.
+				block = newBlock;
 			}
 		}
 
