@@ -75,7 +75,7 @@ namespace pcpp
 		/// @return A newly allocated BGP layer of one of the following types (according to the message type):
 		/// BgpOpenMessageLayer, BgpUpdateMessageLayer, BgpNotificationMessageLayer, BgpKeepaliveMessageLayer,
 		/// BgpRouteRefreshMessageLayer
-		static BgpLayer* parseBgpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		static BgpLayer* parseBgpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		// implement abstract methods
 
@@ -103,7 +103,7 @@ namespace pcpp
 		// protected c'tors, this class cannot be instantiated by users
 		BgpLayer()
 		{}
-		BgpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		BgpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : Layer(data, dataLen, prevLayer, packet, BGP)
 		{}
 
@@ -166,7 +166,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		BgpOpenMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		BgpOpenMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : BgpLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -290,7 +290,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		BgpUpdateMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		BgpUpdateMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : BgpLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -422,7 +422,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		BgpNotificationMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		BgpNotificationMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : BgpLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -511,7 +511,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		BgpKeepaliveMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		BgpKeepaliveMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : BgpLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -558,7 +558,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		BgpRouteRefreshMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		BgpRouteRefreshMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : BgpLayer(data, dataLen, prevLayer, packet)
 		{}
 

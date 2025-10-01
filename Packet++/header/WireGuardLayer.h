@@ -56,7 +56,7 @@ namespace pcpp
 		/// @param dataLen Length of the data
 		/// @param prevLayer Pointer to the previous layer in the packet (if any)
 		/// @param packet Pointer to the packet this layer belongs to
-		WireGuardLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		WireGuardLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : Layer(data, dataLen, prevLayer, packet, WireGuard)
 		{}
 
@@ -81,7 +81,8 @@ namespace pcpp
 		/// @param prevLayer Pointer to the previous layer
 		/// @param packet Pointer to the packet
 		/// @return A pointer to the parsed WireGuardLayer, or nullptr if parsing fails
-		static WireGuardLayer* parseWireGuardLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		static WireGuardLayer* parseWireGuardLayer(uint8_t* data, size_t dataLen, Layer* prevLayer,
+		                                           ILayerOwner* packet);
 
 		/// @return String representation of the message type.
 		std::string getMessageTypeAsString() const;
@@ -158,7 +159,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		WireGuardHandshakeInitiationLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		WireGuardHandshakeInitiationLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : WireGuardLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -255,7 +256,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		WireGuardHandshakeResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		WireGuardHandshakeResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : WireGuardLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -345,7 +346,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		WireGuardCookieReplyLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		WireGuardCookieReplyLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : WireGuardLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -412,7 +413,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		WireGuardTransportDataLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		WireGuardTransportDataLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : WireGuardLayer(data, dataLen, prevLayer, packet)
 		{}
 

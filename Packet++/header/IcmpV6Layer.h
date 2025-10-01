@@ -128,7 +128,7 @@ namespace pcpp
 		/// @param dataLen Size of the data in bytes
 		/// @param prevLayer A pointer to the previous layer
 		/// @param packet A pointer to the Packet instance where layer will be stored in
-		IcmpV6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		IcmpV6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : Layer(data, dataLen, prevLayer, packet, ICMPv6)
 		{}
 
@@ -147,7 +147,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored
 		/// @return Layer* A newly allocated ICMPv6 layer
-		static Layer* parseIcmpV6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		static Layer* parseIcmpV6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @param[in] type Type to check
 		/// @return True if the layer if of the given type, false otherwise
@@ -215,7 +215,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		ICMPv6EchoLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		ICMPv6EchoLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : IcmpV6Layer(data, dataLen, prevLayer, packet)
 		{}
 

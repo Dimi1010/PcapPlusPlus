@@ -197,7 +197,7 @@ namespace pcpp
 
 	// -------- Class IgmpV3QueryLayer -----------------
 
-	IgmpV3QueryLayer::IgmpV3QueryLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	IgmpV3QueryLayer::IgmpV3QueryLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	    : IgmpLayer(data, dataLen, prevLayer, packet, IGMPv3)
 	{}
 

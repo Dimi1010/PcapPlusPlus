@@ -18,7 +18,7 @@ namespace pcpp
 		return result;
 	}
 
-	SdpLayer::SdpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	SdpLayer::SdpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	    : TextBasedProtocolMessage(data, dataLen, prevLayer, packet, SDP)
 	{
 		m_FieldsOffset = 0;

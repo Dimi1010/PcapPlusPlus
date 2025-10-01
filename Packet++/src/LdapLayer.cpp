@@ -192,7 +192,7 @@ namespace pcpp
 	}
 
 	LdapLayer::LdapLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                     Packet* packet)
+	                     ILayerOwner* packet)
 	    : Layer(data, dataLen, prevLayer, packet, LDAP)
 	{
 		m_Asn1Record = std::move(asn1Record);
@@ -257,7 +257,7 @@ namespace pcpp
 		return "LDAP Layer, " + getLdapOperationType().toString() + (extendedInfo.empty() ? "" : ", " + extendedInfo);
 	}
 
-	LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	{
 		try
 		{

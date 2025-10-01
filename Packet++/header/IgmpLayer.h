@@ -138,7 +138,7 @@ namespace pcpp
 	class IgmpLayer : public Layer
 	{
 	protected:
-		IgmpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet, ProtocolType igmpVer)
+		IgmpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType igmpVer)
 		    : Layer(data, dataLen, prevLayer, packet, igmpVer)
 		{}
 
@@ -216,7 +216,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		IgmpV1Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		IgmpV1Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : IgmpLayer(data, dataLen, prevLayer, packet, IGMPv1)
 		{}
 
@@ -257,7 +257,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		IgmpV2Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		IgmpV2Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : IgmpLayer(data, dataLen, prevLayer, packet, IGMPv2)
 		{}
 
@@ -299,7 +299,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		IgmpV3QueryLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		IgmpV3QueryLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// A constructor that allocates a new IGMPv3 membership query
 		/// @param[in] multicastAddr The multicast address to set. This is an optional parameter and has a default value
@@ -390,7 +390,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		IgmpV3ReportLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		IgmpV3ReportLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : IgmpLayer(data, dataLen, prevLayer, packet, IGMPv3)
 		{}
 

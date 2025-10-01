@@ -349,7 +349,7 @@ namespace pcpp
 
 	// -------- Class SipRequestLayer -----------------
 
-	SipRequestLayer::SipRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	SipRequestLayer::SipRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	    : SipLayer(data, dataLen, prevLayer, packet, SIPRequest)
 	{
 		m_FirstLine = new SipRequestFirstLine(this);
@@ -585,7 +585,7 @@ namespace pcpp
 		{ "608", SipResponseLayer::SipResponseStatusCode::Sip608Rejected                            },
 	};
 
-	SipResponseLayer::SipResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+	SipResponseLayer::SipResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 	    : SipLayer(data, dataLen, prevLayer, packet, SIPResponse)
 	{
 		m_FirstLine = new SipResponseFirstLine(this);

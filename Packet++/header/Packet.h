@@ -18,7 +18,7 @@ namespace pcpp
 	/// last layer in the linked list will be the highest in the packet. For example: for a standard HTTP request packet
 	/// the layer will look like this: EthLayer -> IPv4Layer -> TcpLayer -> HttpRequestLayer <BR> Packet instance isn't
 	/// read only. The user can add or remove layers, update current layer, etc.
-	class Packet
+	class Packet : public ILayerOwner
 	{
 		friend class Layer;
 

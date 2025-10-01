@@ -35,7 +35,7 @@ namespace pcpp
 		/// @param[in] data A pointer to the raw data
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		NullLoopbackLayer(uint8_t* data, size_t dataLen, Packet* packet)
+		NullLoopbackLayer(uint8_t* data, size_t dataLen, ILayerOwner* packet)
 		    : Layer(data, dataLen, nullptr, packet, NULL_LOOPBACK)
 		{}
 

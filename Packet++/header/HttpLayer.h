@@ -90,7 +90,7 @@ namespace pcpp
 		}
 
 	protected:
-		HttpMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet, ProtocolType protocol)
+		HttpMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType protocol)
 		    : TextBasedProtocolMessage(data, dataLen, prevLayer, packet, protocol)
 		{}
 		HttpMessage() : TextBasedProtocolMessage()
@@ -162,7 +162,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		HttpRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		HttpRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// A constructor that allocates a new HTTP request header with only the first line filled. Object will be
 		/// created without further fields. The user can then add fields using addField() methods
@@ -485,7 +485,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		HttpResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		HttpResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// A constructor that allocates a new HTTP response header with only the first line filled. Object will be
 		/// created without further fields. The user can then add fields using addField() methods

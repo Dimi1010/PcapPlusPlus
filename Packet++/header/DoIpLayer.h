@@ -605,7 +605,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored
 		/// @return A newly allocated DoIP layer of one of the declared types (according to the message type)
-		static DoIpLayer* parseDoIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		static DoIpLayer* parseDoIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// A static method that checks whether a port is considered as a DOIP port
 		/// @param[in] port The port number to check
@@ -652,7 +652,7 @@ namespace pcpp
 		// protected c'tors, this class cannot be instantiated by users
 		DoIpLayer(size_t length);
 
-		DoIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		doiphdr* getDoIpHeader() const
 		{
@@ -770,7 +770,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the raw data.
 		/// @param[in] prevLayer Pointer to the previous layer.
 		/// @param[in] packet Pointer to the parent packet instance.
-		DoIpGenericHeaderNack(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpGenericHeaderNack(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs the message with a specific NACK code.
 		/// @param[in] nackCode The generic header NACK code.
@@ -832,7 +832,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the data buffer.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpVehicleIdentificationRequest(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		DoIpVehicleIdentificationRequest(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : DoIpLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -870,7 +870,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the raw data.
 		/// @param[in] prevLayer Pointer to the previous layer.
 		/// @param[in] packet Pointer to the parent packet instance.
-		DoIpVehicleIdentificationRequestWithEID(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpVehicleIdentificationRequestWithEID(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs the message using the specified EID.
 		/// @param[in] eid A 6-byte Entity ID used for vehicle identification.
@@ -931,7 +931,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the raw data.
 		/// @param[in] prevLayer Pointer to the previous layer.
 		/// @param[in] packet Pointer to the parent packet instance.
-		DoIpVehicleIdentificationRequestWithVIN(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpVehicleIdentificationRequestWithVIN(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs the message using the specified VIN.
 		/// @param[in] vin A 17-byte Vehicle Identification Number.
@@ -993,7 +993,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data buffer in bytes.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpVehicleAnnouncementMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpVehicleAnnouncementMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs the message using specified field values.
 		/// @param[in] vin Vehicle Identification Number (VIN).
@@ -1122,7 +1122,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the raw data.
 		/// @param[in] prevLayer Pointer to the previous layer.
 		/// @param[in] packet Pointer to the parent packet instance.
-		DoIpRoutingActivationRequest(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpRoutingActivationRequest(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs the message from field values.
 		/// @param[in] sourceAddress Source address of the tester.
@@ -1225,7 +1225,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the raw data.
 		/// @param[in] prevLayer Pointer to the previous layer.
 		/// @param[in] packet Pointer to the parent packet instance.
-		DoIpRoutingActivationResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpRoutingActivationResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs the message from field values.
 		/// @param[in] logicalAddressExternalTester Logical address of the external tester.
@@ -1339,7 +1339,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the data buffer.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpAliveCheckRequest(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		DoIpAliveCheckRequest(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : DoIpLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -1378,7 +1378,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data buffer in bytes.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpAliveCheckResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpAliveCheckResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs the message using the specified source address.
 		/// @param[in] sourceAddress The source address of the responder.
@@ -1441,7 +1441,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the data buffer.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpEntityStatusRequest(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		DoIpEntityStatusRequest(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : DoIpLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -1480,7 +1480,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data buffer in bytes.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpEntityStatusResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpEntityStatusResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs the message using provided field values.
 		/// @param[in] nodeType Type of the DoIP node (default: GATEWAY).
@@ -1588,7 +1588,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the data buffer.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpDiagnosticPowerModeRequest(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+		DoIpDiagnosticPowerModeRequest(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
 		    : DoIpLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -1627,7 +1627,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data buffer in bytes.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpDiagnosticPowerModeResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpDiagnosticPowerModeResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs the message using the specified power mode code.
 		/// @param[in] modeCode Diagnostic power mode code to set.
@@ -1704,7 +1704,7 @@ namespace pcpp
 		virtual std::string getSummary() const = 0;
 
 	protected:
-		DoIpDiagnosticBase(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpDiagnosticBase(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		DoIpDiagnosticBase(size_t length) : DoIpLayer(length) {};
 
@@ -1739,7 +1739,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the data buffer.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpDiagnosticMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpDiagnosticMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs a DiagnosticMessage from specified field values.
 		/// @param[in] sourceAddress Address of the sending ECU/tester.
@@ -1825,7 +1825,7 @@ namespace pcpp
 		}
 
 	protected:
-		DoIpDiagnosticResponseMessageBase(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpDiagnosticResponseMessageBase(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 		DoIpDiagnosticResponseMessageBase(uint16_t sourceAddress, uint16_t targetAddress, DoIpPayloadTypes type);
 
 	private:
@@ -1860,7 +1860,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the data buffer.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpDiagnosticMessageAck(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpDiagnosticMessageAck(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs a DiagnosticAckMessage from specified field values.
 		/// @param[in] sourceAddress Address of the sending ECU.
@@ -1903,7 +1903,7 @@ namespace pcpp
 		/// @param[in] dataLen Length of the data buffer.
 		/// @param[in] prevLayer Pointer to the previous protocol layer.
 		/// @param[in] packet Pointer to the parent packet.
-		DoIpDiagnosticMessageNack(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
+		DoIpDiagnosticMessageNack(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
 
 		/// @brief Constructs a DiagnosticNackMessage from specified field values.
 		/// @param[in] sourceAddress Address of the sending ECU.
