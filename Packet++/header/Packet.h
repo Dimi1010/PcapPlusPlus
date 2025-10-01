@@ -339,12 +339,6 @@ namespace pcpp
 
 	namespace experimental
 	{
-		struct ParseOptions
-		{
-			ProtocolTypeFamily parseUntil = UnknownProtocol;
-			OsiModelLayer parseUntilLayer = OsiModelLayerUnknown;
-		};
-
 		/// Arena allocation concept
 		///
 		/// Each packet already handles its own memory management for Layers. When a packet is created from a raw
@@ -571,6 +565,19 @@ namespace pcpp
 			MemoryArena* m_Arena;
 		};
 
+		struct ParseOptions
+		{
+			ProtocolTypeFamily parseUntil = UnknownProtocol;
+			OsiModelLayer parseUntilLayer = OsiModelLayerUnknown;
+		};
+
+		/// @brief An tag to defer parsing of a packet.
+		struct NoParseTag
+		{
+		};
+
+		static constexpr NoParseTag NoParse = {};
+
 		class ArenaPacket
 		{
 		public:
@@ -584,30 +591,30 @@ namespace pcpp
 			/// @brief Creates a packet from a raw packet with an associated memory arena for layer allocations.
 			/// @param rawPacket A pointer to the raw packet.
 			/// @param ownRawPacket If true, the packet takes ownership of the raw packet and will handle its deletion.
-			/// @param linkType The link layer type of the raw packet. Default is Ethernet.
 			/// @param options Parsing options for the packet.
 			explicit ArenaPacket(RawPacket* rawPacket, bool ownRawPacket = false,
-			                     LinkLayerType linkType = LinkLayerType::LINKTYPE_ETHERNET,
 			                     ParseOptions options = ParseOptions{});
+
+			explicit ArenaPacket(NoParseTag, RawPacket* rawPacket, bool ownRawPacket = false);
 
 			/// @brief Creates a packet from a raw packet with an associated memory arena for layer allocations.
 			/// @param arena The memory arena to use for layer allocations.
 			/// @param rawPacket A pointer to the raw packet.
 			/// @param ownRawPacket If true, the packet takes ownership of the raw packet and will handle its deletion.
-			/// @param linkType The link layer type of the raw packet. Default is Ethernet.
 			/// @param options Parsing options for the packet.
 			ArenaPacket(MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket = false,
-			            LinkLayerType linkType = LinkLayerType::LINKTYPE_ETHERNET,
 			            ParseOptions options = ParseOptions{});
+
+			ArenaPacket(NoParseTag, MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket = false);
 
 			~ArenaPacket()
 			{
 				clearPacketData();
 			}
 
-			void setRawPacket(RawPacket* rawPacket, bool ownRawPacket = false,
-			                  LinkLayerType linkType = LinkLayerType::LINKTYPE_ETHERNET,
-			                  ParseOptions options = ParseOptions{});
+			void setRawPacket(RawPacket* rawPacket, bool ownRawPacket = false, ParseOptions options = ParseOptions{});
+
+			void setRawPacket(NoParseTag, RawPacket* rawPacket, bool ownRawPacket = false);
 
 			/// @brief Parses the packet.
 			/// @param options Options to use when parsing.

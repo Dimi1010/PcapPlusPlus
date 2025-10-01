@@ -1059,20 +1059,18 @@ namespace pcpp
 			::operator delete(block);
 		}
 
-		ArenaPacket::ArenaPacket(RawPacket* rawPacket, bool ownRawPacket, LinkLayerType linkType, ParseOptions options)
+		ArenaPacket::ArenaPacket(RawPacket* rawPacket, bool ownRawPacket, ParseOptions options)
 		{
-			setRawPacket(rawPacket, ownRawPacket, linkType, std::move(options));
+			setRawPacket(rawPacket, ownRawPacket, std::move(options));
 		}
 
-		ArenaPacket::ArenaPacket(MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket, LinkLayerType linkType,
-		                         ParseOptions options)
+		ArenaPacket::ArenaPacket(MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket, ParseOptions options)
 		    : ArenaPacket(std::move(arena))
 		{
-			setRawPacket(rawPacket, ownRawPacket, linkType, std::move(options));
+			setRawPacket(rawPacket, ownRawPacket, std::move(options));
 		}
 
-		void ArenaPacket::setRawPacket(RawPacket* rawPacket, bool ownPacket, LinkLayerType linkType,
-		                               ParseOptions options)
+		void ArenaPacket::setRawPacket(RawPacket* rawPacket, bool ownPacket, ParseOptions options)
 		{
 			// Destroy the existing packet data, if any
 
