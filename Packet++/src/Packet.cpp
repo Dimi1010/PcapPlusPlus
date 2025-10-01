@@ -1060,24 +1060,41 @@ namespace pcpp
 		}
 
 		ArenaPacket::ArenaPacket(RawPacket* rawPacket, bool ownRawPacket, ParseOptions options)
+		    : ArenaPacket(NoParse, rawPacket, ownRawPacket)
 		{
-			setRawPacket(rawPacket, ownRawPacket, std::move(options));
+			parseLayers(options);
+		}
+
+		ArenaPacket::ArenaPacket(NoParseTag, RawPacket* rawPacket, bool ownRawPacket)
+		{
+			setRawPacket(NoParse, rawPacket, ownRawPacket);
+		}
+
+		ArenaPacket::ArenaPacket(NoParseTag, MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket)
+		    : ArenaPacket(std::move(arena))
+		{
+			setRawPacket(NoParse, rawPacket, ownRawPacket);
 		}
 
 		ArenaPacket::ArenaPacket(MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket, ParseOptions options)
-		    : ArenaPacket(std::move(arena))
+		    : ArenaPacket(NoParse, std::move(arena), rawPacket, ownRawPacket)
 		{
-			setRawPacket(rawPacket, ownRawPacket, std::move(options));
+			parseLayers(options);
 		}
 
 		void ArenaPacket::setRawPacket(RawPacket* rawPacket, bool ownPacket, ParseOptions options)
 		{
+			// Delegate to the no parse overload.
+			setRawPacket(NoParse, rawPacket, ownPacket);
+			// Parse the layers based on the provided options
+			parseLayers(options);
+		}
+
+		void ArenaPacket::setRawPacket(NoParseTag, RawPacket* rawPacket, bool ownRawPacket)
+		{
 			// Destroy the existing packet data, if any
 
 			// Assign the new raw packet
-
-			// Parse the layers based on the provided options
-			parseLayers(options);
 		}
 
 		void ArenaPacket::parseLayers(ParseOptions options)

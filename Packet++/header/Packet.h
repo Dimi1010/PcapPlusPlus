@@ -588,14 +588,27 @@ namespace pcpp
 			explicit ArenaPacket(MemoryArena arena) : m_Arena(std::move(arena))
 			{}
 
+			/// @brief Creates a packet from a raw packet with an associated memory arena for layer allocation, with
+			/// deferred parsing.
+			/// @param rawPacket A pointer to the raw packet.
+			/// @param ownRawPacket If true, the packet takes ownership of the raw packet and will handle its deletion.
+			/// @remarks This constructor does not automatically parse the packet.
+			explicit ArenaPacket(NoParseTag, RawPacket* rawPacket, bool ownRawPacket = false);
+
+			/// @brief Creates a packet from a raw packet with an associated memory arena for layer allocation, with
+			/// deferred parsing.
+			/// @param arena The memory arena to use for layer allocations.
+			/// @param rawPacket A pointer to the raw packet.
+			/// @param ownRawPacket If true, the packet takes ownership of the raw packet and will handle its deletion.
+			/// @remarks This constructor does not automatically parse the packet.
+			explicit ArenaPacket(NoParseTag, MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket = false);
+
 			/// @brief Creates a packet from a raw packet with an associated memory arena for layer allocations.
 			/// @param rawPacket A pointer to the raw packet.
 			/// @param ownRawPacket If true, the packet takes ownership of the raw packet and will handle its deletion.
 			/// @param options Parsing options for the packet.
 			explicit ArenaPacket(RawPacket* rawPacket, bool ownRawPacket = false,
 			                     ParseOptions options = ParseOptions{});
-
-			explicit ArenaPacket(NoParseTag, RawPacket* rawPacket, bool ownRawPacket = false);
 
 			/// @brief Creates a packet from a raw packet with an associated memory arena for layer allocations.
 			/// @param arena The memory arena to use for layer allocations.
@@ -604,8 +617,6 @@ namespace pcpp
 			/// @param options Parsing options for the packet.
 			ArenaPacket(MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket = false,
 			            ParseOptions options = ParseOptions{});
-
-			ArenaPacket(NoParseTag, MemoryArena arena, RawPacket* rawPacket, bool ownRawPacket = false);
 
 			~ArenaPacket()
 			{
