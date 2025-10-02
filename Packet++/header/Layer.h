@@ -28,6 +28,8 @@ namespace pcpp
 		virtual ~IDataContainer() = default;
 	};
 
+	class Layer;
+
 	/// @brief An interface (virtual abstract class) for classes that can own layers.
 	/// The layer class has a pointer to an ILayerOwner instance which is the owner of this layer.
 	/// The owner is responsible for managing the backing store of the layer (e.g. extending/shortening the layer data).
@@ -37,6 +39,35 @@ namespace pcpp
 		friend class Layer;
 
 		~ILayerOwner() = default;
+
+		virtual Layer* getFirstLayer() const = 0;
+		virtual Layer* getLastLayer() const = 0;
+
+		virtual bool addLayer(Layer* newLayer, bool ownInPacket = false) = 0;
+		virtual bool removeAllLayersAfter(Layer* layer) = 0;
+
+		/// A templated method to get a layer of a certain type (protocol). If no layer of such type is found, nullptr
+		/// is returned
+		/// @param[in] reverseOrder The optional parameter that indicates that the lookup should run in reverse order,
+		/// the default value is false
+		/// @return A pointer to the layer of the requested type, nullptr if not found
+		template <class TLayer> TLayer* getLayerOfType(bool reverseOrder = false) const;
+
+		/// A templated method to get the first layer of a certain type (protocol), start searching from a certain
+		/// layer. For example: if a packet looks like: EthLayer -> VlanLayer(1) -> VlanLayer(2) -> VlanLayer(3) ->
+		/// IPv4Layer and the user put VlanLayer(2) as a parameter and wishes to search for a VlanLayer, VlanLayer(3)
+		/// will be returned If no layer of such type is found, nullptr is returned
+		/// @param[in] startLayer A pointer to the layer to start search from
+		/// @return A pointer to the layer of the requested type, nullptr if not found
+		template <class TLayer> TLayer* getNextLayerOfType(Layer* startLayer) const;
+
+		/// A templated method to get the first layer of a certain type (protocol), start searching from a certain
+		/// layer. For example: if a packet looks like: EthLayer -> VlanLayer(1) -> VlanLayer(2) -> VlanLayer(3) ->
+		/// IPv4Layer and the user put VlanLayer(2) as a parameter and wishes to search for a VlanLayer, VlanLayer(1)
+		/// will be returned If no layer of such type is found, nullptr is returned
+		/// @param[in] startLayer A pointer to the layer to start search from
+		/// @return A pointer to the layer of the requested type, nullptr if not found
+		template <class TLayer> TLayer* getPrevLayerOfType(Layer* startLayer) const;
 
 	protected:
 		virtual bool extendLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToExtend) = 0;
@@ -191,7 +222,8 @@ namespace pcpp
 		      m_PrevLayer(nullptr), m_IsAllocatedInPacket(false)
 		{}
 
-		Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType protocol = UnknownProtocol)
+		Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet,
+		      ProtocolType protocol = UnknownProtocol)
 		    : m_Data(data), m_DataLen(dataLen), m_Packet(packet), m_Protocol(protocol), m_NextLayer(nullptr),
 		      m_PrevLayer(prevLayer), m_IsAllocatedInPacket(false)
 		{}
@@ -304,5 +336,92 @@ namespace pcpp
 	{
 		os << layer.toString();
 		return os;
+	}
+
+	namespace internal
+	{
+		/// @brief Searches the layer stack for a layer of type TLayer starting from curLayer and using nextLayerFn to
+		/// get the next layer in the stack
+		/// @tparam TLayer The type of layer to search for.
+		/// @tparam NextLayerFn A callable type that takes a Layer* and returns the next Layer* in the stack
+		/// @param curLayer The layer to start the search from
+		/// @param nextLayerFn A callable that takes a Layer* and returns the next Layer* in the stack
+		/// @param skipFirst If true, the search will start from the layer after curLayer
+		/// @return A pointer to the first layer of type TLayer found, or nullptr if no such layer exists in the stack
+		template <typename TLayer, typename NextLayerFn>
+		TLayer* searchLayerStackForType(Layer* curLayer, NextLayerFn nextLayerFn, bool skipFirst)
+		{
+			if (curLayer == nullptr)
+				return nullptr;
+
+			if (skipFirst)
+			{
+				curLayer = nextLayerFn(curLayer);
+			}
+
+			while (curLayer != nullptr)
+			{
+				auto* curLayerCasted = dynamic_cast<TLayer*>(curLayer);
+				if (curLayerCasted != nullptr)
+					return curLayerCasted;
+
+				curLayer = nextLayerFn(curLayer);
+			}
+
+			return nullptr;
+		}
+
+		/// @brief Finds the next layer of the specified type after the given layer.
+		/// @tparam TLayer The type of layer to search for.
+		/// @param curLayer A pointer to the current layer from which to start the search.
+		/// @return A pointer to the next layer of the specified type, or nullptr if no such layer is found.
+		template <class TLayer> TLayer* getNextLayerOfType(Layer* curLayer)
+		{
+			return searchLayerStackForType<TLayer>(curLayer, [](Layer* layer) { return layer->getNextLayer(); }, true);
+		}
+
+		/// @brief Finds the previous layer of a specified type in the layer stack, starting from the given layer.
+		/// @tparam TLayer The type of layer to search for.
+		/// @param curLayer A pointer to the current layer from which to begin the search.
+		/// @return A pointer to the previous layer of the specified type, or nullptr if no such layer is found.
+		template <class TLayer> TLayer* getPrevLayerOfType(Layer* curLayer)
+		{
+			return searchLayerStackForType<TLayer>(curLayer, [](Layer* layer) { return layer->getPrevLayer(); }, true);
+		}
+
+		/// @brief Finds the first layer of a specified type within a range of layers, searching either forwards or
+		/// backwards.
+		/// @tparam TLayer The type of layer to search for.
+		/// @param first Pointer to the first layer in the range.
+		/// @param last Pointer to the last layer in the range.
+		/// @param reverse If true, searches from 'last' backwards; otherwise, searches from 'first' forwards.
+		/// @return A pointer to the first layer of type TLayer found in the specified direction, or nullptr if not
+		/// found.
+		template <class TLayer> TLayer* getLayerOfType(Layer* first, Layer* last, bool reverse)
+		{
+			if (!reverse)
+			{
+				return searchLayerStackForType<TLayer>(
+				    first, [](Layer* layer) { return layer->getNextLayer(); }, false);
+			}
+
+			// lookup in reverse order
+			return searchLayerStackForType<TLayer>(last, [](Layer* layer) { return layer->getPrevLayer(); }, false);
+		}
+	}  // namespace internal
+
+	template <typename TLayer> TLayer* ILayerOwner::getLayerOfType(bool reverseOrder) const
+	{
+		return internal::getLayerOfType<TLayer>(getFirstLayer(), getLastLayer(), reverseOrder);
+	}
+
+	template <typename TLayer> TLayer* ILayerOwner::getNextLayerOfType(Layer* startLayer) const
+	{
+		return internal::getNextLayerOfType<TLayer>(startLayer);
+	}
+
+	template <typename TLayer> TLayer* ILayerOwner::getPrevLayerOfType(Layer* startLayer) const
+	{
+		return internal::getPrevLayerOfType<TLayer>(startLayer);
 	}
 }  // namespace pcpp
