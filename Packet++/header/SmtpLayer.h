@@ -11,14 +11,15 @@
 namespace pcpp
 {
 	/// Class for general SMTP message
-	class SmtpLayer : public SingleCommandTextProtocol
+	class SmtpLayer : public WithSizeOf<SmtpLayer, SingleCommandTextProtocol>
 	{
+		using BaseLayer = WithSizeOf<SmtpLayer, SingleCommandTextProtocol>;
+
 	protected:
 		SmtpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : SingleCommandTextProtocol(data, dataLen, prevLayer, packet, SMTP) {};
+		    : BaseLayer(data, dataLen, prevLayer, packet, SMTP) {};
 
-		SmtpLayer(const std::string& command, const std::string& option)
-		    : SingleCommandTextProtocol(command, option, SMTP) {};
+		SmtpLayer(const std::string& command, const std::string& option) : BaseLayer(command, option, SMTP) {};
 
 	public:
 		/// A static method that checks whether the port is considered as SMTP control
@@ -53,8 +54,9 @@ namespace pcpp
 	};
 
 	/// Class for representing the request messages of SMTP Layer
-	class SmtpRequestLayer : public SmtpLayer
+	class SmtpRequestLayer : public WithSizeOf<SmtpRequestLayer, SmtpLayer>
 	{
+		using BaseLayer = WithSizeOf<SmtpRequestLayer, SmtpLayer>;
 	public:
 		/// Enum for SMTP command codes
 		enum class SmtpCommand : uint64_t
@@ -118,13 +120,13 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		SmtpRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : SmtpLayer(data, dataLen, prevLayer, packet) {};
+		    : BaseLayer(data, dataLen, prevLayer, packet) {};
 
 		/// A constructor that creates layer with provided input values
 		/// @param[in] command SMTP command
 		/// @param[in] option Argument of the command
 		explicit SmtpRequestLayer(const SmtpCommand& command, const std::string& option = "")
-		    : SmtpLayer(getCommandAsString(command), option) {};
+		    : BaseLayer(getCommandAsString(command), option) {};
 
 		/// Set the command of request message
 		/// @param[in] code Value to set command
@@ -166,8 +168,9 @@ namespace pcpp
 	};
 
 	/// Class for representing the response messages of SMTP Layer
-	class SmtpResponseLayer : public SmtpLayer
+	class SmtpResponseLayer : public WithSizeOf<SmtpResponseLayer, SmtpLayer>
 	{
+		using BaseLayer = WithSizeOf<SmtpResponseLayer, SmtpLayer>;
 	public:
 		/// Enum for SMTP response codes
 		enum class SmtpStatusCode : int
@@ -248,13 +251,13 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		SmtpResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : SmtpLayer(data, dataLen, prevLayer, packet) {};
+		    : BaseLayer(data, dataLen, prevLayer, packet) {};
 
 		/// A constructor that creates layer with provided input values
 		/// @param[in] code Status code
 		/// @param[in] option Argument of the status code
 		explicit SmtpResponseLayer(const SmtpStatusCode& code, const std::string& option = "")
-		    : SmtpLayer(std::to_string(int(code)), option) {};
+		    : BaseLayer(std::to_string(int(code)), option) {};
 
 		/// Set the status code of response message
 		/// @param[in] code Value to set status code

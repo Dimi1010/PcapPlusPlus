@@ -66,8 +66,9 @@ namespace pcpp
 
 	/// @class VxlanLayer
 	/// Represents a VXLAN (Virtual eXtensible Local Area Network) protocol layer
-	class VxlanLayer : public Layer
+	class VxlanLayer : public WithSizeOf<VxlanLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<VxlanLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -75,7 +76,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		VxlanLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, VXLAN)
+		    : BaseLayer(data, dataLen, prevLayer, packet, VXLAN)
 		{}
 
 		/// A constructor that creates a new VXLAN header and allocates the data. Note: the VNI present flag is set

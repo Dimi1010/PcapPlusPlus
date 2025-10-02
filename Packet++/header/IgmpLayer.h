@@ -135,11 +135,13 @@ namespace pcpp
 	/// A base class for all IGMP (Internet Group Management Protocol) protocol classes. This is an abstract class and
 	/// cannot be instantiated, only its child classes can be instantiated. The inherited classes represent the
 	/// different versions of the protocol: IGMPv1, IGMPv2 and IGMPv3
-	class IgmpLayer : public Layer
+	class IgmpLayer : public WithSizeOf<IgmpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<IgmpLayer, Layer>;
+
 	protected:
 		IgmpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType igmpVer)
-		    : Layer(data, dataLen, prevLayer, packet, igmpVer)
+		    : BaseLayer(data, dataLen, prevLayer, packet, igmpVer)
 		{}
 
 		IgmpLayer(IgmpType type, const IPv4Address& groupAddr, uint8_t maxResponseTime, ProtocolType igmpVer);
@@ -208,8 +210,10 @@ namespace pcpp
 	/// @class IgmpV1Layer
 	/// Represents IGMPv1 (Internet Group Management Protocol ver 1) layer. This class represents all the different
 	/// messages of IGMPv1
-	class IgmpV1Layer : public IgmpLayer
+	class IgmpV1Layer : public WithSizeOf<IgmpV1Layer, IgmpLayer>
 	{
+		using BaseLayer = WithSizeOf<IgmpV1Layer, IgmpLayer>;
+
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -217,7 +221,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		IgmpV1Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : IgmpLayer(data, dataLen, prevLayer, packet, IGMPv1)
+		    : BaseLayer(data, dataLen, prevLayer, packet, IGMPv1)
 		{}
 
 		/// A constructor that allocates a new IGMPv1 header
@@ -225,7 +229,7 @@ namespace pcpp
 		/// @param[in] groupAddr The multicast address to set. This is an optional parameter and has a default value of
 		/// IPv4Address#Zero if not provided
 		explicit IgmpV1Layer(IgmpType type, const IPv4Address& groupAddr = IPv4Address())
-		    : IgmpLayer(type, groupAddr, 0, IGMPv1)
+		    : BaseLayer(type, groupAddr, 0, IGMPv1)
 		{}
 
 		/// A destructor for this layer (does nothing)
@@ -249,8 +253,10 @@ namespace pcpp
 	/// @class IgmpV2Layer
 	/// Represents IGMPv2 (Internet Group Management Protocol ver 2) layer. This class represents all the different
 	/// messages of IGMPv2
-	class IgmpV2Layer : public IgmpLayer
+	class IgmpV2Layer : public WithSizeOf<IgmpV2Layer, IgmpLayer>
 	{
+		using BaseLayer = WithSizeOf<IgmpV2Layer, IgmpLayer>;
+
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -258,7 +264,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		IgmpV2Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : IgmpLayer(data, dataLen, prevLayer, packet, IGMPv2)
+		    : BaseLayer(data, dataLen, prevLayer, packet, IGMPv2)
 		{}
 
 		/// A constructor that allocates a new IGMPv2 header
@@ -268,7 +274,7 @@ namespace pcpp
 		/// @param[in] maxResponseTime The max response time to set. This is an optional parameter and has a default
 		/// value of 0 if not provided
 		explicit IgmpV2Layer(IgmpType type, const IPv4Address& groupAddr = IPv4Address(), uint8_t maxResponseTime = 0)
-		    : IgmpLayer(type, groupAddr, maxResponseTime, IGMPv2)
+		    : BaseLayer(type, groupAddr, maxResponseTime, IGMPv2)
 		{}
 
 		/// A destructor for this layer (does nothing)
@@ -291,8 +297,10 @@ namespace pcpp
 
 	/// @class IgmpV3QueryLayer
 	/// Represents an IGMPv3 (Internet Group Management Protocol ver 3) membership query message
-	class IgmpV3QueryLayer : public IgmpLayer
+	class IgmpV3QueryLayer : public WithSizeOf<IgmpV3QueryLayer, IgmpLayer>
 	{
+		using BaseLayer = WithSizeOf<IgmpV3QueryLayer, IgmpLayer>;
+
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -378,8 +386,9 @@ namespace pcpp
 
 	/// @class IgmpV3ReportLayer
 	/// Represents an IGMPv3 (Internet Group Management Protocol ver 3) membership report message
-	class IgmpV3ReportLayer : public IgmpLayer
+	class IgmpV3ReportLayer : public WithSizeOf<IgmpV3ReportLayer, IgmpLayer>
 	{
+		using BaseLayer = WithSizeOf<IgmpV3ReportLayer, IgmpLayer>;
 	private:
 		igmpv3_group_record* addGroupRecordAt(uint8_t recordType, const IPv4Address& multicastAddress,
 		                                      const std::vector<IPv4Address>& sourceAddresses, int offset);
@@ -391,11 +400,11 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		IgmpV3ReportLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : IgmpLayer(data, dataLen, prevLayer, packet, IGMPv3)
+		    : BaseLayer(data, dataLen, prevLayer, packet, IGMPv3)
 		{}
 
 		/// A constructor that allocates a new IGMPv3 membership report with 0 group addresses
-		IgmpV3ReportLayer() : IgmpLayer(IgmpType_MembershipReportV3, IPv4Address(), 0, IGMPv3)
+		IgmpV3ReportLayer() : BaseLayer(IgmpType_MembershipReportV3, IPv4Address(), 0, IGMPv3)
 		{}
 
 		/// Get a pointer to the raw IGMPv3 membership report header. Notice this points directly to the data, so every

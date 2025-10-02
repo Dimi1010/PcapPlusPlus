@@ -384,7 +384,7 @@ namespace pcpp
 	// -------- Class Vrrpv2Layer -----------------
 
 	VrrpV2Layer::VrrpV2Layer(uint8_t virtualRouterId, uint8_t priority, uint8_t advInt, uint8_t authType)
-	    : VrrpLayer(VRRPv2, virtualRouterId, priority)
+	    : BaseLayer(VRRPv2, virtualRouterId, priority)
 	{
 		setAdvInt(advInt);
 		setAuthType(authType);
@@ -451,7 +451,7 @@ namespace pcpp
 
 	VrrpV3Layer::VrrpV3Layer(IPAddress::AddressType addressType, uint8_t virtualRouterId, uint8_t priority,
 	                         uint16_t maxAdvInt)
-	    : VrrpLayer(VRRPv3, virtualRouterId, priority)
+	    : BaseLayer(VRRPv3, virtualRouterId, priority)
 	{
 		setAddressType(addressType);
 		setMaxAdvInt(maxAdvInt);

@@ -116,11 +116,13 @@ namespace pcpp
 
 	/// @class StpLayer
 	/// Represents an Spanning Tree Protocol Layer
-	class StpLayer : public Layer
+	class StpLayer : public WithSizeOf<StpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<StpLayer, Layer>;
+
 	protected:
 		StpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, STP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, STP)
 		{}
 
 		explicit StpLayer(size_t dataLen)
@@ -226,10 +228,12 @@ namespace pcpp
 
 	/// @class StpTopologyChangeBPDULayer
 	/// Represents network topology change BPDU message of Spanning Tree Protocol
-	class StpTopologyChangeBPDULayer : public StpLayer
+	class StpTopologyChangeBPDULayer : public WithSizeOf<StpTopologyChangeBPDULayer, StpLayer>
 	{
+		using BaseLayer = WithSizeOf<StpTopologyChangeBPDULayer, StpLayer>;
+
 	protected:
-		explicit StpTopologyChangeBPDULayer(size_t dataLen) : StpLayer(dataLen)
+		explicit StpTopologyChangeBPDULayer(size_t dataLen) : BaseLayer(dataLen)
 		{}
 
 	public:
@@ -239,7 +243,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		StpTopologyChangeBPDULayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : StpLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// Empty c'tor to create a new network topology change (TCN) BPDU layer.
@@ -283,10 +287,12 @@ namespace pcpp
 
 	/// @class StpConfigurationBPDULayer
 	/// Represents configuration BPDU message of Spanning Tree Protocol
-	class StpConfigurationBPDULayer : public StpTopologyChangeBPDULayer
+	class StpConfigurationBPDULayer : public WithSizeOf<StpConfigurationBPDULayer, StpTopologyChangeBPDULayer>
 	{
+		using BaseLayer = WithSizeOf<StpConfigurationBPDULayer, StpTopologyChangeBPDULayer>;
+
 	protected:
-		explicit StpConfigurationBPDULayer(size_t dataLen) : StpTopologyChangeBPDULayer(dataLen)
+		explicit StpConfigurationBPDULayer(size_t dataLen) : BaseLayer(dataLen)
 		{}
 
 	public:
@@ -296,7 +302,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		StpConfigurationBPDULayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : StpTopologyChangeBPDULayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// Empty c'tor to create a new configuration BPDU layer.
@@ -471,10 +477,11 @@ namespace pcpp
 
 	/// @class RapidStpLayer
 	/// Represents Rapid Spanning Tree Protocol (RSTP)
-	class RapidStpLayer : public StpConfigurationBPDULayer
+	class RapidStpLayer : public WithSizeOf<RapidStpLayer, StpConfigurationBPDULayer>
 	{
+		using BaseLayer = WithSizeOf<RapidStpLayer, StpConfigurationBPDULayer>;
 	protected:
-		explicit RapidStpLayer(size_t dataLen) : StpConfigurationBPDULayer(dataLen)
+		explicit RapidStpLayer(size_t dataLen) : BaseLayer(dataLen)
 		{}
 
 	public:
@@ -484,7 +491,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		RapidStpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : StpConfigurationBPDULayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// Empty c'tor to create a new Rapid STP layer.
@@ -542,8 +549,9 @@ namespace pcpp
 	/// @class MultipleStpLayer
 	/// Represents Multiple Spanning Tree Protocol (MSTP). It has limited capabilities (no crafting / limited editing)
 	/// over MSTI configuration
-	class MultipleStpLayer : public RapidStpLayer
+	class MultipleStpLayer : public WithSizeOf<MultipleStpLayer, RapidStpLayer>
 	{
+		using BaseLayer = WithSizeOf<MultipleStpLayer, RapidStpLayer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -551,7 +559,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		MultipleStpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : RapidStpLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// Empty c'tor to create a new Multiple STP layer.

@@ -117,7 +117,7 @@ namespace pcpp
 	}
 
 	SSLHandshakeLayer::SSLHandshakeLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : SSLLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{
 		uint8_t* curPos = m_Data + sizeof(ssl_tls_record_layer);
 		size_t recordDataLen = be16toh(getRecordLayer()->length);

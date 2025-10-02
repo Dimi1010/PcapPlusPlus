@@ -212,13 +212,13 @@ namespace pcpp
 
 	IPv4Layer::IPv4Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet,
 	                     bool setTotalLenAsDataLen)
-	    : Layer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{
 		initLayerInPacket(setTotalLenAsDataLen);
 	}
 
 	IPv4Layer::IPv4Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : Layer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{
 		initLayerInPacket(true);
 	}
@@ -231,14 +231,14 @@ namespace pcpp
 		ipHdr->ipDst = dstIP.toInt();
 	}
 
-	IPv4Layer::IPv4Layer(const IPv4Layer& other) : Layer(other)
+	IPv4Layer::IPv4Layer(const IPv4Layer& other) : BaseLayer(other)
 	{
 		copyLayerData(other);
 	}
 
 	IPv4Layer& IPv4Layer::operator=(const IPv4Layer& other)
 	{
-		Layer::operator=(other);
+		BaseLayer::operator=(other);
 
 		copyLayerData(other);
 

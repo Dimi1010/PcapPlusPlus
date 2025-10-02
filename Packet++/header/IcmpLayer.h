@@ -322,8 +322,9 @@ namespace pcpp
 
 	/// @class IcmpLayer
 	/// Represents an ICMP protocol layer (for IPv4 only)
-	class IcmpLayer : public Layer
+	class IcmpLayer : public WithSizeOf<IcmpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<IcmpLayer, Layer>;
 	private:
 		icmp_echo_request m_EchoData;
 		mutable icmp_router_advertisement m_RouterAdvData;
@@ -343,7 +344,7 @@ namespace pcpp
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		// cppcheck-suppress uninitMemberVar
 		IcmpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, ICMP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, ICMP)
 		{}
 
 		/// An empty constructor that creates a new layer with an empty ICMP header without setting the ICMP type or

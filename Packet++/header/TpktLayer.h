@@ -26,8 +26,9 @@ namespace pcpp
 
 	/// @class TpktLayer
 	/// Represents a TPKT (Transport Service on top of the TCP) protocol layer
-	class TpktLayer : public Layer
+	class TpktLayer : public WithSizeOf<TpktLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<TpktLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref tpkthdr)
@@ -35,7 +36,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		TpktLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, TPKT)
+		    : BaseLayer(data, dataLen, prevLayer, packet, TPKT)
 		{}
 
 		/// A constructor that allocates a new TPKT header

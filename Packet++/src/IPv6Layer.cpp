@@ -28,7 +28,7 @@ namespace pcpp
 	}
 
 	IPv6Layer::IPv6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : Layer(data, dataLen, prevLayer, packet, IPv6)
+	    : BaseLayer(data, dataLen, prevLayer, packet, IPv6)
 	{
 		m_FirstExtension = nullptr;
 		m_LastExtension = nullptr;
@@ -54,7 +54,7 @@ namespace pcpp
 		dstIP.copyTo(ipHdr->ipDst);
 	}
 
-	IPv6Layer::IPv6Layer(const IPv6Layer& other) : Layer(other)
+	IPv6Layer::IPv6Layer(const IPv6Layer& other) : BaseLayer(other)
 	{
 		m_FirstExtension = nullptr;
 		m_LastExtension = nullptr;

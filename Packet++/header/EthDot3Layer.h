@@ -27,15 +27,16 @@ namespace pcpp
 
 	/// @class EthDot3Layer
 	/// Represents an IEEE 802.3 Ethernet protocol layer
-	class EthDot3Layer : public Layer
+	class EthDot3Layer : public WithSizeOf<EthDot3Layer, Layer>
 	{
+		using BaseLayer = WithSizeOf<EthDot3Layer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to ether_dot3_header)
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		EthDot3Layer(uint8_t* data, size_t dataLen, ILayerOwner* packet)
-		    : Layer(data, dataLen, nullptr, packet, EthernetDot3)
+		    : BaseLayer(data, dataLen, nullptr, packet, EthernetDot3)
 		{}
 
 		/// A constructor that creates the layer from an existing packet raw data
@@ -44,7 +45,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		EthDot3Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, EthernetDot3)
+		    : BaseLayer(data, dataLen, prevLayer, packet, EthernetDot3)
 		{}
 
 		/// A constructor that creates a new IEEE 802.3 Ethernet header and allocates the data

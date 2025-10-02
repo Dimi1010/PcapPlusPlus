@@ -42,8 +42,9 @@ namespace pcpp
 
 	/// @class AuthenticationHeaderLayer
 	/// Represents an IPSec AuthenticationHeader (AH) layer
-	class AuthenticationHeaderLayer : public Layer
+	class AuthenticationHeaderLayer : public WithSizeOf<AuthenticationHeaderLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<AuthenticationHeaderLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -51,7 +52,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		AuthenticationHeaderLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, AuthenticationHeader)
+		    : BaseLayer(data, dataLen, prevLayer, packet, AuthenticationHeader)
 		{}
 
 		/// Get a pointer to the raw AH header. Notice this points directly to the data, so every change will change the
@@ -114,8 +115,9 @@ namespace pcpp
 
 	/// @class ESPLayer
 	/// Represents an IPSec Encapsulating Security Payload (ESP) layer
-	class ESPLayer : public Layer
+	class ESPLayer : public WithSizeOf<ESPLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<ESPLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -123,7 +125,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		ESPLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, ESP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, ESP)
 		{}
 
 		ipsec_esp* getESPHeader() const

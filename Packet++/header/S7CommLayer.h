@@ -72,8 +72,9 @@ namespace pcpp
 	};
 	/// @class S7CommLayer
 	/// Represents a S7COMM (S7 Communication) protocol
-	class S7CommLayer : public Layer
+	class S7CommLayer : public WithSizeOf<S7CommLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<S7CommLayer, Layer>;
 	public:
 		/// A constructor that allocates a new S7comm header
 		/// @param[in] msgType The general type of the message
@@ -91,7 +92,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		S7CommLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, S7COMM)
+		    : BaseLayer(data, dataLen, prevLayer, packet, S7COMM)
 		{
 			m_Parameter = nullptr;
 		}

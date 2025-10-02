@@ -66,8 +66,10 @@ namespace pcpp
 	/// @class SipLayer
 	/// Represents a general SIP message. It's an abstract class and cannot be instantiated. It's inherited by
 	/// SipRequestLayer and SipResponseLayer
-	class SipLayer : public TextBasedProtocolMessage
+	class SipLayer : public WithSizeOf<SipLayer, TextBasedProtocolMessage>
 	{
+		using BaseLayer = WithSizeOf<SipLayer, TextBasedProtocolMessage>;
+
 	public:
 		/// The length of the body of many SIP response messages is determined by a SIP header field called
 		/// "Content-Length". This method parses this field, extracts its value and return it. If this field doesn't
@@ -116,15 +118,14 @@ namespace pcpp
 
 	protected:
 		SipLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType protocol)
-		    : TextBasedProtocolMessage(data, dataLen, prevLayer, packet, protocol)
+		    : BaseLayer(data, dataLen, prevLayer, packet, protocol)
 		{}
-		SipLayer() : TextBasedProtocolMessage()
-		{}
-		SipLayer(const SipLayer& other) : TextBasedProtocolMessage(other)
+		SipLayer() = default;
+		SipLayer(const SipLayer& other) : BaseLayer(other)
 		{}
 		SipLayer& operator=(const SipLayer& other)
 		{
-			TextBasedProtocolMessage::operator=(other);
+			BaseLayer::operator=(other);
 			return *this;
 		}
 
@@ -148,8 +149,9 @@ namespace pcpp
 	/// special treatment and gets a class of it's own: SipRequestFirstLine. In most cases a SIP request will be
 	/// contained in a single packet but for cases it is not, only the first packet will be identified as SIP request
 	/// layer. You can find out whether the header is complete by using SipLayer#isHeaderComplete()
-	class SipRequestLayer : public SipLayer
+	class SipRequestLayer : public WithSizeOf<SipRequestLayer, SipLayer>
 	{
+		using BaseLayer = WithSizeOf<SipRequestLayer, SipLayer>;
 		friend class SipRequestFirstLine;
 
 	public:
@@ -237,8 +239,9 @@ namespace pcpp
 	/// requires a special treatment and gets a class of it's own: SipResponseFirstLine. In most cases a SIP response
 	/// will be contained in a single packet but for cases it is not, only the first packet will be identified as SIP
 	/// response layer. You can find out whether the header is complete by using SipLayer#isHeaderComplete()
-	class SipResponseLayer : public SipLayer
+	class SipResponseLayer : public WithSizeOf<SipResponseLayer, SipLayer>
 	{
+		using BaseLayer = WithSizeOf<SipResponseLayer, SipLayer>;
 		friend class SipResponseFirstLine;
 
 	public:

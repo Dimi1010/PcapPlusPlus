@@ -52,8 +52,9 @@ namespace pcpp
 	/// (for example: PCPP_SDP_ORIGINATOR_FIELD is a macro for the originator field (o=) ).<BR>
 	/// For more details about SDP structure please refer to its Wikipedia page:
 	/// https://en.wikipedia.org/wiki/Session_Description_Protocol
-	class SdpLayer : public TextBasedProtocolMessage
+	class SdpLayer : public WithSizeOf<SdpLayer, TextBasedProtocolMessage>
 	{
+		using BaseLayer = WithSizeOf<SdpLayer, TextBasedProtocolMessage>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -91,7 +92,7 @@ namespace pcpp
 		/// A copy constructor for this layer. Inherits the base copy constructor and doesn't add
 		/// anything else
 		/// @param[in] other The instance to copy from
-		SdpLayer(const SdpLayer& other) : TextBasedProtocolMessage(other)
+		SdpLayer(const SdpLayer& other) : BaseLayer(other)
 		{}
 
 		/// An assignment operator overload for this layer. Inherits the base assignment operator
@@ -99,7 +100,7 @@ namespace pcpp
 		/// @param[in] other The instance to copy from
 		SdpLayer& operator=(const SdpLayer& other)
 		{
-			TextBasedProtocolMessage::operator=(other);
+			BaseLayer::operator=(other);
 			return *this;
 		}
 

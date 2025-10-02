@@ -198,11 +198,11 @@ namespace pcpp
 	// -------- Class IgmpV3QueryLayer -----------------
 
 	IgmpV3QueryLayer::IgmpV3QueryLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : IgmpLayer(data, dataLen, prevLayer, packet, IGMPv3)
+	    : BaseLayer(data, dataLen, prevLayer, packet, IGMPv3)
 	{}
 
 	IgmpV3QueryLayer::IgmpV3QueryLayer(const IPv4Address& multicastAddr, uint8_t maxResponseTime, uint8_t s_qrv)
-	    : IgmpLayer(IgmpType_MembershipQuery, multicastAddr, maxResponseTime, IGMPv3)
+	    : BaseLayer(IgmpType_MembershipQuery, multicastAddr, maxResponseTime, IGMPv3)
 	{
 		getIgmpV3QueryHeader()->s_qrv = s_qrv;
 	}

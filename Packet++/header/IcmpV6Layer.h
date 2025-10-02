@@ -120,8 +120,9 @@ namespace pcpp
 
 	/// @class IcmpV6Layer
 	/// Base class for ICMPv6 protocol layers which provides common logic for ICMPv6 messages.
-	class IcmpV6Layer : public Layer
+	class IcmpV6Layer : public WithSizeOf<IcmpV6Layer, Layer>
 	{
+		using BaseLayer = WithSizeOf<IcmpV6Layer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param data A pointer to the raw data
@@ -129,7 +130,7 @@ namespace pcpp
 		/// @param prevLayer A pointer to the previous layer
 		/// @param packet A pointer to the Packet instance where layer will be stored in
 		IcmpV6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, ICMPv6)
+		    : BaseLayer(data, dataLen, prevLayer, packet, ICMPv6)
 		{}
 
 		/// A constructor that allocates a new ICMPv6 layer with type, code and data
@@ -198,8 +199,9 @@ namespace pcpp
 
 	/// @class ICMPv6EchoLayer
 	/// Represents an ICMPv6 echo request/reply protocol layer
-	class ICMPv6EchoLayer : public IcmpV6Layer
+	class ICMPv6EchoLayer : public WithSizeOf<ICMPv6EchoLayer, IcmpV6Layer>
 	{
+		using BaseLayer = WithSizeOf<ICMPv6EchoLayer, IcmpV6Layer>;
 	public:
 		/// An enum representing ICMPv6 echo message types
 		enum ICMPv6EchoType
@@ -216,7 +218,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		ICMPv6EchoLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : IcmpV6Layer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A constructor for a new echo request/reply layer

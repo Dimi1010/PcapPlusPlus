@@ -27,8 +27,9 @@ namespace pcpp
 
 	/// @class UdpLayer
 	/// Represents an UDP (User Datagram Protocol) protocol layer
-	class UdpLayer : public Layer
+	class UdpLayer : public WithSizeOf<UdpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<UdpLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref udphdr)
@@ -36,7 +37,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		UdpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, UDP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, UDP)
 		{}
 
 		/// A constructor that allocates a new UDP header with source and destination ports

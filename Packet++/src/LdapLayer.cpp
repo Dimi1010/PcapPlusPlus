@@ -193,7 +193,7 @@ namespace pcpp
 
 	LdapLayer::LdapLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
 	                     ILayerOwner* packet)
-	    : Layer(data, dataLen, prevLayer, packet, LDAP)
+	    : BaseLayer(data, dataLen, prevLayer, packet, LDAP)
 	{
 		m_Asn1Record = std::move(asn1Record);
 	}

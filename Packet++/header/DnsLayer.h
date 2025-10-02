@@ -430,8 +430,9 @@ namespace pcpp
 
 	/// Note: DNS over TCP can spread over more than one packet, but this implementation doesn't support this use-case
 	/// and assumes the whole message fits in a single packet.
-	class DnsOverTcpLayer : public DnsLayer
+	class DnsOverTcpLayer : public WithSizeOf<DnsOverTcpLayer, DnsLayer>
 	{
+		using BaseLayer = WithSizeOf<DnsOverTcpLayer, DnsLayer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -439,17 +440,17 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		DnsOverTcpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : DnsLayer(data, dataLen, prevLayer, packet, sizeof(uint16_t))
+		    : BaseLayer(data, dataLen, prevLayer, packet, sizeof(uint16_t))
 		{}
 
 		/// A constructor that creates an empty DNS layer: all members of dnshdr are set to 0 and layer will contain no
 		/// records
-		DnsOverTcpLayer() : DnsLayer(sizeof(uint16_t))
+		DnsOverTcpLayer() : BaseLayer(sizeof(uint16_t))
 		{}
 
 		/// A copy constructor for this layer
 		/// @param[in] other The DNS over TCP layer to copy from
-		DnsOverTcpLayer(const DnsOverTcpLayer& other) : DnsLayer(other)
+		DnsOverTcpLayer(const DnsOverTcpLayer& other) : BaseLayer(other)
 		{}
 
 		/// @return The value of the TCP message length as described in https://tools.ietf.org/html/rfc7766#section-8

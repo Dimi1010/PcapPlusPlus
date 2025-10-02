@@ -12,8 +12,10 @@ namespace pcpp
 {
 	/// @class WireGuardLayer
 	/// Represents a WireGuard protocol layer
-	class WireGuardLayer : public Layer
+	class WireGuardLayer : public WithSizeOf<WireGuardLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<WireGuardLayer, Layer>;
+
 	protected:
 #pragma pack(push, 1)
 		/// @struct wg_common_header
@@ -57,7 +59,7 @@ namespace pcpp
 		/// @param prevLayer Pointer to the previous layer in the packet (if any)
 		/// @param packet Pointer to the packet this layer belongs to
 		WireGuardLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, WireGuard)
+		    : BaseLayer(data, dataLen, prevLayer, packet, WireGuard)
 		{}
 
 		/// Checks if the given port numbers are WireGuard ports.
@@ -222,8 +224,10 @@ namespace pcpp
 
 	/// @class WireGuardHandshakeResponseLayer
 	/// Represents a Handshake Response message
-	class WireGuardHandshakeResponseLayer : public WireGuardLayer
+	class WireGuardHandshakeResponseLayer : public WithSizeOf<WireGuardHandshakeResponseLayer, WireGuardLayer>
 	{
+		using BaseLayer = WithSizeOf<WireGuardHandshakeResponseLayer, WireGuardLayer>;
+
 	private:
 #pragma pack(push, 1)
 		/// @struct wg_handshake_response
@@ -257,7 +261,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		WireGuardHandshakeResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : WireGuardLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A constructor that creates a new Handshake Response message
@@ -318,8 +322,10 @@ namespace pcpp
 
 	/// @class WireGuardCookieReplyLayer
 	/// Represents a Cookie Reply message
-	class WireGuardCookieReplyLayer : public WireGuardLayer
+	class WireGuardCookieReplyLayer : public WithSizeOf<WireGuardCookieReplyLayer, WireGuardLayer>
 	{
+		using BaseLayer = WithSizeOf<WireGuardCookieReplyLayer, WireGuardLayer>;
+
 	private:
 #pragma pack(push, 1)
 		/// @struct wg_cookie_reply
@@ -347,7 +353,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		WireGuardCookieReplyLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : WireGuardLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A constructor that creates a new Cookie Reply message
@@ -385,8 +391,9 @@ namespace pcpp
 
 	/// @class WireGuardTransportDataLayer
 	/// Represents a Transport Data message
-	class WireGuardTransportDataLayer : public WireGuardLayer
+	class WireGuardTransportDataLayer : public WithSizeOf<WireGuardTransportDataLayer, WireGuardLayer>
 	{
+		using BaseLayer = WithSizeOf<WireGuardTransportDataLayer, WireGuardLayer>;
 	private:
 #pragma pack(push, 1)
 		/// @struct wg_transport_data
@@ -414,7 +421,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		WireGuardTransportDataLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : WireGuardLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A constructor that creates a new Transport Data message

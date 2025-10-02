@@ -175,7 +175,7 @@ namespace pcpp
 
 	SSHKeyExchangeInitMessage::SSHKeyExchangeInitMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
 	                                                     ILayerOwner* packet)
-	    : SSHHandshakeMessage(data, dataLen, prevLayer, packet), m_OffsetsInitialized(false)
+	    : BaseLayer(data, dataLen, prevLayer, packet), m_OffsetsInitialized(false)
 	{
 		memset(m_FieldOffsets, 0, 11 * sizeof(size_t));
 	}

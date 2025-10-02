@@ -63,8 +63,10 @@ namespace pcpp
 	/// @class HttpMessage
 	/// Represents a general HTTP message. It's an abstract class and cannot be instantiated. It's inherited by
 	/// HttpRequestLayer and HttpResponseLayer
-	class HttpMessage : public TextBasedProtocolMessage
+	class HttpMessage : public WithSizeOf<HttpMessage, TextBasedProtocolMessage>
 	{
+		using BaseLayer = WithSizeOf<HttpMessage, TextBasedProtocolMessage>;
+
 	public:
 		~HttpMessage() override = default;
 
@@ -91,15 +93,14 @@ namespace pcpp
 
 	protected:
 		HttpMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType protocol)
-		    : TextBasedProtocolMessage(data, dataLen, prevLayer, packet, protocol)
+		    : BaseLayer(data, dataLen, prevLayer, packet, protocol)
 		{}
-		HttpMessage() : TextBasedProtocolMessage()
-		{}
-		HttpMessage(const HttpMessage& other) : TextBasedProtocolMessage(other)
+		HttpMessage() = default;
+		HttpMessage(const HttpMessage& other) : BaseLayer(other)
 		{}
 		HttpMessage& operator=(const HttpMessage& other)
 		{
-			TextBasedProtocolMessage::operator=(other);
+			BaseLayer::operator=(other);
 			return *this;
 		}
 
@@ -127,8 +128,9 @@ namespace pcpp
 	/// first packet won't be complete (as it continues in the following packets), this why PcapPlusPlus can indicate
 	/// that HTTP request header is complete or not(doesn't end with "\r\n\r\n" or "\n\n") using
 	/// HttpMessage#isHeaderComplete()
-	class HttpRequestLayer : public HttpMessage
+	class HttpRequestLayer : public WithSizeOf<HttpRequestLayer, HttpMessage>
 	{
+		using BaseLayer = WithSizeOf<HttpRequestLayer, HttpMessage>;
 		friend class HttpRequestFirstLine;
 
 	public:
@@ -472,8 +474,9 @@ namespace pcpp
 	/// (the other packets won't be recognized as HttpResponseLayer) and 2) the HTTP header for the first packet won't
 	/// be complete (as it continues in the following packets), this why PcapPlusPlus can indicate that HTTP response
 	/// header is complete or not (doesn't end with "\r\n\r\n" or "\n\n") using HttpMessage#isHeaderComplete()
-	class HttpResponseLayer : public HttpMessage
+	class HttpResponseLayer : public WithSizeOf<HttpResponseLayer, HttpMessage>
 	{
+		using BaseLayer = WithSizeOf<HttpResponseLayer, HttpMessage>;
 		friend class HttpResponseFirstLine;
 
 	public:

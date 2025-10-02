@@ -350,7 +350,7 @@ namespace pcpp
 	// -------- Class SipRequestLayer -----------------
 
 	SipRequestLayer::SipRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : SipLayer(data, dataLen, prevLayer, packet, SIPRequest)
+	    : BaseLayer(data, dataLen, prevLayer, packet, SIPRequest)
 	{
 		m_FirstLine = new SipRequestFirstLine(this);
 		m_FieldsOffset = m_FirstLine->getSize();
@@ -364,14 +364,14 @@ namespace pcpp
 		m_FieldsOffset = m_FirstLine->getSize();
 	}
 
-	SipRequestLayer::SipRequestLayer(const SipRequestLayer& other) : SipLayer(other)
+	SipRequestLayer::SipRequestLayer(const SipRequestLayer& other) : BaseLayer(other)
 	{
 		m_FirstLine = new SipRequestFirstLine(this);
 	}
 
 	SipRequestLayer& SipRequestLayer::operator=(const SipRequestLayer& other)
 	{
-		SipLayer::operator=(other);
+		BaseLayer::operator=(other);
 
 		if (m_FirstLine != nullptr)
 			delete m_FirstLine;
@@ -586,7 +586,7 @@ namespace pcpp
 	};
 
 	SipResponseLayer::SipResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : SipLayer(data, dataLen, prevLayer, packet, SIPResponse)
+	    : BaseLayer(data, dataLen, prevLayer, packet, SIPResponse)
 	{
 		m_FirstLine = new SipResponseFirstLine(this);
 		m_FieldsOffset = m_FirstLine->getSize();
@@ -606,14 +606,14 @@ namespace pcpp
 		delete m_FirstLine;
 	}
 
-	SipResponseLayer::SipResponseLayer(const SipResponseLayer& other) : SipLayer(other)
+	SipResponseLayer::SipResponseLayer(const SipResponseLayer& other) : BaseLayer(other)
 	{
 		m_FirstLine = new SipResponseFirstLine(this);
 	}
 
 	SipResponseLayer& SipResponseLayer::operator=(const SipResponseLayer& other)
 	{
-		SipLayer::operator=(other);
+		BaseLayer::operator=(other);
 
 		if (m_FirstLine != nullptr)
 			delete m_FirstLine;

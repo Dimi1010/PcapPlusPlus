@@ -24,18 +24,18 @@ namespace pcpp
 
 	TextBasedProtocolMessage::TextBasedProtocolMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
 	                                                   ILayerOwner* packet, ProtocolType protocol)
-	    : Layer(data, dataLen, prevLayer, packet, protocol), m_FieldList(nullptr), m_LastField(nullptr),
+	    : BaseLayer(data, dataLen, prevLayer, packet, protocol), m_FieldList(nullptr), m_LastField(nullptr),
 	      m_FieldsOffset(0)
 	{}
 
-	TextBasedProtocolMessage::TextBasedProtocolMessage(const TextBasedProtocolMessage& other) : Layer(other)
+	TextBasedProtocolMessage::TextBasedProtocolMessage(const TextBasedProtocolMessage& other) : BaseLayer(other)
 	{
 		copyDataFrom(other);
 	}
 
 	TextBasedProtocolMessage& TextBasedProtocolMessage::operator=(const TextBasedProtocolMessage& other)
 	{
-		Layer::operator=(other);
+		BaseLayer::operator=(other);
 		HeaderField* curField = m_FieldList;
 		while (curField != nullptr)
 		{
