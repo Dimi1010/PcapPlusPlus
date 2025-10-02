@@ -18,8 +18,10 @@ namespace pcpp
 	/// @class BgpLayer
 	/// Represents Border Gateway Protocol (BGP) v4 protocol layer. This is an abstract class that cannot be
 	/// instantiated, and contains functionality which is common to all BGP message types.
-	class BgpLayer : public Layer
+	class BgpLayer : public WithSizeOf<BgpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<BgpLayer, Layer>;
+
 	public:
 		/// An enum representing BGP message types
 		enum BgpMessageType
@@ -104,7 +106,7 @@ namespace pcpp
 		BgpLayer()
 		{}
 		BgpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, BGP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, BGP)
 		{}
 
 		bgp_common_header* getBasicHeader() const

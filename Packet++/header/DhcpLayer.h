@@ -567,8 +567,9 @@ namespace pcpp
 
 	/// @class DhcpLayer
 	/// Represents a DHCP (Dynamic Host Configuration Protocol) protocol layer
-	class DhcpLayer : public Layer
+	class DhcpLayer : public WithSizeOf<DhcpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<DhcpLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

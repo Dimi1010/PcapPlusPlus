@@ -84,8 +84,10 @@ namespace pcpp
 
 	/// @class DnsLayer
 	/// Represents the DNS protocol layer
-	class DnsLayer : public Layer
+	class DnsLayer : public WithSizeOf<DnsLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<DnsLayer, Layer>;
+
 		friend class IDnsResource;
 		friend class DnsQuery;
 		friend class DnsResource;

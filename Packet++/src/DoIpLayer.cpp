@@ -197,7 +197,7 @@ namespace pcpp
 	}
 
 	DoIpLayer::DoIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : Layer(data, dataLen, prevLayer, packet, DOIP)
+	    : BaseLayer(data, dataLen, prevLayer, packet, DOIP)
 	{}
 
 	bool DoIpLayer::isDataValid(uint8_t* data, size_t dataLen)
@@ -404,10 +404,10 @@ namespace pcpp
 	// DoIpGenericHeaderNack|
 	//~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpGenericHeaderNack::DoIpGenericHeaderNack(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : DoIpLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
-	DoIpGenericHeaderNack::DoIpGenericHeaderNack(DoIpGenericHeaderNackCodes nackCode) : DoIpLayer(FIXED_LEN)
+	DoIpGenericHeaderNack::DoIpGenericHeaderNack(DoIpGenericHeaderNackCodes nackCode) : BaseLayer(FIXED_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), (FIXED_LEN - DOIP_HEADER_LEN));
 		setNackCode(nackCode);
@@ -441,7 +441,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	// DoIpVehicleIdentificationRequest|
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-	DoIpVehicleIdentificationRequest::DoIpVehicleIdentificationRequest() : DoIpLayer(DOIP_HEADER_LEN)
+	DoIpVehicleIdentificationRequest::DoIpVehicleIdentificationRequest() : BaseLayer(DOIP_HEADER_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), 0);
 	}
@@ -452,12 +452,12 @@ namespace pcpp
 	DoIpVehicleIdentificationRequestWithEID::DoIpVehicleIdentificationRequestWithEID(uint8_t* data, size_t dataLen,
 	                                                                                 Layer* prevLayer,
 	                                                                                 ILayerOwner* packet)
-	    : DoIpLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpVehicleIdentificationRequestWithEID::DoIpVehicleIdentificationRequestWithEID(
 	    const std::array<uint8_t, DOIP_EID_LEN>& eid)
-	    : DoIpLayer(FIXED_LEN)
+	    : BaseLayer(FIXED_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), DOIP_EID_LEN);
 		setEID(eid);
@@ -486,12 +486,12 @@ namespace pcpp
 	DoIpVehicleIdentificationRequestWithVIN::DoIpVehicleIdentificationRequestWithVIN(uint8_t* data, size_t dataLen,
 	                                                                                 Layer* prevLayer,
 	                                                                                 ILayerOwner* packet)
-	    : DoIpLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpVehicleIdentificationRequestWithVIN::DoIpVehicleIdentificationRequestWithVIN(
 	    const std::array<uint8_t, DOIP_VIN_LEN>& vin)
-	    : DoIpLayer(FIXED_LEN)
+	    : BaseLayer(FIXED_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), DOIP_VIN_LEN);
 		setVIN(vin);
@@ -519,7 +519,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpVehicleAnnouncementMessage::DoIpVehicleAnnouncementMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
 	                                                               ILayerOwner* packet)
-	    : DoIpLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpVehicleAnnouncementMessage::DoIpVehicleAnnouncementMessage(const std::array<uint8_t, DOIP_VIN_LEN>& vin,
@@ -527,7 +527,7 @@ namespace pcpp
 	                                                               const std::array<uint8_t, DOIP_EID_LEN>& eid,
 	                                                               const std::array<uint8_t, DOIP_GID_LEN>& gid,
 	                                                               DoIpActionCodes actionCode)
-	    : DoIpLayer(FIXED_LEN)
+	    : BaseLayer(FIXED_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), (FIXED_LEN - DOIP_HEADER_LEN));
 
@@ -659,12 +659,12 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpRoutingActivationRequest::DoIpRoutingActivationRequest(uint8_t* data, size_t dataLen, Layer* prevLayer,
 	                                                           ILayerOwner* packet)
-	    : DoIpLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpRoutingActivationRequest::DoIpRoutingActivationRequest(uint16_t sourceAddress,
 	                                                           DoIpActivationTypes activationType)
-	    : DoIpLayer(FIXED_LEN)
+	    : BaseLayer(FIXED_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), (FIXED_LEN - DOIP_HEADER_LEN));
 
@@ -774,13 +774,13 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpRoutingActivationResponse::DoIpRoutingActivationResponse(uint8_t* data, size_t dataLen, Layer* prevLayer,
 	                                                             ILayerOwner* packet)
-	    : DoIpLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpRoutingActivationResponse::DoIpRoutingActivationResponse(uint16_t logicalAddressExternalTester,
 	                                                             uint16_t sourceAddress,
 	                                                             DoIpRoutingResponseCodes responseCode)
-	    : DoIpLayer(FIXED_LEN)
+	    : BaseLayer(FIXED_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), (FIXED_LEN - DOIP_HEADER_LEN));
 
@@ -895,7 +895,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~|
 	// DoIpAliveCheckRequest|
 	//~~~~~~~~~~~~~~~~~~~~~~|
-	DoIpAliveCheckRequest::DoIpAliveCheckRequest() : DoIpLayer(DOIP_HEADER_LEN)
+	DoIpAliveCheckRequest::DoIpAliveCheckRequest() : BaseLayer(DOIP_HEADER_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), 0);
 	}
@@ -904,10 +904,10 @@ namespace pcpp
 	// DoIpAliveCheckResponse|
 	//~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpAliveCheckResponse::DoIpAliveCheckResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : DoIpLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
-	DoIpAliveCheckResponse::DoIpAliveCheckResponse(uint16_t sourceAddress) : DoIpLayer(FIXED_LEN)
+	DoIpAliveCheckResponse::DoIpAliveCheckResponse(uint16_t sourceAddress) : BaseLayer(FIXED_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), DOIP_SOURCE_ADDRESS_LEN);
 		setSourceAddress(sourceAddress);
@@ -933,7 +933,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~|
 	// DoIpEntityStatusRequest|
 	//~~~~~~~~~~~~~~~~~~~~~~~~|
-	DoIpEntityStatusRequest::DoIpEntityStatusRequest() : DoIpLayer(DOIP_HEADER_LEN)
+	DoIpEntityStatusRequest::DoIpEntityStatusRequest() : BaseLayer(DOIP_HEADER_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), 0);
 	}
@@ -943,12 +943,12 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpEntityStatusResponse::DoIpEntityStatusResponse(uint8_t* data, size_t dataLen, Layer* prevLayer,
 	                                                   ILayerOwner* packet)
-	    : DoIpLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpEntityStatusResponse::DoIpEntityStatusResponse(DoIpEntityStatusResponseCode nodeType,
 	                                                   uint8_t maxConcurrentSockets, uint8_t currentlyOpenSockets)
-	    : DoIpLayer(FIXED_LEN)
+	    : BaseLayer(FIXED_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), (FIXED_LEN - DOIP_HEADER_LEN));
 
@@ -1049,7 +1049,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	// DoIpDiagnosticPowerModeRequest|
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-	DoIpDiagnosticPowerModeRequest::DoIpDiagnosticPowerModeRequest() : DoIpLayer(DOIP_HEADER_LEN)
+	DoIpDiagnosticPowerModeRequest::DoIpDiagnosticPowerModeRequest() : BaseLayer(DOIP_HEADER_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), 0);
 	}
@@ -1059,11 +1059,11 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpDiagnosticPowerModeResponse::DoIpDiagnosticPowerModeResponse(uint8_t* data, size_t dataLen, Layer* prevLayer,
 	                                                                 ILayerOwner* packet)
-	    : DoIpLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpDiagnosticPowerModeResponse::DoIpDiagnosticPowerModeResponse(DoIpDiagnosticPowerModeCodes code)
-	    : DoIpLayer(FIXED_LEN)
+	    : BaseLayer(FIXED_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), (FIXED_LEN - DOIP_HEADER_LEN));
 		setPowerModeCode(code);
@@ -1098,7 +1098,7 @@ namespace pcpp
 	// DoIpDiagnosticBase|
 	//~~~~~~~~~~~~~~~~~~~|
 	DoIpDiagnosticBase::DoIpDiagnosticBase(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : DoIpLayer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	uint16_t DoIpDiagnosticBase::getSourceAddress() const
@@ -1125,12 +1125,12 @@ namespace pcpp
 	// DoIpDiagnosticMessage|
 	//~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpDiagnosticMessage::DoIpDiagnosticMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : DoIpDiagnosticBase(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpDiagnosticMessage::DoIpDiagnosticMessage(uint16_t sourceAddress, uint16_t targetAddress,
 	                                             const std::vector<uint8_t>& diagnosticData)
-	    : DoIpDiagnosticBase(MIN_LEN + diagnosticData.size())
+	    : BaseLayer(MIN_LEN + diagnosticData.size())
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, getPayloadType(), MIN_LEN + diagnosticData.size());
 		setSourceAddress(sourceAddress);
@@ -1177,12 +1177,12 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpDiagnosticResponseMessageBase::DoIpDiagnosticResponseMessageBase(uint8_t* data, size_t dataLen,
 	                                                                     Layer* prevLayer, ILayerOwner* packet)
-	    : DoIpDiagnosticBase(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpDiagnosticResponseMessageBase::DoIpDiagnosticResponseMessageBase(uint16_t sourceAddress, uint16_t targetAddress,
 	                                                                     DoIpPayloadTypes type)
-	    : DoIpDiagnosticBase(FIXED_LEN)
+	    : BaseLayer(FIXED_LEN)
 	{
 		setHeaderFields(DoIpProtocolVersion::ISO13400_2012, type, (FIXED_LEN - DOIP_HEADER_LEN));
 		setSourceAddress(sourceAddress);
@@ -1248,12 +1248,12 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpDiagnosticMessageAck::DoIpDiagnosticMessageAck(uint8_t* data, size_t dataLen, Layer* prevLayer,
 	                                                   ILayerOwner* packet)
-	    : DoIpDiagnosticResponseMessageBase(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpDiagnosticMessageAck::DoIpDiagnosticMessageAck(uint16_t sourceAddress, uint16_t targetAddress,
 	                                                   DoIpDiagnosticAckCodes ackCode)
-	    : DoIpDiagnosticResponseMessageBase(sourceAddress, targetAddress, getPayloadType())
+	    : BaseLayer(sourceAddress, targetAddress, getPayloadType())
 	{
 		setAckCode(ackCode);
 	}
@@ -1291,12 +1291,12 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpDiagnosticMessageNack::DoIpDiagnosticMessageNack(uint8_t* data, size_t dataLen, Layer* prevLayer,
 	                                                     ILayerOwner* packet)
-	    : DoIpDiagnosticResponseMessageBase(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
 	DoIpDiagnosticMessageNack::DoIpDiagnosticMessageNack(uint16_t sourceAddress, uint16_t targetAddress,
 	                                                     DoIpDiagnosticMessageNackCodes nackCode)
-	    : DoIpDiagnosticResponseMessageBase(sourceAddress, targetAddress, getPayloadType())
+	    : BaseLayer(sourceAddress, targetAddress, getPayloadType())
 	{
 		setNackCode(nackCode);
 	}

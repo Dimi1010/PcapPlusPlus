@@ -13,7 +13,7 @@ namespace pcpp
 	// ~~~~~~~~
 
 	DnsLayer::DnsLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : Layer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{
 		init(0, true);
 	}
@@ -23,13 +23,13 @@ namespace pcpp
 		initNewLayer(0);
 	}
 
-	DnsLayer::DnsLayer(const DnsLayer& other) : Layer(other)
+	DnsLayer::DnsLayer(const DnsLayer& other) : BaseLayer(other)
 	{
 		init(other.m_OffsetAdjustment, true);
 	}
 
 	DnsLayer::DnsLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, size_t offsetAdjustment)
-	    : Layer(data, dataLen, prevLayer, packet)
+	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{
 		init(offsetAdjustment, true);
 	}

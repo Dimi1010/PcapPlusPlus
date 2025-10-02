@@ -26,8 +26,9 @@ namespace pcpp
 
 	/// @class CotpLayer
 	/// Represents a COTP (Connection Oriented Transport Protocol)
-	class CotpLayer : public Layer
+	class CotpLayer : public WithSizeOf<CotpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<CotpLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref cotphdr)
@@ -35,7 +36,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		CotpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, COTP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, COTP)
 		{}
 
 		/// A constructor that allocates a new COTP header

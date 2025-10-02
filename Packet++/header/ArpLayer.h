@@ -140,8 +140,9 @@ namespace pcpp
 
 	/// @class ArpLayer
 	/// Represents an ARP protocol layer. Currently only IPv4 ARP messages are supported
-	class ArpLayer : public Layer
+	class ArpLayer : public WithSizeOf<ArpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<ArpLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref arphdr)
@@ -149,7 +150,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		ArpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, ARP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, ARP)
 		{
 			m_DataLen = sizeof(arphdr);
 		}
