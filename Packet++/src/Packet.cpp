@@ -1126,11 +1126,14 @@ namespace pcpp
 				if (curLayer->m_IsAllocatedInPacket)
 				{
 					// This calls the layer destructor, but does not free the memory.
+					const size_t objSize = curLayer->getSizeOf();
+					PCPP_LOG_DEBUG("Destroying layer of type " << typeid(*curLayer).name() << " of size " << objSize);
+
 					allocTraits.destroy(allocator, curLayer);
 
-					// Figure out how to get the derived layer type fast? Is this even needed?
-					// Arena is a noop for deallocation, so just run the destructor for now.
-					// allocTraits.deallocate(allocator, curLayer, 1);
+					// Uses the arena directly to deallocate the memory, because we pass the size directly.
+					// The allocator would have used sizeof(Layer), which is not correct for derived classes.
+					m_Arena.deallocate(curLayer, objSize);
 				}
 				else
 				{
