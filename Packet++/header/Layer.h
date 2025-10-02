@@ -28,6 +28,32 @@ namespace pcpp
 		virtual ~IDataContainer() = default;
 	};
 
+	/// @brief An interface (virtual abstract class) for classes that can provide their size in bytes at runtime
+	/// This is to be used in polymorphic classes where sizeof() operator can't be used, for example when using
+	/// a custom allocator.
+	class IDynamicSizeOf
+	{
+	public:
+		virtual ~IDynamicSizeOf() = default;
+
+		/// @brief Get the size of the object in bytes at runtime
+		/// @return The size of the object in bytes
+		virtual size_t getSizeOf() const = 0;
+	};
+
+	template <typename Derived, typename Base = IDynamicSizeOf> class WithSizeOf : public Base
+	{
+	public:
+		using Base::Base;
+
+		~WithSizeOf() override = default;
+
+		size_t getSizeOf() const override
+		{
+			return sizeof(Derived);
+		}
+	};
+
 	class Layer;
 
 	/// @brief An interface (virtual abstract class) for classes that can own layers.
@@ -108,7 +134,7 @@ namespace pcpp
 	///                                   |----------------|
 	///                                   PayloadLayer data
 	/// @endcode
-	class Layer : public IDataContainer
+	class Layer : public IDataContainer, public WithSizeOf<Layer>
 	{
 		friend class Packet;
 		friend class experimental::ArenaPacket;

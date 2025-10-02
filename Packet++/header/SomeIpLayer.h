@@ -11,8 +11,9 @@ namespace pcpp
 {
 	/// @class SomeIpLayer
 	/// Represents a SOME/IP protocol layer
-	class SomeIpLayer : public Layer
+	class SomeIpLayer : public WithSizeOf<SomeIpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<SomeIpLayer, Layer>;
 	public:
 		/// SOME/IP message types
 		enum class MsgType : uint8_t
@@ -82,7 +83,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		SomeIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, SomeIP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, SomeIP)
 		{}
 
 		/// Construct a new layer object
@@ -286,8 +287,9 @@ namespace pcpp
 
 	/// @class SomeIpTpLayer
 	/// Represents an SOME/IP Transport Protocol Layer
-	class SomeIpTpLayer : public SomeIpLayer
+	class SomeIpTpLayer : public WithSizeOf<SomeIpTpLayer, SomeIpLayer>
 	{
+		using BaseLayer = WithSizeOf<SomeIpTpLayer, SomeIpLayer>;
 	public:
 		/// @struct someiptphdr
 		/// Represents an SOME/IP-TP protocol header.
@@ -307,7 +309,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		SomeIpTpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : SomeIpLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A constructor that creates empty layer and sets values

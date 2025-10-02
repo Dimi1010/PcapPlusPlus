@@ -42,8 +42,10 @@ namespace pcpp
 	/// @class PPPoELayer
 	/// An abstract class that describes the PPPoE protocol. Contains common data and logic of the two types of PPPoE
 	/// packets: PPPoE session and PPPoE discovery
-	class PPPoELayer : public Layer
+	class PPPoELayer : public WithSizeOf<PPPoELayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<PPPoELayer, Layer>;
+
 	public:
 		/// PPPoE possible codes
 		enum PPPoECode
@@ -95,7 +97,7 @@ namespace pcpp
 	protected:
 		// protected c'tor as this class shouldn't be instantiated
 		PPPoELayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType protocol)
-		    : Layer(data, dataLen, prevLayer, packet, protocol)
+		    : BaseLayer(data, dataLen, prevLayer, packet, protocol)
 		{}
 
 		// protected c'tor as this class shouldn't be instantiated
@@ -105,8 +107,10 @@ namespace pcpp
 
 	/// @class PPPoESessionLayer
 	/// Describes the PPPoE session protocol
-	class PPPoESessionLayer : public PPPoELayer
+	class PPPoESessionLayer : public WithSizeOf<PPPoESessionLayer, PPPoELayer>
 	{
+		using BaseLayer = WithSizeOf<PPPoESessionLayer, PPPoELayer>;
+
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref pppoe_header)
@@ -114,7 +118,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		PPPoESessionLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : PPPoELayer(data, dataLen, prevLayer, packet, PPPoESession)
+		    : BaseLayer(data, dataLen, prevLayer, packet, PPPoESession)
 		{}
 
 		/// A constructor that allocates a new PPPoE Session header with version, type and session ID
@@ -124,7 +128,7 @@ namespace pcpp
 		/// @param[in] pppNextProtocol The next protocol to come after the PPPoE session header. Should be one of the
 		/// PPP_* macros listed below
 		PPPoESessionLayer(uint8_t version, uint8_t type, uint16_t sessionId, uint16_t pppNextProtocol)
-		    : PPPoELayer(version, type, PPPoELayer::PPPOE_CODE_SESSION, sessionId, sizeof(uint16_t))
+		    : BaseLayer(version, type, PPPoELayer::PPPOE_CODE_SESSION, sessionId, sizeof(uint16_t))
 		{
 			setPPPNextProtocol(pppNextProtocol);
 		}
@@ -162,8 +166,9 @@ namespace pcpp
 
 	/// @class PPPoEDiscoveryLayer
 	/// Describes the PPPoE discovery protocol
-	class PPPoEDiscoveryLayer : public PPPoELayer
+	class PPPoEDiscoveryLayer : public WithSizeOf<PPPoEDiscoveryLayer, PPPoELayer>
 	{
+		using BaseLayer = WithSizeOf<PPPoEDiscoveryLayer, PPPoELayer>;
 	public:
 		/// PPPoE tag types
 		enum PPPoETagTypes
@@ -281,7 +286,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		PPPoEDiscoveryLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : PPPoELayer(data, dataLen, prevLayer, packet, PPPoEDiscovery)
+		    : BaseLayer(data, dataLen, prevLayer, packet, PPPoEDiscovery)
 		{
 			m_DataLen = getHeaderLen();
 		}
@@ -292,7 +297,7 @@ namespace pcpp
 		/// @param[in] code PPPoE code enum
 		/// @param[in] sessionId PPPoE session ID
 		PPPoEDiscoveryLayer(uint8_t version, uint8_t type, PPPoELayer::PPPoECode code, uint16_t sessionId)
-		    : PPPoELayer(version, type, code, sessionId)
+		    : BaseLayer(version, type, code, sessionId)
 		{
 			m_Protocol = PPPoEDiscovery;
 		}

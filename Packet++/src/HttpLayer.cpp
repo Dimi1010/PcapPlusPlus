@@ -60,7 +60,7 @@ namespace pcpp
 	// -------- Class HttpRequestLayer -----------------
 
 	HttpRequestLayer::HttpRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : HttpMessage(data, dataLen, prevLayer, packet, HTTPRequest)
+	    : BaseLayer(data, dataLen, prevLayer, packet, HTTPRequest)
 	{
 		m_FirstLine = new HttpRequestFirstLine(this);
 		m_FieldsOffset = m_FirstLine->getSize();
@@ -74,14 +74,14 @@ namespace pcpp
 		m_FieldsOffset = m_FirstLine->getSize();
 	}
 
-	HttpRequestLayer::HttpRequestLayer(const HttpRequestLayer& other) : HttpMessage(other)
+	HttpRequestLayer::HttpRequestLayer(const HttpRequestLayer& other) : BaseLayer(other)
 	{
 		m_FirstLine = new HttpRequestFirstLine(this);
 	}
 
 	HttpRequestLayer& HttpRequestLayer::operator=(const HttpRequestLayer& other)
 	{
-		HttpMessage::operator=(other);
+		BaseLayer::operator=(other);
 
 		if (m_FirstLine != nullptr)
 			delete m_FirstLine;
@@ -663,7 +663,7 @@ namespace pcpp
 	}
 
 	HttpResponseLayer::HttpResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : HttpMessage(data, dataLen, prevLayer, packet, HTTPResponse)
+	    : BaseLayer(data, dataLen, prevLayer, packet, HTTPResponse)
 	{
 		m_FirstLine = new HttpResponseFirstLine(this);
 		m_FieldsOffset = m_FirstLine->getSize();
@@ -690,14 +690,14 @@ namespace pcpp
 		delete m_FirstLine;
 	}
 
-	HttpResponseLayer::HttpResponseLayer(const HttpResponseLayer& other) : HttpMessage(other)
+	HttpResponseLayer::HttpResponseLayer(const HttpResponseLayer& other) : BaseLayer(other)
 	{
 		m_FirstLine = new HttpResponseFirstLine(this);
 	}
 
 	HttpResponseLayer& HttpResponseLayer::operator=(const HttpResponseLayer& other)
 	{
-		HttpMessage::operator=(other);
+		BaseLayer::operator=(other);
 
 		if (m_FirstLine != nullptr)
 			delete m_FirstLine;

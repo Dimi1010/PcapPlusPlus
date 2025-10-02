@@ -70,8 +70,10 @@ namespace pcpp
 	/// It holds some common functionality, but its most important method is createSSHMessage()
 	/// which takes raw data and creates an SSH message according to the heuristics described
 	/// in the SSHLayer.h file description
-	class SSHLayer : public Layer
+	class SSHLayer : public WithSizeOf<SSHLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<SSHLayer, Layer>;
+
 	public:
 		/// A static method that takes raw packet data and uses the heuristics described in the
 		/// SSHLayer.h file description to create an SSH layer instance. This method assumes the data is
@@ -112,7 +114,7 @@ namespace pcpp
 	protected:
 		// protected c'tor, this class cannot be instantiated
 		SSHLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, SSH)
+		    : BaseLayer(data, dataLen, prevLayer, packet, SSH)
 		{}
 
 	private:
@@ -126,8 +128,10 @@ namespace pcpp
 	///
 	/// The message content is typically a string that contains the protocol version, software version and a few more
 	/// details. This string can be retrieved using the getIdentificationMessage() method
-	class SSHIdentificationMessage : public SSHLayer
+	class SSHIdentificationMessage : public WithSizeOf<SSHIdentificationMessage, SSHLayer>
 	{
+		using BaseLayer = WithSizeOf<SSHIdentificationMessage, SSHLayer>;
+
 	public:
 		/// @return The SSH identification message which is typically the content of this message
 		std::string getIdentificationMessage();
@@ -158,7 +162,7 @@ namespace pcpp
 
 		// private c'tor, this class cannot be instantiated
 		SSHIdentificationMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : SSHLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 	};
 
@@ -182,8 +186,10 @@ namespace pcpp
 	/// This class provides access to all of these values. The message content itself is not parse with the exception of
 	/// SSHKeyExchangeInitMessage
 	/// which inherits from this class and provides parsing of the Key Exchange Init message.
-	class SSHHandshakeMessage : public SSHLayer
+	class SSHHandshakeMessage : public WithSizeOf<SSHHandshakeMessage, SSHLayer>
 	{
+		using BaseLayer = WithSizeOf<SSHHandshakeMessage, SSHLayer>;
+
 	public:
 		/// An enum that represents SSH non-encrypted message types
 		enum SSHHandshakeMessageType
@@ -258,7 +264,7 @@ namespace pcpp
 
 		// private c'tor, this class cannot be instantiated
 		SSHHandshakeMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : SSHLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		ssh_message_base* getMsgBaseHeader() const
@@ -271,8 +277,10 @@ namespace pcpp
 	/// A class representing the SSH Key Exchange Init message. This is a non-encrypted message that contains
 	/// information about the algorithms used for key exchange, encryption, MAC and compression. This class provides
 	/// methods to access these details
-	class SSHKeyExchangeInitMessage : public SSHHandshakeMessage
+	class SSHKeyExchangeInitMessage : public WithSizeOf<SSHKeyExchangeInitMessage, SSHHandshakeMessage>
 	{
+		using BaseLayer = WithSizeOf<SSHKeyExchangeInitMessage, SSHHandshakeMessage>;
+
 	public:
 		/// A c'tor for this class that accepts raw message data. Please avoid using it as it's used internally
 		/// when parsing SSH handshake messages in SSHHandshakeMessage#tryParse()
@@ -386,13 +394,14 @@ namespace pcpp
 	///
 	/// It is assumed that any SSH message which does not fit to any of the other SSH message types, according to the
 	/// heuristics described in the SSHLayer.h file description, is considered as an encrypted message.
-	class SSHEncryptedMessage : public SSHLayer
+	class SSHEncryptedMessage : public WithSizeOf<SSHEncryptedMessage, SSHLayer>
 	{
+		using BaseLayer = WithSizeOf<SSHEncryptedMessage, SSHLayer>;
 	public:
 		/// A c'tor for this class that accepts raw message data. Please avoid using it as it's used internally
 		/// when parsing SSH messages in SSHLayer#createSSHMessage()
 		SSHEncryptedMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : SSHLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		// implement abstract methods

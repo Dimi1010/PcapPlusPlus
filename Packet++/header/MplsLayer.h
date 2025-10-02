@@ -10,8 +10,9 @@ namespace pcpp
 {
 	/// @class MplsLayer
 	/// Represents a MPLS (Multi-Protocol Label Switching) layer
-	class MplsLayer : public Layer
+	class MplsLayer : public WithSizeOf<MplsLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<MplsLayer, Layer>;
 	private:
 #pragma pack(push, 1)
 		struct mpls_header
@@ -35,7 +36,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		MplsLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, MPLS)
+		    : BaseLayer(data, dataLen, prevLayer, packet, MPLS)
 		{}
 
 		/// A constructor that allocates a new MPLS header

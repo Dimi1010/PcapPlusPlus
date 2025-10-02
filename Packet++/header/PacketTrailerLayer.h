@@ -28,8 +28,9 @@ namespace pcpp
 	/// This layer can be removed by the user or extended/shortened, as any layer.
 	///
 	/// It also contains method to extract the trailer data
-	class PacketTrailerLayer : public Layer
+	class PacketTrailerLayer : public WithSizeOf<PacketTrailerLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<PacketTrailerLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -37,7 +38,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		PacketTrailerLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, PacketTrailer)
+		    : BaseLayer(data, dataLen, prevLayer, packet, PacketTrailer)
 		{}
 
 		~PacketTrailerLayer() override = default;

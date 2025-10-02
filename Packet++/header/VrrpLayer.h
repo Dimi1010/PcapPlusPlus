@@ -104,8 +104,9 @@ namespace pcpp
 	/// A base class for all VRRP (Virtual Router Redundancy Protocol) protocol classes. This is an abstract class and
 	/// cannot be instantiated, only its child classes can be instantiated. The inherited classes represent the
 	/// different versions of the protocol: VRRPv2 and VRRPv3
-	class VrrpLayer : public Layer
+	class VrrpLayer : public WithSizeOf<VrrpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<VrrpLayer, Layer>;
 	private:
 		bool addIPAddressesAt(const std::vector<IPAddress>& ipAddresses, int offset);
 
@@ -126,7 +127,7 @@ namespace pcpp
 	protected:
 		VrrpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType vrrpVer,
 		          IPAddress::AddressType addressType)
-		    : Layer(data, dataLen, prevLayer, packet, vrrpVer), m_AddressType(addressType)
+		    : BaseLayer(data, dataLen, prevLayer, packet, vrrpVer), m_AddressType(addressType)
 		{}
 
 		explicit VrrpLayer(ProtocolType subProtocol, uint8_t virtualRouterId, uint8_t priority);
@@ -268,8 +269,9 @@ namespace pcpp
 	/// @class VrrpV2Layer
 	/// Represents VRRPv2 (Virtual Router Redundancy Protocol ver 2) layer. This class represents all the different
 	/// messages of VRRPv2
-	class VrrpV2Layer : public VrrpLayer
+	class VrrpV2Layer : public WithSizeOf<VrrpV2Layer, VrrpLayer>
 	{
+		using BaseLayer = WithSizeOf<VrrpV2Layer, VrrpLayer>;
 	private:
 		struct vrrpv2_auth_adv
 		{
@@ -299,7 +301,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		VrrpV2Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : VrrpLayer(data, dataLen, prevLayer, packet, VRRPv2, IPAddress::IPv4AddressType)
+		    : BaseLayer(data, dataLen, prevLayer, packet, VRRPv2, IPAddress::IPv4AddressType)
 		{}
 
 		/// A constructor that allocates a new VRRP v2 layer
@@ -348,8 +350,9 @@ namespace pcpp
 	/// @class VrrpV3Layer
 	/// Represents VRRPv3 (Virtual Router Redundancy Protocol ver 3) layer. This class represents all the different
 	/// messages of VRRP
-	class VrrpV3Layer : public VrrpLayer
+	class VrrpV3Layer : public WithSizeOf<VrrpV3Layer, VrrpLayer>
 	{
+		using BaseLayer = WithSizeOf<VrrpV3Layer, VrrpLayer>;
 	private:
 		struct vrrpv3_rsvd_adv
 		{
@@ -365,7 +368,7 @@ namespace pcpp
 		/// @param[in] addressType The IP address type to set for this layer
 		VrrpV3Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet,
 		            IPAddress::AddressType addressType)
-		    : VrrpLayer(data, dataLen, prevLayer, packet, VRRPv3, addressType)
+		    : BaseLayer(data, dataLen, prevLayer, packet, VRRPv3, addressType)
 		{}
 
 		/// A constructor that allocates a new VRRPv3

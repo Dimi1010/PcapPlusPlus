@@ -42,7 +42,7 @@ namespace pcpp
 	}
 
 	DhcpLayer::DhcpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : Layer(data, dataLen, prevLayer, packet, DHCP)
+	    : BaseLayer(data, dataLen, prevLayer, packet, DHCP)
 	{}
 
 	void DhcpLayer::initDhcpLayer(size_t numOfBytesToAllocate)
@@ -53,12 +53,12 @@ namespace pcpp
 		m_Protocol = DHCP;
 	}
 
-	DhcpLayer::DhcpLayer() : Layer()
+	DhcpLayer::DhcpLayer()
 	{
 		initDhcpLayer(sizeof(dhcp_header));
 	}
 
-	DhcpLayer::DhcpLayer(DhcpMessageType msgType, const MacAddress& clientMacAddr) : Layer()
+	DhcpLayer::DhcpLayer(DhcpMessageType msgType, const MacAddress& clientMacAddr)
 	{
 		initDhcpLayer(sizeof(dhcp_header) + 4 * sizeof(uint8_t));
 

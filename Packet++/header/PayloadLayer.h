@@ -10,8 +10,9 @@ namespace pcpp
 {
 	/// @class PayloadLayer
 	/// Represents a generic or unknown layer or a packet payload
-	class PayloadLayer : public Layer
+	class PayloadLayer : public WithSizeOf<PayloadLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<PayloadLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -19,7 +20,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		PayloadLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, GenericPayload)
+		    : BaseLayer(data, dataLen, prevLayer, packet, GenericPayload)
 		{}
 
 		/// A constructor that allocates a new payload

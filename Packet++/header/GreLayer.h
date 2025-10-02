@@ -93,8 +93,9 @@ namespace pcpp
 	/// @class GreLayer
 	/// Abstract base class for GRE layers (GREv0Layer and GREv1Layer). Cannot be instantiated and contains common logic
 	/// for derived classes
-	class GreLayer : public Layer
+	class GreLayer : public WithSizeOf<GreLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<GreLayer, Layer>;
 	public:
 		~GreLayer() override = default;
 
@@ -140,7 +141,7 @@ namespace pcpp
 
 	protected:
 		GreLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType protocol)
-		    : Layer(data, dataLen, prevLayer, packet, protocol)
+		    : BaseLayer(data, dataLen, prevLayer, packet, protocol)
 		{}
 
 		GreLayer()
@@ -163,8 +164,9 @@ namespace pcpp
 	/// Represents a GRE version 0 protocol. Limitation: currently this layer doesn't support GRE routing information
 	/// parsing and editing. So if a GREv0 packet includes routing information it won't be parse correctly. I didn't add
 	/// it because of lack of time, but if you need it please tell me and I'll add it
-	class GREv0Layer : public GreLayer
+	class GREv0Layer : public WithSizeOf<GREv0Layer, GreLayer>
 	{
+		using BaseLayer = WithSizeOf<GREv0Layer, GreLayer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -172,7 +174,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		GREv0Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : GreLayer(data, dataLen, prevLayer, packet, GREv0)
+		    : BaseLayer(data, dataLen, prevLayer, packet, GREv0)
 		{}
 
 		/// A constructor that creates a new GREv0 header and allocates the data
@@ -261,8 +263,9 @@ namespace pcpp
 
 	/// @class GREv1Layer
 	/// Represents a GRE version 1 protocol
-	class GREv1Layer : public GreLayer
+	class GREv1Layer : public WithSizeOf<GREv1Layer, GreLayer>
 	{
+		using BaseLayer = WithSizeOf<GREv1Layer, GreLayer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -270,7 +273,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		GREv1Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : GreLayer(data, dataLen, prevLayer, packet, GREv1)
+		    : BaseLayer(data, dataLen, prevLayer, packet, GREv1)
 		{}
 
 		/// A constructor that creates a new GREv1 header and allocates the data
@@ -332,8 +335,9 @@ namespace pcpp
 	/// @class PPP_PPTPLayer
 	/// Represent a PPP (point-to-point) protocol header that comes after GREv1 header, as part of PPTP - Point-to-Point
 	/// Tunneling Protocol
-	class PPP_PPTPLayer : public Layer
+	class PPP_PPTPLayer : public WithSizeOf<PPP_PPTPLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<PPP_PPTPLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref ppp_pptp_header)
@@ -341,7 +345,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		PPP_PPTPLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, PPP_PPTP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, PPP_PPTP)
 		{}
 
 		/// A constructor that allocates a new PPP-PPTP header

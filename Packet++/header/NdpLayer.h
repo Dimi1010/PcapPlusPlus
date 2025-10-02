@@ -96,8 +96,10 @@ namespace pcpp
 
 	/// @class NDPLayerBase
 	/// Represents a base for NDP packet types
-	class NDPLayerBase : public IcmpV6Layer
+	class NDPLayerBase : public WithSizeOf<NDPLayerBase, IcmpV6Layer>
 	{
+		using BaseLayer = WithSizeOf<NDPLayerBase, IcmpV6Layer>;
+
 	public:
 		~NDPLayerBase() override = default;
 
@@ -137,7 +139,7 @@ namespace pcpp
 		NDPLayerBase() = default;
 
 		NDPLayerBase(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : IcmpV6Layer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 	private:
@@ -153,8 +155,10 @@ namespace pcpp
 
 	/// @class NDPNeighborSolicitationLayer
 	/// Represents a NDP Neighbor Solicitation protocol layer
-	class NDPNeighborSolicitationLayer : public NDPLayerBase
+	class NDPNeighborSolicitationLayer : public WithSizeOf<NDPNeighborSolicitationLayer, NDPLayerBase>
 	{
+		using BaseLayer = WithSizeOf<NDPNeighborSolicitationLayer, NDPLayerBase>;
+
 	public:
 		/// @struct ndpneighborsolicitationhdr
 		/// Represents neighbor solicitation message format
@@ -174,7 +178,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		NDPNeighborSolicitationLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : NDPLayerBase(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A constructor for a new NDPNeighborSolicitationLayer object
@@ -220,8 +224,9 @@ namespace pcpp
 
 	/// @class NDPNeighborAdvertisementLayer
 	/// Represents a NDP Neighbor Advertisement protocol layer
-	class NDPNeighborAdvertisementLayer : public NDPLayerBase
+	class NDPNeighborAdvertisementLayer : public WithSizeOf<NDPNeighborAdvertisementLayer, NDPLayerBase>
 	{
+		using BaseLayer = WithSizeOf<NDPNeighborAdvertisementLayer, NDPLayerBase>;
 	public:
 		/// @struct ndpneighboradvertisementhdr
 		/// Represents neighbor advertisement message format
@@ -264,7 +269,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		NDPNeighborAdvertisementLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : NDPLayerBase(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A constructor that allocates a new NDP Advertisement Layer with target link-layer address option

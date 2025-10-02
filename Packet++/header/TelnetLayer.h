@@ -9,8 +9,9 @@
 namespace pcpp
 {
 	/// Class for representing the Telnet Layer
-	class TelnetLayer : public Layer
+	class TelnetLayer : public WithSizeOf<TelnetLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<TelnetLayer, Layer>;
 	private:
 		// Position iterator for next command
 		size_t lastPositionOffset;
@@ -212,7 +213,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		TelnetLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, Telnet)
+		    : BaseLayer(data, dataLen, prevLayer, packet, Telnet)
 		{
 			lastPositionOffset = SIZE_MAX;
 		};

@@ -18,8 +18,10 @@ namespace pcpp
 	/// @class BgpLayer
 	/// Represents Border Gateway Protocol (BGP) v4 protocol layer. This is an abstract class that cannot be
 	/// instantiated, and contains functionality which is common to all BGP message types.
-	class BgpLayer : public Layer
+	class BgpLayer : public WithSizeOf<BgpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<BgpLayer, Layer>;
+
 	public:
 		/// An enum representing BGP message types
 		enum BgpMessageType
@@ -104,7 +106,7 @@ namespace pcpp
 		BgpLayer()
 		{}
 		BgpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, BGP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, BGP)
 		{}
 
 		bgp_common_header* getBasicHeader() const
@@ -117,8 +119,9 @@ namespace pcpp
 
 	/// @class BgpOpenMessageLayer
 	/// Represents a BGP v4 OPEN message
-	class BgpOpenMessageLayer : public BgpLayer
+	class BgpOpenMessageLayer : public WithSizeOf<BgpOpenMessageLayer, BgpLayer>
 	{
+		using BaseLayer = WithSizeOf<BgpOpenMessageLayer, BgpLayer>;
 	public:
 #pragma pack(push, 1)
 		/// @struct bgp_open_message
@@ -167,7 +170,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		BgpOpenMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : BgpLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A c'tor that creates a new BGP OPEN message
@@ -234,8 +237,9 @@ namespace pcpp
 
 	/// @class BgpUpdateMessageLayer
 	/// Represents a BGP v4 UPDATE message
-	class BgpUpdateMessageLayer : public BgpLayer
+	class BgpUpdateMessageLayer : public WithSizeOf<BgpUpdateMessageLayer, BgpLayer>
 	{
+		using BaseLayer = WithSizeOf<BgpUpdateMessageLayer, BgpLayer>;
 	public:
 		/// @struct prefix_and_ip
 		/// A structure that contains IPv4 address and IP address mask (prefix) information.
@@ -291,7 +295,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		BgpUpdateMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : BgpLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A static method that takes a byte array and detects whether it is a BgpUpdateMessage
@@ -402,8 +406,9 @@ namespace pcpp
 
 	/// @class BgpNotificationMessageLayer
 	/// Represents a BGP v4 NOTIFICATION message
-	class BgpNotificationMessageLayer : public BgpLayer
+	class BgpNotificationMessageLayer : public WithSizeOf<BgpNotificationMessageLayer, BgpLayer>
 	{
+		using BaseLayer = WithSizeOf<BgpNotificationMessageLayer, BgpLayer>;
 	public:
 #pragma pack(push, 1)
 		/// @struct bgp_notification_message
@@ -423,7 +428,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		BgpNotificationMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : BgpLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A c'tor that creates a new BGP NOTIFICATION message
@@ -499,8 +504,9 @@ namespace pcpp
 
 	/// @class BgpKeepaliveMessageLayer
 	/// Represents a BGP v4 KEEPALIVE message
-	class BgpKeepaliveMessageLayer : public BgpLayer
+	class BgpKeepaliveMessageLayer : public WithSizeOf<BgpKeepaliveMessageLayer, BgpLayer>
 	{
+		using BaseLayer = WithSizeOf<BgpKeepaliveMessageLayer, BgpLayer>;
 	public:
 		/// @typedef bgp_keepalive_message
 		/// BGP KEEPALIVE message structure
@@ -512,7 +518,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		BgpKeepaliveMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : BgpLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A c'tor that creates a new BGP KEEPALIVE message
@@ -536,8 +542,9 @@ namespace pcpp
 
 	/// @class BgpRouteRefreshMessageLayer
 	/// Represents a BGP v4 ROUTE-REFRESH message
-	class BgpRouteRefreshMessageLayer : public BgpLayer
+	class BgpRouteRefreshMessageLayer : public WithSizeOf<BgpRouteRefreshMessageLayer, BgpLayer>
 	{
+		using BaseLayer = WithSizeOf<BgpRouteRefreshMessageLayer, BgpLayer>;
 	public:
 #pragma pack(push, 1)
 		/// @struct bgp_route_refresh_message
@@ -559,7 +566,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		BgpRouteRefreshMessageLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : BgpLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		/// A c'tor that creates a new BGP ROUTE-REFRESH message

@@ -319,7 +319,7 @@ namespace pcpp
 	}
 
 	TcpLayer::TcpLayer(uint8_t* data, const size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-	    : Layer(data, dataLen, prevLayer, packet, TCP)
+	    : BaseLayer(data, dataLen, prevLayer, packet, TCP)
 	{
 		m_NumOfTrailingBytes = 0;
 	}
@@ -342,7 +342,7 @@ namespace pcpp
 		m_NumOfTrailingBytes = other.m_NumOfTrailingBytes;
 	}
 
-	TcpLayer::TcpLayer(const TcpLayer& other) : Layer(other)
+	TcpLayer::TcpLayer(const TcpLayer& other) : BaseLayer(other)
 	{
 		copyLayerData(other);
 	}

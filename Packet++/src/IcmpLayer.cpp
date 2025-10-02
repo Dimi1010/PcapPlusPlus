@@ -27,7 +27,7 @@ namespace pcpp
 		preferenceLevel = htobe32(preference);
 	}
 
-	IcmpLayer::IcmpLayer() : Layer()
+	IcmpLayer::IcmpLayer()
 	{
 		m_DataLen = sizeof(icmphdr);
 		m_Data = new uint8_t[m_DataLen];

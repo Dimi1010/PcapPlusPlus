@@ -13,7 +13,7 @@
 
 namespace pcpp
 {
-	EthLayer::EthLayer(const MacAddress& sourceMac, const MacAddress& destMac, uint16_t etherType) : Layer()
+	EthLayer::EthLayer(const MacAddress& sourceMac, const MacAddress& destMac, uint16_t etherType)
 	{
 		const size_t headerLen = sizeof(ether_header);
 		m_DataLen = headerLen;

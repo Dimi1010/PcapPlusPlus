@@ -28,15 +28,16 @@ namespace pcpp
 
 	/// @class NullLoopbackLayer
 	/// Represents a Null/Loopback layer
-	class NullLoopbackLayer : public Layer
+	class NullLoopbackLayer : public WithSizeOf<NullLoopbackLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<NullLoopbackLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		NullLoopbackLayer(uint8_t* data, size_t dataLen, ILayerOwner* packet)
-		    : Layer(data, dataLen, nullptr, packet, NULL_LOOPBACK)
+		    : BaseLayer(data, dataLen, nullptr, packet, NULL_LOOPBACK)
 		{}
 
 		/// A constructor that allocates a new Null/Loopback header

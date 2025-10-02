@@ -503,8 +503,9 @@ namespace pcpp
 
 	/// @class SomeIpSdLayer
 	/// Implementation of the SOME/IP-SD protocol
-	class SomeIpSdLayer : public SomeIpLayer
+	class SomeIpSdLayer : public WithSizeOf<SomeIpSdLayer, SomeIpLayer>
 	{
+		using BaseLayer = WithSizeOf<SomeIpSdLayer, SomeIpLayer>;
 	public:
 		friend class SomeIpSdEntry;
 

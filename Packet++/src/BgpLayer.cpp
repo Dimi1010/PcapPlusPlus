@@ -920,7 +920,7 @@ namespace pcpp
 	// BgpKeepaliveMessageLayer
 	// ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	BgpKeepaliveMessageLayer::BgpKeepaliveMessageLayer() : BgpLayer()
+	BgpKeepaliveMessageLayer::BgpKeepaliveMessageLayer()
 	{
 		const size_t headerLen = sizeof(bgp_common_header);
 		m_DataLen = headerLen;

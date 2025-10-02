@@ -65,8 +65,9 @@ namespace pcpp
 	/// |                                                               |
 	/// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	/// @endcode
-	class NtpLayer : public Layer
+	class NtpLayer : public WithSizeOf<NtpLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<NtpLayer, Layer>;
 	private:
 #pragma pack(push, 1)
 		struct ntp_header
@@ -315,7 +316,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		NtpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, NTP)
+		    : BaseLayer(data, dataLen, prevLayer, packet, NTP)
 		{}
 
 		/// Empty c'tor

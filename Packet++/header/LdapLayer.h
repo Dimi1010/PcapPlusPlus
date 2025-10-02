@@ -284,8 +284,10 @@ namespace pcpp
 
 	/// @class LdapLayer
 	/// Represents an LDAP message
-	class LdapLayer : public Layer
+	class LdapLayer : public WithSizeOf<LdapLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<LdapLayer, Layer>;
+
 	public:
 		/// A constructor to create a new LDAP message
 		/// @param[in] messageId The LDAP message ID
@@ -415,8 +417,10 @@ namespace pcpp
 	/// @class LdapResponseLayer
 	/// An abstract class for representing an LDAP response message. It's the parent class
 	/// for all response message layers
-	class LdapResponseLayer : public LdapLayer
+	class LdapResponseLayer : public WithSizeOf<LdapResponseLayer, LdapLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapResponseLayer, LdapLayer>;
+
 	public:
 		/// @return LDAP result code
 		LdapResultCode getResultCode() const;
@@ -444,7 +448,7 @@ namespace pcpp
 		LdapResponseLayer() = default;
 		LdapResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
 		                  ILayerOwner* packet)
-		    : LdapLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 
 		LdapResponseLayer(uint16_t messageId, LdapOperationType operationType, LdapResultCode resultCode,
@@ -463,8 +467,10 @@ namespace pcpp
 
 	/// @class LdapBindRequestLayer
 	/// Represents LDAP bind request operation
-	class LdapBindRequestLayer : public LdapLayer
+	class LdapBindRequestLayer : public WithSizeOf<LdapBindRequestLayer, LdapLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapBindRequestLayer, LdapLayer>;
+
 	public:
 		/// An enum to represent the bind request authentication type
 		enum class AuthenticationType : uint8_t
@@ -553,7 +559,7 @@ namespace pcpp
 
 		LdapBindRequestLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
 		                     ILayerOwner* packet)
-		    : LdapLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 
 		std::string getExtendedInfoString() const override;
@@ -569,8 +575,10 @@ namespace pcpp
 
 	/// @class LdapBindResponseLayer
 	/// Represents LDAP bind response operation
-	class LdapBindResponseLayer : public LdapResponseLayer
+	class LdapBindResponseLayer : public WithSizeOf<LdapBindResponseLayer, LdapResponseLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapBindResponseLayer, LdapResponseLayer>;
+
 	public:
 		/// A constructor to create a new LDAP bind response message
 		/// @param[in] messageId The LDAP message ID
@@ -601,14 +609,16 @@ namespace pcpp
 
 		LdapBindResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
 		                      ILayerOwner* packet)
-		    : LdapResponseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
 
 	/// @class LdapUnbindRequestLayer
 	/// Represents LDAP unbind operation
-	class LdapUnbindRequestLayer : public LdapLayer
+	class LdapUnbindRequestLayer : public WithSizeOf<LdapUnbindRequestLayer, LdapLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapUnbindRequestLayer, LdapLayer>;
+
 	public:
 		/// A constructor to create a new LDAP unbind message
 		/// @param[in] messageId The LDAP message ID
@@ -636,14 +646,16 @@ namespace pcpp
 
 		LdapUnbindRequestLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
 		                       ILayerOwner* packet)
-		    : LdapLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
 
 	/// @class LdapSearchRequestLayer
 	/// Represents LDAP search request operation
-	class LdapSearchRequestLayer : public LdapLayer
+	class LdapSearchRequestLayer : public WithSizeOf<LdapSearchRequestLayer, LdapLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapSearchRequestLayer, LdapLayer>;
+
 	public:
 		/// @class SearchRequestScope
 		/// An enum wrapper class for LDAP search request scope
@@ -821,7 +833,7 @@ namespace pcpp
 
 		LdapSearchRequestLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
 		                       ILayerOwner* packet)
-		    : LdapLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 
 		std::string getExtendedInfoString() const override;
@@ -829,8 +841,10 @@ namespace pcpp
 
 	/// @class LdapSearchResultEntryLayer
 	/// Represents LDAP search result entry message
-	class LdapSearchResultEntryLayer : public LdapLayer
+	class LdapSearchResultEntryLayer : public WithSizeOf<LdapSearchResultEntryLayer, LdapLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapSearchResultEntryLayer, LdapLayer>;
+
 	public:
 		/// A constructor to create a new LDAP search result entry message
 		/// @param[in] messageId The LDAP message ID
@@ -864,14 +878,16 @@ namespace pcpp
 
 		LdapSearchResultEntryLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen,
 		                           Layer* prevLayer, ILayerOwner* packet)
-		    : LdapLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
 
 	/// @class LdapSearchResultDoneLayer
 	/// Represents LDAP search result done message
-	class LdapSearchResultDoneLayer : public LdapResponseLayer
+	class LdapSearchResultDoneLayer : public WithSizeOf<LdapSearchResultDoneLayer, LdapResponseLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapSearchResultDoneLayer, LdapResponseLayer>;
+
 	public:
 		/// A constructor to create a new LDAP search result done message
 		/// @param[in] messageId The LDAP message ID
@@ -888,8 +904,8 @@ namespace pcpp
 		                          const std::string& diagnosticMessage,
 		                          const std::vector<std::string>& referral = std::vector<std::string>(),
 		                          const std::vector<LdapControl>& controls = std::vector<LdapControl>())
-		    : LdapResponseLayer(messageId, LdapOperationType::SearchResultDone, resultCode, matchedDN,
-		                        diagnosticMessage, referral, controls)
+		    : BaseLayer(messageId, LdapOperationType::SearchResultDone, resultCode, matchedDN, diagnosticMessage,
+		                referral, controls)
 		{}
 
 	protected:
@@ -898,14 +914,16 @@ namespace pcpp
 
 		LdapSearchResultDoneLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen,
 		                          Layer* prevLayer, ILayerOwner* packet)
-		    : LdapResponseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
 
 	/// @class LdapModifyResponseLayer
 	/// Represents LDAP modify response message
-	class LdapModifyResponseLayer : public LdapResponseLayer
+	class LdapModifyResponseLayer : public WithSizeOf<LdapModifyResponseLayer, LdapResponseLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapModifyResponseLayer, LdapResponseLayer>;
+
 	public:
 		/// A constructor to create a new LDAP modify response message
 		/// @param[in] messageId The LDAP message ID
@@ -922,8 +940,8 @@ namespace pcpp
 		                        const std::string& diagnosticMessage,
 		                        const std::vector<std::string>& referral = std::vector<std::string>(),
 		                        const std::vector<LdapControl>& controls = std::vector<LdapControl>())
-		    : LdapResponseLayer(messageId, LdapOperationType::ModifyResponse, resultCode, matchedDN, diagnosticMessage,
-		                        referral, controls)
+		    : BaseLayer(messageId, LdapOperationType::ModifyResponse, resultCode, matchedDN, diagnosticMessage,
+		                referral, controls)
 		{}
 
 	protected:
@@ -932,14 +950,16 @@ namespace pcpp
 
 		LdapModifyResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
 		                        ILayerOwner* packet)
-		    : LdapResponseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
 
 	/// @class LdapAddResponseLayer
 	/// Represents LDAP add response message
-	class LdapAddResponseLayer : public LdapResponseLayer
+	class LdapAddResponseLayer : public WithSizeOf<LdapAddResponseLayer, LdapResponseLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapAddResponseLayer, LdapResponseLayer>;
+
 	public:
 		/// A constructor to create a new LDAP add response message
 		/// @param[in] messageId The LDAP message ID
@@ -956,8 +976,8 @@ namespace pcpp
 		                     const std::string& diagnosticMessage,
 		                     const std::vector<std::string>& referral = std::vector<std::string>(),
 		                     const std::vector<LdapControl>& controls = std::vector<LdapControl>())
-		    : LdapResponseLayer(messageId, LdapOperationType::AddResponse, resultCode, matchedDN, diagnosticMessage,
-		                        referral, controls)
+		    : BaseLayer(messageId, LdapOperationType::AddResponse, resultCode, matchedDN, diagnosticMessage, referral,
+		                controls)
 		{}
 
 	protected:
@@ -966,14 +986,16 @@ namespace pcpp
 
 		LdapAddResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
 		                     ILayerOwner* packet)
-		    : LdapResponseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
 
 	/// @class LdapDeleteResponseLayer
 	/// Represents LDAP delete response message
-	class LdapDeleteResponseLayer : public LdapResponseLayer
+	class LdapDeleteResponseLayer : public WithSizeOf<LdapDeleteResponseLayer, LdapResponseLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapDeleteResponseLayer, LdapResponseLayer>;
+
 	public:
 		/// A constructor to create a new LDAP delete response message
 		/// @param[in] messageId The LDAP message ID
@@ -990,8 +1012,8 @@ namespace pcpp
 		                        const std::string& diagnosticMessage,
 		                        const std::vector<std::string>& referral = std::vector<std::string>(),
 		                        const std::vector<LdapControl>& controls = std::vector<LdapControl>())
-		    : LdapResponseLayer(messageId, LdapOperationType::DeleteResponse, resultCode, matchedDN, diagnosticMessage,
-		                        referral, controls)
+		    : BaseLayer(messageId, LdapOperationType::DeleteResponse, resultCode, matchedDN, diagnosticMessage,
+		                referral, controls)
 		{}
 
 	protected:
@@ -1000,14 +1022,16 @@ namespace pcpp
 
 		LdapDeleteResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
 		                        ILayerOwner* packet)
-		    : LdapResponseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
 
 	/// @class LdapModifyDNResponseLayer
 	/// Represents LDAP modify DN response message
-	class LdapModifyDNResponseLayer : public LdapResponseLayer
+	class LdapModifyDNResponseLayer : public WithSizeOf<LdapModifyDNResponseLayer, LdapResponseLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapModifyDNResponseLayer, LdapResponseLayer>;
+
 	public:
 		/// A constructor to create a new LDAP modify DN response message
 		/// @param[in] messageId The LDAP message ID
@@ -1024,8 +1048,8 @@ namespace pcpp
 		                          const std::string& diagnosticMessage,
 		                          const std::vector<std::string>& referral = std::vector<std::string>(),
 		                          const std::vector<LdapControl>& controls = std::vector<LdapControl>())
-		    : LdapResponseLayer(messageId, LdapOperationType::ModifyDNResponse, resultCode, matchedDN,
-		                        diagnosticMessage, referral, controls)
+		    : BaseLayer(messageId, LdapOperationType::ModifyDNResponse, resultCode, matchedDN, diagnosticMessage,
+		                referral, controls)
 		{}
 
 	protected:
@@ -1034,14 +1058,15 @@ namespace pcpp
 
 		LdapModifyDNResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen,
 		                          Layer* prevLayer, ILayerOwner* packet)
-		    : LdapResponseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
 
 	/// @class LdapCompareResponseLayer
 	/// Represents LDAP compare response message
-	class LdapCompareResponseLayer : public LdapResponseLayer
+	class LdapCompareResponseLayer : public WithSizeOf<LdapCompareResponseLayer, LdapResponseLayer>
 	{
+		using BaseLayer = WithSizeOf<LdapCompareResponseLayer, LdapResponseLayer>;
 	public:
 		/// A constructor to create a new LDAP compare response message
 		/// @param[in] messageId The LDAP message ID
@@ -1058,7 +1083,7 @@ namespace pcpp
 		                         const std::string& diagnosticMessage,
 		                         const std::vector<std::string>& referral = std::vector<std::string>(),
 		                         const std::vector<LdapControl>& controls = std::vector<LdapControl>())
-		    : LdapResponseLayer(messageId, LdapOperationType::CompareResponse, resultCode, matchedDN, diagnosticMessage,
+		    : BaseLayer(messageId, LdapOperationType::CompareResponse, resultCode, matchedDN, diagnosticMessage,
 		                        referral, controls)
 		{}
 
@@ -1068,7 +1093,7 @@ namespace pcpp
 
 		LdapCompareResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen,
 		                         Layer* prevLayer, ILayerOwner* packet)
-		    : LdapResponseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
+		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
 

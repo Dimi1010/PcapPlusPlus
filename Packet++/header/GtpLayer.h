@@ -205,8 +205,9 @@ namespace pcpp
 
 	/// @class GtpV1Layer
 	/// A class representing the [GTP v1](https://en.wikipedia.org/wiki/GPRS_Tunnelling_Protocol) protocol.
-	class GtpV1Layer : public Layer
+	class GtpV1Layer : public WithSizeOf<GtpV1Layer, Layer>
 	{
+		using BaseLayer = WithSizeOf<GtpV1Layer, Layer>;
 	private:
 		struct gtpv1_header_extra
 		{
@@ -288,7 +289,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		GtpV1Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, GTPv1)
+		    : BaseLayer(data, dataLen, prevLayer, packet, GTPv1)
 		{}
 
 		/// A constructor that creates a new GTPv1 layer and sets the message type and the TEID value
@@ -966,8 +967,9 @@ namespace pcpp
 
 	/// @class GtpV2Layer
 	/// A class representing the GTPv2 defined in 3GPP TS 29.274
-	class GtpV2Layer : public Layer
+	class GtpV2Layer : public WithSizeOf<GtpV2Layer, Layer>
 	{
+		using BaseLayer = WithSizeOf<GtpV2Layer, Layer>;
 	public:
 		~GtpV2Layer() override = default;
 
@@ -977,7 +979,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		GtpV2Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, GTPv2)
+		    : BaseLayer(data, dataLen, prevLayer, packet, GTPv2)
 		{}
 
 		/// A constructor that creates a new GTPv2 message

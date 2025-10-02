@@ -31,8 +31,9 @@ namespace pcpp
 
 	/// @class ModbusLayer
 	/// Represents the MODBUS Application Protocol layer
-	class ModbusLayer : public Layer
+	class ModbusLayer : public WithSizeOf<ModbusLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<ModbusLayer, Layer>;
 	public:
 		/// @brief Enum class representing Modbus function codes.
 		/// This enumeration defines the standard Modbus function codes used in request and response PDUs.
@@ -84,7 +85,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		ModbusLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, Modbus)
+		    : BaseLayer(data, dataLen, prevLayer, packet, Modbus)
 		{}
 
 		/// A constructor that creates the layer from user inputs

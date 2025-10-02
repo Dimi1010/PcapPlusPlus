@@ -174,8 +174,10 @@ namespace pcpp
 	/// detailed explanation of the TLS/SSL protocol support in PcapPlusPlus.
 	/// This class provides the common functionality used by all record types and also contains static methods for
 	/// identifying an creating SSL/TLS record type layers
-	class SSLLayer : public Layer
+	class SSLLayer : public WithSizeOf<SSLLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<SSLLayer, Layer>;
+
 	public:
 		/// A static method that checks whether the port is considered as SSL/TLS
 		/// @param[in] port The port number to be checked
@@ -250,7 +252,7 @@ namespace pcpp
 
 	protected:
 		SSLLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, SSL)
+		    : BaseLayer(data, dataLen, prevLayer, packet, SSL)
 		{}
 
 	};  // class SSLLayer
@@ -299,8 +301,10 @@ namespace pcpp
 	///  |     (22)                 xxx   |               version,length        |                           |                             |
 	/// @endcode
 	// clang-format on
-	class SSLHandshakeLayer : public SSLLayer
+	class SSLHandshakeLayer : public WithSizeOf<SSLHandshakeLayer, SSLLayer>
 	{
+		using BaseLayer = WithSizeOf<SSLHandshakeLayer, SSLLayer>;
+
 	public:
 		/// C'tor for this class that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -352,8 +356,10 @@ namespace pcpp
 	/// @class SSLChangeCipherSpecLayer
 	/// Represents SSL/TLS change-cipher-spec layer. This layer has no additional fields besides common fields described
 	/// in SSLLayer
-	class SSLChangeCipherSpecLayer : public SSLLayer
+	class SSLChangeCipherSpecLayer : public WithSizeOf<SSLChangeCipherSpecLayer, SSLLayer>
 	{
+		using BaseLayer = WithSizeOf<SSLChangeCipherSpecLayer, SSLLayer>;
+
 	public:
 		/// C'tor for this class that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -361,7 +367,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		SSLChangeCipherSpecLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : SSLLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		~SSLChangeCipherSpecLayer() override = default;
@@ -378,8 +384,10 @@ namespace pcpp
 	/// @class SSLAlertLayer
 	/// Represents SSL/TLS alert layer. Inherits from SSLLayer and adds parsing functionality such as retrieving the
 	/// alert level and description
-	class SSLAlertLayer : public SSLLayer
+	class SSLAlertLayer : public WithSizeOf<SSLAlertLayer, SSLLayer>
 	{
+		using BaseLayer = WithSizeOf<SSLAlertLayer, SSLLayer>;
+
 	public:
 		/// C'tor for this class that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -387,7 +395,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		SSLAlertLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : SSLLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		~SSLAlertLayer() override = default;
@@ -410,8 +418,9 @@ namespace pcpp
 	/// @class SSLApplicationDataLayer
 	/// Represents SSL/TLS application data layer. This message contains the encrypted data transferred from client to
 	/// server and vice-versa after the SSL/TLS handshake was completed successfully
-	class SSLApplicationDataLayer : public SSLLayer
+	class SSLApplicationDataLayer : public WithSizeOf<SSLApplicationDataLayer, SSLLayer>
 	{
+		using BaseLayer = WithSizeOf<SSLApplicationDataLayer, SSLLayer>;
 	public:
 		/// C'tor for this class that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -419,7 +428,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		SSLApplicationDataLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : SSLLayer(data, dataLen, prevLayer, packet)
+		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
 		~SSLApplicationDataLayer() override = default;

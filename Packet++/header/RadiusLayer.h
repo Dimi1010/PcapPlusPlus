@@ -130,8 +130,9 @@ namespace pcpp
 
 	/// @class RadiusLayer
 	/// Represents a RADIUS (Remote Authentication Dial-In User Service) protocol layer
-	class RadiusLayer : public Layer
+	class RadiusLayer : public WithSizeOf<RadiusLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<RadiusLayer, Layer>;
 	private:
 		TLVRecordReader<RadiusAttribute> m_AttributeReader;
 
@@ -149,7 +150,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		RadiusLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, Radius)
+		    : BaseLayer(data, dataLen, prevLayer, packet, Radius)
 		{}
 
 		/// A constructor that creates a new layer from scratch

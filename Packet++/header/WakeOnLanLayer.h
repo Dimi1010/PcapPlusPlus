@@ -11,8 +11,9 @@
 namespace pcpp
 {
 	/// Class for representing the Wake on LAN Layer
-	class WakeOnLanLayer : public Layer
+	class WakeOnLanLayer : public WithSizeOf<WakeOnLanLayer, Layer>
 	{
+		using BaseLayer = WithSizeOf<WakeOnLanLayer, Layer>;
 	private:
 		void init(uint16_t len);
 
@@ -36,7 +37,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		WakeOnLanLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
-		    : Layer(data, dataLen, prevLayer, packet, WakeOnLan)
+		    : BaseLayer(data, dataLen, prevLayer, packet, WakeOnLan)
 		{}
 
 		/// Construct a new Wake On Lan Layer with provided values

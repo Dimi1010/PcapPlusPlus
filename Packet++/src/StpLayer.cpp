@@ -71,7 +71,7 @@ namespace pcpp
 	}
 
 	// ---------------------- Class StpTopologyChangeBPDULayer ----------------------
-	StpTopologyChangeBPDULayer::StpTopologyChangeBPDULayer() : StpLayer(sizeof(stp_tcn_bpdu))
+	StpTopologyChangeBPDULayer::StpTopologyChangeBPDULayer() : BaseLayer(sizeof(stp_tcn_bpdu))
 	{
 		// Set initial values for TCN
 		setProtoId(0x0);
@@ -86,7 +86,7 @@ namespace pcpp
 	}
 
 	// ---------------------- Class StpConfigurationBPDULayer ----------------------
-	StpConfigurationBPDULayer::StpConfigurationBPDULayer() : StpTopologyChangeBPDULayer(sizeof(stp_conf_bpdu))
+	StpConfigurationBPDULayer::StpConfigurationBPDULayer() : BaseLayer(sizeof(stp_conf_bpdu))
 	{
 		// Set initial value for configuration BPDU
 		setProtoId(0x0);
@@ -231,7 +231,7 @@ namespace pcpp
 	}
 
 	// ---------------------- Class RapidStpLayer ----------------------
-	RapidStpLayer::RapidStpLayer() : StpConfigurationBPDULayer(sizeof(rstp_conf_bpdu))
+	RapidStpLayer::RapidStpLayer() : BaseLayer(sizeof(rstp_conf_bpdu))
 	{
 		// Set initial value for Rapid STP
 		setProtoId(0x0);
@@ -246,7 +246,7 @@ namespace pcpp
 	}
 
 	// ---------------------- Class MultipleStpLayer ----------------------
-	MultipleStpLayer::MultipleStpLayer() : RapidStpLayer(sizeof(mstp_conf_bpdu))
+	MultipleStpLayer::MultipleStpLayer() : BaseLayer(sizeof(mstp_conf_bpdu))
 	{
 		// Set initial value for Multiple STP
 		setProtoId(0x0);
