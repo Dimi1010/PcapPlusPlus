@@ -448,6 +448,14 @@ namespace pcpp
 				reset(0);
 			}
 
+			/// @brief Checks if the arena has any blocks allocated
+			/// @return True if the arena has at least one block allocated, false otherwise
+			bool isAllocated() const;
+
+			/// @brief Checks if the arena is empty (has no blocks or all blocks are empty)
+			/// @return True if the arena is empty, false otherwise
+			bool isEmpty() const;
+
 			void* allocate(size_t bytes, size_t alignment = alignof(std::max_align_t));
 
 			/// @brief Deallocation is a no-op in the arena. Memory is only freed when the arena is destroyed or reset.

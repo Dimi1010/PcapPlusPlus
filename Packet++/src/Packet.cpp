@@ -876,6 +876,16 @@ namespace pcpp
 			return *this;
 		}
 
+		bool MemoryArena::isAllocated() const
+		{
+			return m_FirstBlock != nullptr;
+		}
+
+		bool MemoryArena::isEmpty() const
+		{
+			return m_FirstBlock == nullptr || (m_FirstBlock == m_AllocBlock && m_FirstBlock->usedBytes == 0);
+		}
+
 		void* MemoryArena::allocate(size_t bytes, size_t alignment)
 		{
 			if (bytes == 0)
