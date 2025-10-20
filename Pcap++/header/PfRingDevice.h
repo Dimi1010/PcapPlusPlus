@@ -11,6 +11,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <functional>
 #include <condition_variable>
 
 /// @file
@@ -26,8 +27,8 @@ namespace pcpp
 
 	class PfRingDevice;
 
-	typedef void (*OnPfRingPacketsArriveCallback)(RawPacket* packets, uint32_t numOfPackets, uint8_t threadId,
-	                                              PfRingDevice* device, void* userCookie);
+	using OnPfRingPacketsArriveCallback = std::function<void(RawPacket* packets, uint32_t numOfPackets,
+	                                                         uint8_t threadId, PfRingDevice* device, void* userCookie)>;
 
 	/// @class PfRingDevice
 	/// A class representing a PF_RING port
