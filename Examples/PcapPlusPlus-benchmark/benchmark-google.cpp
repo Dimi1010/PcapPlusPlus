@@ -7,6 +7,9 @@
 #include <IPv6Layer.h>
 #include <TcpLayer.h>
 #include <UdpLayer.h>
+#include <PayloadLayer.h>
+
+#include <memory>
 
 #include <benchmark/benchmark.h>
 
@@ -241,6 +244,206 @@ static void BM_PacketCrafting(benchmark::State& state)
 	state.SetItemsProcessed(totalPackets);
 }
 BENCHMARK(BM_PacketCrafting);
+
+static void BM_LayerCreationHeap(benchmark::State& state)
+{
+	size_t totalLayers = 0;
+	// A dummy packet is needed so the layer thinks its part of a packet, and does not try to delete it's data on
+	// destruction
+	pcpp::Packet dummyPacket;
+	std::array<uint8_t, 1500> dummyData = {};
+
+	std::vector<pcpp::Layer*> cleanupStack;
+	cleanupStack.reserve(10);
+
+	for (auto _ : state)
+	{
+		uint8_t* dataPtr = dummyData.data();
+		size_t remainingLen = dummyData.size();
+
+		auto advanceData = [&](size_t len) {
+			dataPtr += len;
+			remainingLen -= len;
+		};
+
+		auto* ethLayer = new pcpp::EthLayer(dataPtr, remainingLen, &dummyPacket);
+		cleanupStack.push_back(ethLayer);
+		advanceData(ethLayer->getHeaderLen());
+
+		auto* ipLayer = new pcpp::IPv4Layer(dataPtr, remainingLen, ethLayer, &dummyPacket);
+		cleanupStack.push_back(ipLayer);
+		advanceData(ipLayer->getHeaderLen());
+
+		auto* udpLayer = new pcpp::UdpLayer(dataPtr, remainingLen, ipLayer, &dummyPacket);
+		cleanupStack.push_back(udpLayer);
+		advanceData(udpLayer->getHeaderLen());
+
+		auto* payloadLayer = new pcpp::PayloadLayer(dataPtr, remainingLen, udpLayer, &dummyPacket);
+		cleanupStack.push_back(payloadLayer);
+		advanceData(udpLayer->getHeaderLen());
+
+		benchmark::DoNotOptimize(payloadLayer);
+
+		// Clean up
+		for (auto* layer : cleanupStack)
+		{
+			delete layer;
+		}
+		cleanupStack.clear();
+
+		totalLayers += 4;
+	}
+	state.SetItemsProcessed(totalLayers);
+}
+BENCHMARK(BM_LayerCreationHeap);
+
+template <typename T> using Traits = std::allocator_traits<pcpp::experimental::MemoryArenaAllocator<T>>;
+
+static void BM_LayerCreationArena(benchmark::State& state)
+{
+	size_t totalLayers = 0;
+	// A dummy packet is needed so the layer thinks its part of a packet, and does not try to delete it's data on
+	// destruction
+	pcpp::Packet dummyPacket;
+	std::array<uint8_t, 1500> dummyData = {};
+
+	std::vector<pcpp::Layer*> cleanupStack;
+	cleanupStack.reserve(10);
+
+	for (auto _ : state)
+	{
+		uint8_t* dataPtr = dummyData.data();
+		size_t remainingLen = dummyData.size();
+
+		auto advanceData = [&](size_t len) {
+			dataPtr += len;
+			remainingLen -= len;
+		};
+
+		// Arena is created anew for each iteration
+		pcpp::experimental::MemoryArena arena;
+		pcpp::experimental::MemoryArenaAllocator<pcpp::EthLayer> ethAlloc(arena);
+		pcpp::experimental::MemoryArenaAllocator<pcpp::IPv4Layer> ip4Alloc(arena);
+		pcpp::experimental::MemoryArenaAllocator<pcpp::UdpLayer> udpAlloc(arena);
+		pcpp::experimental::MemoryArenaAllocator<pcpp::PayloadLayer> payAlloc(arena);
+
+
+		using EthTraits = typename Traits<pcpp::EthLayer>;
+
+		auto* ethLayer = EthTraits::allocate(ethAlloc, 1);
+		EthTraits::construct(ethAlloc, ethLayer, dataPtr, remainingLen, &dummyPacket);
+		cleanupStack.push_back(ethLayer);
+		advanceData(ethLayer->getHeaderLen());
+
+		using IPv4Traits = typename Traits<pcpp::IPv4Layer>;
+
+		auto* ipLayer = IPv4Traits::allocate(ip4Alloc, 1);
+		IPv4Traits::construct(ip4Alloc, ipLayer, dataPtr, remainingLen, ethLayer, &dummyPacket);
+		cleanupStack.push_back(ipLayer);
+		advanceData(ipLayer->getHeaderLen());
+
+		using UdpTraits = typename Traits<pcpp::UdpLayer>;
+
+		auto* udpLayer = UdpTraits::allocate(udpAlloc, 1);
+		UdpTraits::construct(udpAlloc, udpLayer, dataPtr, remainingLen, ipLayer, &dummyPacket);
+		cleanupStack.push_back(udpLayer);
+		advanceData(udpLayer->getHeaderLen());
+
+		using PayloadTraits = typename Traits<pcpp::PayloadLayer>;
+
+		auto* payloadLayer = PayloadTraits::allocate(payAlloc, 1);
+		PayloadTraits::construct(payAlloc, payloadLayer, dataPtr, remainingLen, udpLayer, &dummyPacket);
+		cleanupStack.push_back(payloadLayer);
+		advanceData(udpLayer->getHeaderLen());
+
+		benchmark::DoNotOptimize(payloadLayer);
+
+		// Clean up
+		for (auto* layer : cleanupStack)
+		{
+			layer->~Layer();
+		}
+		cleanupStack.clear();
+		arena.clear();
+
+		totalLayers += 4;
+	}
+	state.SetItemsProcessed(totalLayers);
+}
+BENCHMARK(BM_LayerCreationArena);
+
+static void BM_LayerCreationArenaReuse(benchmark::State& state)
+{
+	size_t totalLayers = 0;
+	// A dummy packet is needed so the layer thinks its part of a packet, and does not try to delete it's data on
+	// destruction
+	pcpp::Packet dummyPacket;
+	std::array<uint8_t, 1500> dummyData = {};
+
+	std::vector<pcpp::Layer*> cleanupStack;
+	cleanupStack.reserve(10);
+
+	// Arena is reused across iterations
+	pcpp::experimental::MemoryArena arena;
+
+	for (auto _ : state)
+	{
+		uint8_t* dataPtr = dummyData.data();
+		size_t remainingLen = dummyData.size();
+
+		auto advanceData = [&](size_t len) {
+			dataPtr += len;
+			remainingLen -= len;
+		};
+
+		pcpp::experimental::MemoryArenaAllocator<pcpp::EthLayer> ethAlloc(arena);
+		pcpp::experimental::MemoryArenaAllocator<pcpp::IPv4Layer> ip4Alloc(arena);
+		pcpp::experimental::MemoryArenaAllocator<pcpp::UdpLayer> udpAlloc(arena);
+		pcpp::experimental::MemoryArenaAllocator<pcpp::PayloadLayer> payAlloc(arena);
+
+		using EthTraits = typename Traits<pcpp::EthLayer>;
+
+		auto* ethLayer = EthTraits::allocate(ethAlloc, 1);
+		EthTraits::construct(ethAlloc, ethLayer, dataPtr, remainingLen, &dummyPacket);
+		cleanupStack.push_back(ethLayer);
+		advanceData(ethLayer->getHeaderLen());
+
+		using IPv4Traits = typename Traits<pcpp::IPv4Layer>;
+
+		auto* ipLayer = IPv4Traits::allocate(ip4Alloc, 1);
+		IPv4Traits::construct(ip4Alloc, ipLayer, dataPtr, remainingLen, ethLayer, &dummyPacket);
+		cleanupStack.push_back(ipLayer);
+		advanceData(ipLayer->getHeaderLen());
+
+		using UdpTraits = typename Traits<pcpp::UdpLayer>;
+
+		auto* udpLayer = UdpTraits::allocate(udpAlloc, 1);
+		UdpTraits::construct(udpAlloc, udpLayer, dataPtr, remainingLen, ipLayer, &dummyPacket);
+		cleanupStack.push_back(udpLayer);
+		advanceData(udpLayer->getHeaderLen());
+
+		using PayloadTraits = typename Traits<pcpp::PayloadLayer>;
+
+		auto* payloadLayer = PayloadTraits::allocate(payAlloc, 1);
+		PayloadTraits::construct(payAlloc, payloadLayer, dataPtr, remainingLen, udpLayer, &dummyPacket);
+		cleanupStack.push_back(payloadLayer);
+		advanceData(udpLayer->getHeaderLen());
+
+		benchmark::DoNotOptimize(payloadLayer);
+
+		// Clean up
+		for (auto* layer : cleanupStack)
+		{
+			layer->~Layer();
+		}
+		cleanupStack.clear();
+		arena.clear();
+
+		totalLayers += 4;
+	}
+	state.SetItemsProcessed(totalLayers);
+}
+BENCHMARK(BM_LayerCreationArenaReuse);
 
 int main(int argc, char** argv)
 {
