@@ -55,16 +55,17 @@ namespace pcpp
 	};
 
 	class Layer;
+	class RawPacket;
 
-	/// @brief An interface (virtual abstract class) for classes that can own layers.
-	/// The layer class has a pointer to an ILayerOwner instance which is the owner of this layer.
-	/// The owner is responsible for managing the backing store of the layer (e.g. extending/shortening the layer data).
+	// Consider this as the base class for Packet?
 	class ILayerOwner
 	{
 	public:
 		friend class Layer;
 
 		~ILayerOwner() = default;
+
+		virtual RawPacket* getRawPacket() const = 0;
 
 		virtual Layer* getFirstLayer() const = 0;
 		virtual Layer* getLastLayer() const = 0;
@@ -95,6 +96,7 @@ namespace pcpp
 		/// @return A pointer to the layer of the requested type, nullptr if not found
 		template <class TLayer> TLayer* getPrevLayerOfType(Layer* startLayer) const;
 
+		// Should not really be public?
 	protected:
 		virtual bool extendLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToExtend) = 0;
 		virtual bool shortenLayer(Layer* layer, int offsetInLayer, size_t numOfBytesToShorten) = 0;
@@ -105,6 +107,8 @@ namespace pcpp
 	{
 		class ArenaPacket;
 	}
+
+	class ILayerOwner;
 
 	/// @class Layer
 	/// Layer is the base class for all protocol layers. Each protocol supported in PcapPlusPlus has a class that
