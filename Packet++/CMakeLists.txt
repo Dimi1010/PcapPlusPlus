@@ -73,6 +73,8 @@ add_library(
   src/WireGuardLayer.cpp
   src/X509Decoder.cpp
   src/X509ExtensionDataDecoder.cpp
+  "src/experimental/MemoryArena.cpp"
+  "src/experimental/ArenaPacket.cpp"
   # Force hash-library pcapng to be link fully static
 )
 
@@ -152,6 +154,8 @@ set(
   header/WireGuardLayer.h
   header/X509Decoder.h
   header/X509ExtensionDataDecoder.h
+ "header/experimental/MemoryArena.h"
+ "header/experimental/ArenaPacket.h"
 )
 
 # Don't use set_target_properties CMake limit to 50 elements
