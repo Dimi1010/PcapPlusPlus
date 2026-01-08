@@ -1132,7 +1132,7 @@ namespace pcpp
 			{
 				Layer* nextLayer = curLayer->getNextLayer();
 
-				if (curLayer->m_IsAllocatedInPacket)
+				if (curLayer->m_AllocationInfo.ownedByPacket)
 				{
 					// This calls the layer destructor, but does not free the memory.
 					const size_t objSize = curLayer->getSizeOf();
