@@ -84,9 +84,9 @@ namespace pcpp
 
 	/// @class DnsLayer
 	/// Represents the DNS protocol layer
-	class DnsLayer : public WithSizeOf<DnsLayer, Layer>
+	class DnsLayer : public WithDynamicSizeOf<DnsLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<DnsLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<DnsLayer, Layer>;
 
 		friend class IDnsResource;
 		friend class DnsQuery;
@@ -430,9 +430,9 @@ namespace pcpp
 
 	/// Note: DNS over TCP can spread over more than one packet, but this implementation doesn't support this use-case
 	/// and assumes the whole message fits in a single packet.
-	class DnsOverTcpLayer : public WithSizeOf<DnsOverTcpLayer, DnsLayer>
+	class DnsOverTcpLayer : public WithDynamicSizeOf<DnsOverTcpLayer, DnsLayer>
 	{
-		using BaseLayer = WithSizeOf<DnsOverTcpLayer, DnsLayer>;
+		using BaseLayer = WithDynamicSizeOf<DnsOverTcpLayer, DnsLayer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

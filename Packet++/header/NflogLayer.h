@@ -141,9 +141,9 @@ namespace pcpp
 
 	/// @class NflogLayer
 	/// Represents an NFLOG protocol layer
-	class NflogLayer : public WithSizeOf<NflogLayer, Layer>
+	class NflogLayer : public WithDynamicSizeOf<NflogLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<NflogLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<NflogLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to ether_header)

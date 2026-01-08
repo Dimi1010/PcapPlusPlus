@@ -205,9 +205,9 @@ namespace pcpp
 
 	/// @class GtpV1Layer
 	/// A class representing the [GTP v1](https://en.wikipedia.org/wiki/GPRS_Tunnelling_Protocol) protocol.
-	class GtpV1Layer : public WithSizeOf<GtpV1Layer, Layer>
+	class GtpV1Layer : public WithDynamicSizeOf<GtpV1Layer, Layer>
 	{
-		using BaseLayer = WithSizeOf<GtpV1Layer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<GtpV1Layer, Layer>;
 	private:
 		struct gtpv1_header_extra
 		{
@@ -967,9 +967,9 @@ namespace pcpp
 
 	/// @class GtpV2Layer
 	/// A class representing the GTPv2 defined in 3GPP TS 29.274
-	class GtpV2Layer : public WithSizeOf<GtpV2Layer, Layer>
+	class GtpV2Layer : public WithDynamicSizeOf<GtpV2Layer, Layer>
 	{
-		using BaseLayer = WithSizeOf<GtpV2Layer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<GtpV2Layer, Layer>;
 	public:
 		~GtpV2Layer() override = default;
 

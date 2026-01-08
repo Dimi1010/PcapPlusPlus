@@ -18,9 +18,9 @@ namespace pcpp
 	/// @class BgpLayer
 	/// Represents Border Gateway Protocol (BGP) v4 protocol layer. This is an abstract class that cannot be
 	/// instantiated, and contains functionality which is common to all BGP message types.
-	class BgpLayer : public WithSizeOf<BgpLayer, Layer>
+	class BgpLayer : public WithDynamicSizeOf<BgpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<BgpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<BgpLayer, Layer>;
 
 	public:
 		/// An enum representing BGP message types
@@ -123,9 +123,9 @@ namespace pcpp
 
 	/// @class BgpOpenMessageLayer
 	/// Represents a BGP v4 OPEN message
-	class BgpOpenMessageLayer : public WithSizeOf<BgpOpenMessageLayer, BgpLayer>
+	class BgpOpenMessageLayer : public WithDynamicSizeOf<BgpOpenMessageLayer, BgpLayer>
 	{
-		using BaseLayer = WithSizeOf<BgpOpenMessageLayer, BgpLayer>;
+		using BaseLayer = WithDynamicSizeOf<BgpOpenMessageLayer, BgpLayer>;
 	public:
 #pragma pack(push, 1)
 		/// @struct bgp_open_message
@@ -241,9 +241,9 @@ namespace pcpp
 
 	/// @class BgpUpdateMessageLayer
 	/// Represents a BGP v4 UPDATE message
-	class BgpUpdateMessageLayer : public WithSizeOf<BgpUpdateMessageLayer, BgpLayer>
+	class BgpUpdateMessageLayer : public WithDynamicSizeOf<BgpUpdateMessageLayer, BgpLayer>
 	{
-		using BaseLayer = WithSizeOf<BgpUpdateMessageLayer, BgpLayer>;
+		using BaseLayer = WithDynamicSizeOf<BgpUpdateMessageLayer, BgpLayer>;
 	public:
 		/// @struct prefix_and_ip
 		/// A structure that contains IPv4 address and IP address mask (prefix) information.
@@ -410,9 +410,9 @@ namespace pcpp
 
 	/// @class BgpNotificationMessageLayer
 	/// Represents a BGP v4 NOTIFICATION message
-	class BgpNotificationMessageLayer : public WithSizeOf<BgpNotificationMessageLayer, BgpLayer>
+	class BgpNotificationMessageLayer : public WithDynamicSizeOf<BgpNotificationMessageLayer, BgpLayer>
 	{
-		using BaseLayer = WithSizeOf<BgpNotificationMessageLayer, BgpLayer>;
+		using BaseLayer = WithDynamicSizeOf<BgpNotificationMessageLayer, BgpLayer>;
 	public:
 #pragma pack(push, 1)
 		/// @struct bgp_notification_message
@@ -508,9 +508,9 @@ namespace pcpp
 
 	/// @class BgpKeepaliveMessageLayer
 	/// Represents a BGP v4 KEEPALIVE message
-	class BgpKeepaliveMessageLayer : public WithSizeOf<BgpKeepaliveMessageLayer, BgpLayer>
+	class BgpKeepaliveMessageLayer : public WithDynamicSizeOf<BgpKeepaliveMessageLayer, BgpLayer>
 	{
-		using BaseLayer = WithSizeOf<BgpKeepaliveMessageLayer, BgpLayer>;
+		using BaseLayer = WithDynamicSizeOf<BgpKeepaliveMessageLayer, BgpLayer>;
 	public:
 		/// @typedef bgp_keepalive_message
 		/// BGP KEEPALIVE message structure
@@ -546,9 +546,9 @@ namespace pcpp
 
 	/// @class BgpRouteRefreshMessageLayer
 	/// Represents a BGP v4 ROUTE-REFRESH message
-	class BgpRouteRefreshMessageLayer : public WithSizeOf<BgpRouteRefreshMessageLayer, BgpLayer>
+	class BgpRouteRefreshMessageLayer : public WithDynamicSizeOf<BgpRouteRefreshMessageLayer, BgpLayer>
 	{
-		using BaseLayer = WithSizeOf<BgpRouteRefreshMessageLayer, BgpLayer>;
+		using BaseLayer = WithDynamicSizeOf<BgpRouteRefreshMessageLayer, BgpLayer>;
 	public:
 #pragma pack(push, 1)
 		/// @struct bgp_route_refresh_message

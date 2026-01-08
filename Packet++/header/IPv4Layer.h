@@ -404,9 +404,9 @@ namespace pcpp
 
 	/// @class IPv4Layer
 	/// Represents an IPv4 protocol layer
-	class IPv4Layer : public WithSizeOf<IPv4Layer, Layer>, public IPLayer
+	class IPv4Layer : public WithDynamicSizeOf<IPv4Layer, Layer>, public IPLayer
 	{
-		using BaseLayer = WithSizeOf<IPv4Layer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<IPv4Layer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref iphdr)

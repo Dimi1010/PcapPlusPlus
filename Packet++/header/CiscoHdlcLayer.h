@@ -6,9 +6,9 @@ namespace pcpp
 {
 	/// @class CiscoHdlcLayer
 	/// Represents a Cisco HDLC protocol layer
-	class CiscoHdlcLayer : public WithSizeOf<CiscoHdlcLayer, Layer>
+	class CiscoHdlcLayer : public WithDynamicSizeOf<CiscoHdlcLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<CiscoHdlcLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<CiscoHdlcLayer, Layer>;
 
 	public:
 		/// @enum AddressType

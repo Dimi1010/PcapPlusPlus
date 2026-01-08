@@ -66,9 +66,9 @@ namespace pcpp
 
 	/// @class VxlanLayer
 	/// Represents a VXLAN (Virtual eXtensible Local Area Network) protocol layer
-	class VxlanLayer : public WithSizeOf<VxlanLayer, Layer>
+	class VxlanLayer : public WithDynamicSizeOf<VxlanLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<VxlanLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<VxlanLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

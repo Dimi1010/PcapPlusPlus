@@ -46,9 +46,9 @@ namespace pcpp
 
 	/// @class IPv6Layer
 	/// Represents an IPv6 protocol layer
-	class IPv6Layer : public WithSizeOf<IPv6Layer, Layer>, public IPLayer
+	class IPv6Layer : public WithDynamicSizeOf<IPv6Layer, Layer>, public IPLayer
 	{
-		using BaseLayer = WithSizeOf<IPv6Layer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<IPv6Layer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref ip6_hdr)

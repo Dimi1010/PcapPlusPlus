@@ -10,9 +10,9 @@
 namespace pcpp
 {
 	/// Class for general FTP message
-	class FtpLayer : public WithSizeOf<FtpLayer, SingleCommandTextProtocol>
+	class FtpLayer : public WithDynamicSizeOf<FtpLayer, SingleCommandTextProtocol>
 	{
-		using BaseLayer = WithSizeOf<FtpLayer, SingleCommandTextProtocol>;
+		using BaseLayer = WithDynamicSizeOf<FtpLayer, SingleCommandTextProtocol>;
 
 	protected:
 		FtpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
@@ -58,9 +58,9 @@ namespace pcpp
 	};
 
 	/// Class for representing the request messages of FTP Layer
-	class FtpRequestLayer : public WithSizeOf<FtpRequestLayer, FtpLayer>
+	class FtpRequestLayer : public WithDynamicSizeOf<FtpRequestLayer, FtpLayer>
 	{
-		using BaseLayer = WithSizeOf<FtpRequestLayer, FtpLayer>;
+		using BaseLayer = WithDynamicSizeOf<FtpRequestLayer, FtpLayer>;
 	public:
 		/// Enum for FTP command codes
 		enum class FtpCommand : int
@@ -267,9 +267,9 @@ namespace pcpp
 	};
 
 	/// Class for representing the response messages of FTP Layer
-	class FtpResponseLayer : public WithSizeOf<FtpResponseLayer, FtpLayer>
+	class FtpResponseLayer : public WithDynamicSizeOf<FtpResponseLayer, FtpLayer>
 	{
-		using BaseLayer = WithSizeOf<FtpResponseLayer, FtpLayer>;
+		using BaseLayer = WithDynamicSizeOf<FtpResponseLayer, FtpLayer>;
 	public:
 		/// Enum for FTP response codes
 		enum class FtpStatusCode : int
@@ -439,9 +439,9 @@ namespace pcpp
 	};
 
 	/// Class for representing the data of FTP Layer
-	class FtpDataLayer : public WithSizeOf<FtpDataLayer, PayloadLayer>
+	class FtpDataLayer : public WithDynamicSizeOf<FtpDataLayer, PayloadLayer>
 	{
-		using BaseLayer = WithSizeOf<FtpDataLayer, PayloadLayer>;
+		using BaseLayer = WithDynamicSizeOf<FtpDataLayer, PayloadLayer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

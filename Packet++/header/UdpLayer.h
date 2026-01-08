@@ -27,9 +27,9 @@ namespace pcpp
 
 	/// @class UdpLayer
 	/// Represents an UDP (User Datagram Protocol) protocol layer
-	class UdpLayer : public WithSizeOf<UdpLayer, Layer>
+	class UdpLayer : public WithDynamicSizeOf<UdpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<UdpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<UdpLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref udphdr)

@@ -284,9 +284,9 @@ namespace pcpp
 
 	/// @class LdapLayer
 	/// Represents an LDAP message
-	class LdapLayer : public WithSizeOf<LdapLayer, Layer>
+	class LdapLayer : public WithDynamicSizeOf<LdapLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<LdapLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<LdapLayer, Layer>;
 
 	public:
 		/// A constructor to create a new LDAP message
@@ -417,9 +417,9 @@ namespace pcpp
 	/// @class LdapResponseLayer
 	/// An abstract class for representing an LDAP response message. It's the parent class
 	/// for all response message layers
-	class LdapResponseLayer : public WithSizeOf<LdapResponseLayer, LdapLayer>
+	class LdapResponseLayer : public WithDynamicSizeOf<LdapResponseLayer, LdapLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapResponseLayer, LdapLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapResponseLayer, LdapLayer>;
 
 	public:
 		/// @return LDAP result code
@@ -467,9 +467,9 @@ namespace pcpp
 
 	/// @class LdapBindRequestLayer
 	/// Represents LDAP bind request operation
-	class LdapBindRequestLayer : public WithSizeOf<LdapBindRequestLayer, LdapLayer>
+	class LdapBindRequestLayer : public WithDynamicSizeOf<LdapBindRequestLayer, LdapLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapBindRequestLayer, LdapLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapBindRequestLayer, LdapLayer>;
 
 	public:
 		/// An enum to represent the bind request authentication type
@@ -575,9 +575,9 @@ namespace pcpp
 
 	/// @class LdapBindResponseLayer
 	/// Represents LDAP bind response operation
-	class LdapBindResponseLayer : public WithSizeOf<LdapBindResponseLayer, LdapResponseLayer>
+	class LdapBindResponseLayer : public WithDynamicSizeOf<LdapBindResponseLayer, LdapResponseLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapBindResponseLayer, LdapResponseLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapBindResponseLayer, LdapResponseLayer>;
 
 	public:
 		/// A constructor to create a new LDAP bind response message
@@ -615,9 +615,9 @@ namespace pcpp
 
 	/// @class LdapUnbindRequestLayer
 	/// Represents LDAP unbind operation
-	class LdapUnbindRequestLayer : public WithSizeOf<LdapUnbindRequestLayer, LdapLayer>
+	class LdapUnbindRequestLayer : public WithDynamicSizeOf<LdapUnbindRequestLayer, LdapLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapUnbindRequestLayer, LdapLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapUnbindRequestLayer, LdapLayer>;
 
 	public:
 		/// A constructor to create a new LDAP unbind message
@@ -652,9 +652,9 @@ namespace pcpp
 
 	/// @class LdapSearchRequestLayer
 	/// Represents LDAP search request operation
-	class LdapSearchRequestLayer : public WithSizeOf<LdapSearchRequestLayer, LdapLayer>
+	class LdapSearchRequestLayer : public WithDynamicSizeOf<LdapSearchRequestLayer, LdapLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapSearchRequestLayer, LdapLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapSearchRequestLayer, LdapLayer>;
 
 	public:
 		/// @class SearchRequestScope
@@ -841,9 +841,9 @@ namespace pcpp
 
 	/// @class LdapSearchResultEntryLayer
 	/// Represents LDAP search result entry message
-	class LdapSearchResultEntryLayer : public WithSizeOf<LdapSearchResultEntryLayer, LdapLayer>
+	class LdapSearchResultEntryLayer : public WithDynamicSizeOf<LdapSearchResultEntryLayer, LdapLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapSearchResultEntryLayer, LdapLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapSearchResultEntryLayer, LdapLayer>;
 
 	public:
 		/// A constructor to create a new LDAP search result entry message
@@ -884,9 +884,9 @@ namespace pcpp
 
 	/// @class LdapSearchResultDoneLayer
 	/// Represents LDAP search result done message
-	class LdapSearchResultDoneLayer : public WithSizeOf<LdapSearchResultDoneLayer, LdapResponseLayer>
+	class LdapSearchResultDoneLayer : public WithDynamicSizeOf<LdapSearchResultDoneLayer, LdapResponseLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapSearchResultDoneLayer, LdapResponseLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapSearchResultDoneLayer, LdapResponseLayer>;
 
 	public:
 		/// A constructor to create a new LDAP search result done message
@@ -920,9 +920,9 @@ namespace pcpp
 
 	/// @class LdapModifyResponseLayer
 	/// Represents LDAP modify response message
-	class LdapModifyResponseLayer : public WithSizeOf<LdapModifyResponseLayer, LdapResponseLayer>
+	class LdapModifyResponseLayer : public WithDynamicSizeOf<LdapModifyResponseLayer, LdapResponseLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapModifyResponseLayer, LdapResponseLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapModifyResponseLayer, LdapResponseLayer>;
 
 	public:
 		/// A constructor to create a new LDAP modify response message
@@ -956,9 +956,9 @@ namespace pcpp
 
 	/// @class LdapAddResponseLayer
 	/// Represents LDAP add response message
-	class LdapAddResponseLayer : public WithSizeOf<LdapAddResponseLayer, LdapResponseLayer>
+	class LdapAddResponseLayer : public WithDynamicSizeOf<LdapAddResponseLayer, LdapResponseLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapAddResponseLayer, LdapResponseLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapAddResponseLayer, LdapResponseLayer>;
 
 	public:
 		/// A constructor to create a new LDAP add response message
@@ -992,9 +992,9 @@ namespace pcpp
 
 	/// @class LdapDeleteResponseLayer
 	/// Represents LDAP delete response message
-	class LdapDeleteResponseLayer : public WithSizeOf<LdapDeleteResponseLayer, LdapResponseLayer>
+	class LdapDeleteResponseLayer : public WithDynamicSizeOf<LdapDeleteResponseLayer, LdapResponseLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapDeleteResponseLayer, LdapResponseLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapDeleteResponseLayer, LdapResponseLayer>;
 
 	public:
 		/// A constructor to create a new LDAP delete response message
@@ -1028,9 +1028,9 @@ namespace pcpp
 
 	/// @class LdapModifyDNResponseLayer
 	/// Represents LDAP modify DN response message
-	class LdapModifyDNResponseLayer : public WithSizeOf<LdapModifyDNResponseLayer, LdapResponseLayer>
+	class LdapModifyDNResponseLayer : public WithDynamicSizeOf<LdapModifyDNResponseLayer, LdapResponseLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapModifyDNResponseLayer, LdapResponseLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapModifyDNResponseLayer, LdapResponseLayer>;
 
 	public:
 		/// A constructor to create a new LDAP modify DN response message
@@ -1064,9 +1064,9 @@ namespace pcpp
 
 	/// @class LdapCompareResponseLayer
 	/// Represents LDAP compare response message
-	class LdapCompareResponseLayer : public WithSizeOf<LdapCompareResponseLayer, LdapResponseLayer>
+	class LdapCompareResponseLayer : public WithDynamicSizeOf<LdapCompareResponseLayer, LdapResponseLayer>
 	{
-		using BaseLayer = WithSizeOf<LdapCompareResponseLayer, LdapResponseLayer>;
+		using BaseLayer = WithDynamicSizeOf<LdapCompareResponseLayer, LdapResponseLayer>;
 	public:
 		/// A constructor to create a new LDAP compare response message
 		/// @param[in] messageId The LDAP message ID

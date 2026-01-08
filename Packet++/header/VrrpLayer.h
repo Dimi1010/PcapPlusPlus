@@ -104,9 +104,9 @@ namespace pcpp
 	/// A base class for all VRRP (Virtual Router Redundancy Protocol) protocol classes. This is an abstract class and
 	/// cannot be instantiated, only its child classes can be instantiated. The inherited classes represent the
 	/// different versions of the protocol: VRRPv2 and VRRPv3
-	class VrrpLayer : public WithSizeOf<VrrpLayer, Layer>
+	class VrrpLayer : public WithDynamicSizeOf<VrrpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<VrrpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<VrrpLayer, Layer>;
 	private:
 		bool addIPAddressesAt(const std::vector<IPAddress>& ipAddresses, int offset);
 
@@ -269,9 +269,9 @@ namespace pcpp
 	/// @class VrrpV2Layer
 	/// Represents VRRPv2 (Virtual Router Redundancy Protocol ver 2) layer. This class represents all the different
 	/// messages of VRRPv2
-	class VrrpV2Layer : public WithSizeOf<VrrpV2Layer, VrrpLayer>
+	class VrrpV2Layer : public WithDynamicSizeOf<VrrpV2Layer, VrrpLayer>
 	{
-		using BaseLayer = WithSizeOf<VrrpV2Layer, VrrpLayer>;
+		using BaseLayer = WithDynamicSizeOf<VrrpV2Layer, VrrpLayer>;
 	private:
 		struct vrrpv2_auth_adv
 		{
@@ -350,9 +350,9 @@ namespace pcpp
 	/// @class VrrpV3Layer
 	/// Represents VRRPv3 (Virtual Router Redundancy Protocol ver 3) layer. This class represents all the different
 	/// messages of VRRP
-	class VrrpV3Layer : public WithSizeOf<VrrpV3Layer, VrrpLayer>
+	class VrrpV3Layer : public WithDynamicSizeOf<VrrpV3Layer, VrrpLayer>
 	{
-		using BaseLayer = WithSizeOf<VrrpV3Layer, VrrpLayer>;
+		using BaseLayer = WithDynamicSizeOf<VrrpV3Layer, VrrpLayer>;
 	private:
 		struct vrrpv3_rsvd_adv
 		{

@@ -120,9 +120,9 @@ namespace pcpp
 
 	/// @class IcmpV6Layer
 	/// Base class for ICMPv6 protocol layers which provides common logic for ICMPv6 messages.
-	class IcmpV6Layer : public WithSizeOf<IcmpV6Layer, Layer>
+	class IcmpV6Layer : public WithDynamicSizeOf<IcmpV6Layer, Layer>
 	{
-		using BaseLayer = WithSizeOf<IcmpV6Layer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<IcmpV6Layer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param data A pointer to the raw data
@@ -199,9 +199,9 @@ namespace pcpp
 
 	/// @class ICMPv6EchoLayer
 	/// Represents an ICMPv6 echo request/reply protocol layer
-	class ICMPv6EchoLayer : public WithSizeOf<ICMPv6EchoLayer, IcmpV6Layer>
+	class ICMPv6EchoLayer : public WithDynamicSizeOf<ICMPv6EchoLayer, IcmpV6Layer>
 	{
-		using BaseLayer = WithSizeOf<ICMPv6EchoLayer, IcmpV6Layer>;
+		using BaseLayer = WithDynamicSizeOf<ICMPv6EchoLayer, IcmpV6Layer>;
 	public:
 		/// An enum representing ICMPv6 echo message types
 		enum ICMPv6EchoType

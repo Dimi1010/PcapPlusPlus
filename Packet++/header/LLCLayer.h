@@ -25,9 +25,9 @@ namespace pcpp
 
 	/// @class LLCLayer
 	/// Represents Logical Link Control layer messages
-	class LLCLayer : public WithSizeOf<LLCLayer, Layer>
+	class LLCLayer : public WithDynamicSizeOf<LLCLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<LLCLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<LLCLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to llc_header)

@@ -41,12 +41,12 @@ namespace pcpp
 		virtual size_t getSizeOf() const = 0;
 	};
 
-	template <typename Derived, typename Base = IDynamicSizeOf> class WithSizeOf : public Base
+	template <typename Derived, typename Base = IDynamicSizeOf> class WithDynamicSizeOf : public Base
 	{
 	public:
 		using Base::Base;
 
-		~WithSizeOf() override = default;
+		~WithDynamicSizeOf() override = default;
 
 		size_t getSizeOf() const override
 		{
@@ -189,7 +189,7 @@ namespace pcpp
 	///                                   |----------------|
 	///                                   PayloadLayer data
 	/// @endcode
-	class Layer : public IDataContainer, public WithSizeOf<Layer>
+	class Layer : public IDataContainer, public WithDynamicSizeOf<Layer>
 	{
 		friend class Packet;
 		friend class experimental::ArenaPacket;

@@ -10,9 +10,9 @@ namespace pcpp
 {
 	/// @class PayloadLayer
 	/// Represents a generic or unknown layer or a packet payload
-	class PayloadLayer : public WithSizeOf<PayloadLayer, Layer>
+	class PayloadLayer : public WithDynamicSizeOf<PayloadLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<PayloadLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<PayloadLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

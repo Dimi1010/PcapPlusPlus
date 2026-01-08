@@ -96,9 +96,9 @@ namespace pcpp
 
 	/// @class NDPLayerBase
 	/// Represents a base for NDP packet types
-	class NDPLayerBase : public WithSizeOf<NDPLayerBase, IcmpV6Layer>
+	class NDPLayerBase : public WithDynamicSizeOf<NDPLayerBase, IcmpV6Layer>
 	{
-		using BaseLayer = WithSizeOf<NDPLayerBase, IcmpV6Layer>;
+		using BaseLayer = WithDynamicSizeOf<NDPLayerBase, IcmpV6Layer>;
 
 	public:
 		~NDPLayerBase() override = default;
@@ -155,9 +155,9 @@ namespace pcpp
 
 	/// @class NDPNeighborSolicitationLayer
 	/// Represents a NDP Neighbor Solicitation protocol layer
-	class NDPNeighborSolicitationLayer : public WithSizeOf<NDPNeighborSolicitationLayer, NDPLayerBase>
+	class NDPNeighborSolicitationLayer : public WithDynamicSizeOf<NDPNeighborSolicitationLayer, NDPLayerBase>
 	{
-		using BaseLayer = WithSizeOf<NDPNeighborSolicitationLayer, NDPLayerBase>;
+		using BaseLayer = WithDynamicSizeOf<NDPNeighborSolicitationLayer, NDPLayerBase>;
 
 	public:
 		/// @struct ndpneighborsolicitationhdr
@@ -224,9 +224,9 @@ namespace pcpp
 
 	/// @class NDPNeighborAdvertisementLayer
 	/// Represents a NDP Neighbor Advertisement protocol layer
-	class NDPNeighborAdvertisementLayer : public WithSizeOf<NDPNeighborAdvertisementLayer, NDPLayerBase>
+	class NDPNeighborAdvertisementLayer : public WithDynamicSizeOf<NDPNeighborAdvertisementLayer, NDPLayerBase>
 	{
-		using BaseLayer = WithSizeOf<NDPNeighborAdvertisementLayer, NDPLayerBase>;
+		using BaseLayer = WithDynamicSizeOf<NDPNeighborAdvertisementLayer, NDPLayerBase>;
 	public:
 		/// @struct ndpneighboradvertisementhdr
 		/// Represents neighbor advertisement message format

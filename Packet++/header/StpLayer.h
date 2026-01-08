@@ -116,9 +116,9 @@ namespace pcpp
 
 	/// @class StpLayer
 	/// Represents an Spanning Tree Protocol Layer
-	class StpLayer : public WithSizeOf<StpLayer, Layer>
+	class StpLayer : public WithDynamicSizeOf<StpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<StpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<StpLayer, Layer>;
 
 	protected:
 		StpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
@@ -228,9 +228,9 @@ namespace pcpp
 
 	/// @class StpTopologyChangeBPDULayer
 	/// Represents network topology change BPDU message of Spanning Tree Protocol
-	class StpTopologyChangeBPDULayer : public WithSizeOf<StpTopologyChangeBPDULayer, StpLayer>
+	class StpTopologyChangeBPDULayer : public WithDynamicSizeOf<StpTopologyChangeBPDULayer, StpLayer>
 	{
-		using BaseLayer = WithSizeOf<StpTopologyChangeBPDULayer, StpLayer>;
+		using BaseLayer = WithDynamicSizeOf<StpTopologyChangeBPDULayer, StpLayer>;
 
 	protected:
 		explicit StpTopologyChangeBPDULayer(size_t dataLen) : BaseLayer(dataLen)
@@ -287,9 +287,9 @@ namespace pcpp
 
 	/// @class StpConfigurationBPDULayer
 	/// Represents configuration BPDU message of Spanning Tree Protocol
-	class StpConfigurationBPDULayer : public WithSizeOf<StpConfigurationBPDULayer, StpTopologyChangeBPDULayer>
+	class StpConfigurationBPDULayer : public WithDynamicSizeOf<StpConfigurationBPDULayer, StpTopologyChangeBPDULayer>
 	{
-		using BaseLayer = WithSizeOf<StpConfigurationBPDULayer, StpTopologyChangeBPDULayer>;
+		using BaseLayer = WithDynamicSizeOf<StpConfigurationBPDULayer, StpTopologyChangeBPDULayer>;
 
 	protected:
 		explicit StpConfigurationBPDULayer(size_t dataLen) : BaseLayer(dataLen)
@@ -477,9 +477,9 @@ namespace pcpp
 
 	/// @class RapidStpLayer
 	/// Represents Rapid Spanning Tree Protocol (RSTP)
-	class RapidStpLayer : public WithSizeOf<RapidStpLayer, StpConfigurationBPDULayer>
+	class RapidStpLayer : public WithDynamicSizeOf<RapidStpLayer, StpConfigurationBPDULayer>
 	{
-		using BaseLayer = WithSizeOf<RapidStpLayer, StpConfigurationBPDULayer>;
+		using BaseLayer = WithDynamicSizeOf<RapidStpLayer, StpConfigurationBPDULayer>;
 	protected:
 		explicit RapidStpLayer(size_t dataLen) : BaseLayer(dataLen)
 		{}
@@ -549,9 +549,9 @@ namespace pcpp
 	/// @class MultipleStpLayer
 	/// Represents Multiple Spanning Tree Protocol (MSTP). It has limited capabilities (no crafting / limited editing)
 	/// over MSTI configuration
-	class MultipleStpLayer : public WithSizeOf<MultipleStpLayer, RapidStpLayer>
+	class MultipleStpLayer : public WithDynamicSizeOf<MultipleStpLayer, RapidStpLayer>
 	{
-		using BaseLayer = WithSizeOf<MultipleStpLayer, RapidStpLayer>;
+		using BaseLayer = WithDynamicSizeOf<MultipleStpLayer, RapidStpLayer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

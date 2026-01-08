@@ -10,9 +10,9 @@
 namespace pcpp
 {
 	/// Class for single command text based protocol (FTP, SMTP) messages
-	class SingleCommandTextProtocol : public WithSizeOf<SingleCommandTextProtocol, Layer>
+	class SingleCommandTextProtocol : public WithDynamicSizeOf<SingleCommandTextProtocol, Layer>
 	{
-		using BaseLayer = WithSizeOf<SingleCommandTextProtocol, Layer>;
+		using BaseLayer = WithDynamicSizeOf<SingleCommandTextProtocol, Layer>;
 	private:
 		size_t getArgumentFieldOffset() const;
 		void setDelimiter(bool hyphen);

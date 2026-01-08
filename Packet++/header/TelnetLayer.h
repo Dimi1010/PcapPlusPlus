@@ -9,9 +9,9 @@
 namespace pcpp
 {
 	/// Class for representing the Telnet Layer
-	class TelnetLayer : public WithSizeOf<TelnetLayer, Layer>
+	class TelnetLayer : public WithDynamicSizeOf<TelnetLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<TelnetLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<TelnetLayer, Layer>;
 	private:
 		// Position iterator for next command
 		size_t lastPositionOffset;

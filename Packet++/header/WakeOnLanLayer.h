@@ -11,9 +11,9 @@
 namespace pcpp
 {
 	/// Class for representing the Wake on LAN Layer
-	class WakeOnLanLayer : public WithSizeOf<WakeOnLanLayer, Layer>
+	class WakeOnLanLayer : public WithDynamicSizeOf<WakeOnLanLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<WakeOnLanLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<WakeOnLanLayer, Layer>;
 	private:
 		void init(uint16_t len);
 

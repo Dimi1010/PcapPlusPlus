@@ -72,9 +72,9 @@ namespace pcpp
 	};
 	/// @class S7CommLayer
 	/// Represents a S7COMM (S7 Communication) protocol
-	class S7CommLayer : public WithSizeOf<S7CommLayer, Layer>
+	class S7CommLayer : public WithDynamicSizeOf<S7CommLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<S7CommLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<S7CommLayer, Layer>;
 	public:
 		/// A constructor that allocates a new S7comm header
 		/// @param[in] msgType The general type of the message

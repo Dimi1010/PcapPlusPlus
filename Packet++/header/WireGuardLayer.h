@@ -12,9 +12,9 @@ namespace pcpp
 {
 	/// @class WireGuardLayer
 	/// Represents a WireGuard protocol layer
-	class WireGuardLayer : public WithSizeOf<WireGuardLayer, Layer>
+	class WireGuardLayer : public WithDynamicSizeOf<WireGuardLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<WireGuardLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<WireGuardLayer, Layer>;
 
 	protected:
 #pragma pack(push, 1)
@@ -224,9 +224,9 @@ namespace pcpp
 
 	/// @class WireGuardHandshakeResponseLayer
 	/// Represents a Handshake Response message
-	class WireGuardHandshakeResponseLayer : public WithSizeOf<WireGuardHandshakeResponseLayer, WireGuardLayer>
+	class WireGuardHandshakeResponseLayer : public WithDynamicSizeOf<WireGuardHandshakeResponseLayer, WireGuardLayer>
 	{
-		using BaseLayer = WithSizeOf<WireGuardHandshakeResponseLayer, WireGuardLayer>;
+		using BaseLayer = WithDynamicSizeOf<WireGuardHandshakeResponseLayer, WireGuardLayer>;
 
 	private:
 #pragma pack(push, 1)
@@ -322,9 +322,9 @@ namespace pcpp
 
 	/// @class WireGuardCookieReplyLayer
 	/// Represents a Cookie Reply message
-	class WireGuardCookieReplyLayer : public WithSizeOf<WireGuardCookieReplyLayer, WireGuardLayer>
+	class WireGuardCookieReplyLayer : public WithDynamicSizeOf<WireGuardCookieReplyLayer, WireGuardLayer>
 	{
-		using BaseLayer = WithSizeOf<WireGuardCookieReplyLayer, WireGuardLayer>;
+		using BaseLayer = WithDynamicSizeOf<WireGuardCookieReplyLayer, WireGuardLayer>;
 
 	private:
 #pragma pack(push, 1)
@@ -391,9 +391,9 @@ namespace pcpp
 
 	/// @class WireGuardTransportDataLayer
 	/// Represents a Transport Data message
-	class WireGuardTransportDataLayer : public WithSizeOf<WireGuardTransportDataLayer, WireGuardLayer>
+	class WireGuardTransportDataLayer : public WithDynamicSizeOf<WireGuardTransportDataLayer, WireGuardLayer>
 	{
-		using BaseLayer = WithSizeOf<WireGuardTransportDataLayer, WireGuardLayer>;
+		using BaseLayer = WithDynamicSizeOf<WireGuardTransportDataLayer, WireGuardLayer>;
 	private:
 #pragma pack(push, 1)
 		/// @struct wg_transport_data

@@ -140,9 +140,9 @@ namespace pcpp
 
 	/// @class ArpLayer
 	/// Represents an ARP protocol layer. Currently only IPv4 ARP messages are supported
-	class ArpLayer : public WithSizeOf<ArpLayer, Layer>
+	class ArpLayer : public WithDynamicSizeOf<ArpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<ArpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<ArpLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref arphdr)

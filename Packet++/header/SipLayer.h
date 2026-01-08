@@ -66,9 +66,9 @@ namespace pcpp
 	/// @class SipLayer
 	/// Represents a general SIP message. It's an abstract class and cannot be instantiated. It's inherited by
 	/// SipRequestLayer and SipResponseLayer
-	class SipLayer : public WithSizeOf<SipLayer, TextBasedProtocolMessage>
+	class SipLayer : public WithDynamicSizeOf<SipLayer, TextBasedProtocolMessage>
 	{
-		using BaseLayer = WithSizeOf<SipLayer, TextBasedProtocolMessage>;
+		using BaseLayer = WithDynamicSizeOf<SipLayer, TextBasedProtocolMessage>;
 
 	public:
 		/// The length of the body of many SIP response messages is determined by a SIP header field called
@@ -181,9 +181,9 @@ namespace pcpp
 	/// special treatment and gets a class of it's own: SipRequestFirstLine. In most cases a SIP request will be
 	/// contained in a single packet but for cases it is not, only the first packet will be identified as SIP request
 	/// layer. You can find out whether the header is complete by using SipLayer#isHeaderComplete()
-	class SipRequestLayer : public WithSizeOf<SipRequestLayer, SipLayer>
+	class SipRequestLayer : public WithDynamicSizeOf<SipRequestLayer, SipLayer>
 	{
-		using BaseLayer = WithSizeOf<SipRequestLayer, SipLayer>;
+		using BaseLayer = WithDynamicSizeOf<SipRequestLayer, SipLayer>;
 		friend class SipRequestFirstLine;
 
 	public:
@@ -271,9 +271,9 @@ namespace pcpp
 	/// requires a special treatment and gets a class of it's own: SipResponseFirstLine. In most cases a SIP response
 	/// will be contained in a single packet but for cases it is not, only the first packet will be identified as SIP
 	/// response layer. You can find out whether the header is complete by using SipLayer#isHeaderComplete()
-	class SipResponseLayer : public WithSizeOf<SipResponseLayer, SipLayer>
+	class SipResponseLayer : public WithDynamicSizeOf<SipResponseLayer, SipLayer>
 	{
-		using BaseLayer = WithSizeOf<SipResponseLayer, SipLayer>;
+		using BaseLayer = WithDynamicSizeOf<SipResponseLayer, SipLayer>;
 		friend class SipResponseFirstLine;
 
 	public:

@@ -253,9 +253,9 @@ namespace pcpp
 
 	/// @class DhcpV6Layer
 	/// Represents a DHCPv6 (Dynamic Host Configuration Protocol version 6) protocol layer
-	class DhcpV6Layer : public WithSizeOf<DhcpV6Layer, Layer>
+	class DhcpV6Layer : public WithDynamicSizeOf<DhcpV6Layer, Layer>
 	{
-		using BaseLayer = WithSizeOf<DhcpV6Layer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<DhcpV6Layer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

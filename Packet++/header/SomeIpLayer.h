@@ -11,9 +11,9 @@ namespace pcpp
 {
 	/// @class SomeIpLayer
 	/// Represents a SOME/IP protocol layer
-	class SomeIpLayer : public WithSizeOf<SomeIpLayer, Layer>
+	class SomeIpLayer : public WithDynamicSizeOf<SomeIpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<SomeIpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<SomeIpLayer, Layer>;
 	public:
 		/// SOME/IP message types
 		enum class MsgType : uint8_t
@@ -287,9 +287,9 @@ namespace pcpp
 
 	/// @class SomeIpTpLayer
 	/// Represents an SOME/IP Transport Protocol Layer
-	class SomeIpTpLayer : public WithSizeOf<SomeIpTpLayer, SomeIpLayer>
+	class SomeIpTpLayer : public WithDynamicSizeOf<SomeIpTpLayer, SomeIpLayer>
 	{
-		using BaseLayer = WithSizeOf<SomeIpTpLayer, SomeIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<SomeIpTpLayer, SomeIpLayer>;
 	public:
 		/// @struct someiptphdr
 		/// Represents an SOME/IP-TP protocol header.

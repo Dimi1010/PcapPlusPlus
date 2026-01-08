@@ -11,9 +11,9 @@
 namespace pcpp
 {
 	/// Class for general SMTP message
-	class SmtpLayer : public WithSizeOf<SmtpLayer, SingleCommandTextProtocol>
+	class SmtpLayer : public WithDynamicSizeOf<SmtpLayer, SingleCommandTextProtocol>
 	{
-		using BaseLayer = WithSizeOf<SmtpLayer, SingleCommandTextProtocol>;
+		using BaseLayer = WithDynamicSizeOf<SmtpLayer, SingleCommandTextProtocol>;
 
 	protected:
 		SmtpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
@@ -54,9 +54,9 @@ namespace pcpp
 	};
 
 	/// Class for representing the request messages of SMTP Layer
-	class SmtpRequestLayer : public WithSizeOf<SmtpRequestLayer, SmtpLayer>
+	class SmtpRequestLayer : public WithDynamicSizeOf<SmtpRequestLayer, SmtpLayer>
 	{
-		using BaseLayer = WithSizeOf<SmtpRequestLayer, SmtpLayer>;
+		using BaseLayer = WithDynamicSizeOf<SmtpRequestLayer, SmtpLayer>;
 	public:
 		/// Enum for SMTP command codes
 		enum class SmtpCommand : uint64_t
@@ -168,9 +168,9 @@ namespace pcpp
 	};
 
 	/// Class for representing the response messages of SMTP Layer
-	class SmtpResponseLayer : public WithSizeOf<SmtpResponseLayer, SmtpLayer>
+	class SmtpResponseLayer : public WithDynamicSizeOf<SmtpResponseLayer, SmtpLayer>
 	{
-		using BaseLayer = WithSizeOf<SmtpResponseLayer, SmtpLayer>;
+		using BaseLayer = WithDynamicSizeOf<SmtpResponseLayer, SmtpLayer>;
 	public:
 		/// Enum for SMTP response codes
 		enum class SmtpStatusCode : int

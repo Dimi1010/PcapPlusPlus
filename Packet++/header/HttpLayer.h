@@ -63,9 +63,9 @@ namespace pcpp
 	/// @class HttpMessage
 	/// Represents a general HTTP message. It's an abstract class and cannot be instantiated. It's inherited by
 	/// HttpRequestLayer and HttpResponseLayer
-	class HttpMessage : public WithSizeOf<HttpMessage, TextBasedProtocolMessage>
+	class HttpMessage : public WithDynamicSizeOf<HttpMessage, TextBasedProtocolMessage>
 	{
-		using BaseLayer = WithSizeOf<HttpMessage, TextBasedProtocolMessage>;
+		using BaseLayer = WithDynamicSizeOf<HttpMessage, TextBasedProtocolMessage>;
 
 	public:
 		~HttpMessage() override = default;
@@ -128,9 +128,9 @@ namespace pcpp
 	/// first packet won't be complete (as it continues in the following packets), this why PcapPlusPlus can indicate
 	/// that HTTP request header is complete or not(doesn't end with "\r\n\r\n" or "\n\n") using
 	/// HttpMessage#isHeaderComplete()
-	class HttpRequestLayer : public WithSizeOf<HttpRequestLayer, HttpMessage>
+	class HttpRequestLayer : public WithDynamicSizeOf<HttpRequestLayer, HttpMessage>
 	{
-		using BaseLayer = WithSizeOf<HttpRequestLayer, HttpMessage>;
+		using BaseLayer = WithDynamicSizeOf<HttpRequestLayer, HttpMessage>;
 		friend class HttpRequestFirstLine;
 
 	public:
@@ -474,9 +474,9 @@ namespace pcpp
 	/// (the other packets won't be recognized as HttpResponseLayer) and 2) the HTTP header for the first packet won't
 	/// be complete (as it continues in the following packets), this why PcapPlusPlus can indicate that HTTP response
 	/// header is complete or not (doesn't end with "\r\n\r\n" or "\n\n") using HttpMessage#isHeaderComplete()
-	class HttpResponseLayer : public WithSizeOf<HttpResponseLayer, HttpMessage>
+	class HttpResponseLayer : public WithDynamicSizeOf<HttpResponseLayer, HttpMessage>
 	{
-		using BaseLayer = WithSizeOf<HttpResponseLayer, HttpMessage>;
+		using BaseLayer = WithDynamicSizeOf<HttpResponseLayer, HttpMessage>;
 		friend class HttpResponseFirstLine;
 
 	public:

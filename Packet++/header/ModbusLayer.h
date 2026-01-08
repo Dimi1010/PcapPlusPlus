@@ -31,9 +31,9 @@ namespace pcpp
 
 	/// @class ModbusLayer
 	/// Represents the MODBUS Application Protocol layer
-	class ModbusLayer : public WithSizeOf<ModbusLayer, Layer>
+	class ModbusLayer : public WithDynamicSizeOf<ModbusLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<ModbusLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<ModbusLayer, Layer>;
 	public:
 		/// @brief Enum class representing Modbus function codes.
 		/// This enumeration defines the standard Modbus function codes used in request and response PDUs.

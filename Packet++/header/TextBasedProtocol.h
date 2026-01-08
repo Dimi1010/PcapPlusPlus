@@ -101,9 +101,9 @@ namespace pcpp
 	/// @class TextBasedProtocolMessage
 	/// An abstract base class that wraps text-based-protocol header layers (both requests and responses). It is the
 	/// base class for all those layers. This class is not meant to be instantiated, hence the protected c'tor
-	class TextBasedProtocolMessage : public WithSizeOf<TextBasedProtocolMessage, Layer>
+	class TextBasedProtocolMessage : public WithDynamicSizeOf<TextBasedProtocolMessage, Layer>
 	{
-		using BaseLayer = WithSizeOf<TextBasedProtocolMessage, Layer>;
+		using BaseLayer = WithDynamicSizeOf<TextBasedProtocolMessage, Layer>;
 		friend class HeaderField;
 
 	public:

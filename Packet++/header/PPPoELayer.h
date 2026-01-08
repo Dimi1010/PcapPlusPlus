@@ -42,9 +42,9 @@ namespace pcpp
 	/// @class PPPoELayer
 	/// An abstract class that describes the PPPoE protocol. Contains common data and logic of the two types of PPPoE
 	/// packets: PPPoE session and PPPoE discovery
-	class PPPoELayer : public WithSizeOf<PPPoELayer, Layer>
+	class PPPoELayer : public WithDynamicSizeOf<PPPoELayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<PPPoELayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<PPPoELayer, Layer>;
 
 	public:
 		/// PPPoE possible codes
@@ -107,9 +107,9 @@ namespace pcpp
 
 	/// @class PPPoESessionLayer
 	/// Describes the PPPoE session protocol
-	class PPPoESessionLayer : public WithSizeOf<PPPoESessionLayer, PPPoELayer>
+	class PPPoESessionLayer : public WithDynamicSizeOf<PPPoESessionLayer, PPPoELayer>
 	{
-		using BaseLayer = WithSizeOf<PPPoESessionLayer, PPPoELayer>;
+		using BaseLayer = WithDynamicSizeOf<PPPoESessionLayer, PPPoELayer>;
 
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
@@ -166,9 +166,9 @@ namespace pcpp
 
 	/// @class PPPoEDiscoveryLayer
 	/// Describes the PPPoE discovery protocol
-	class PPPoEDiscoveryLayer : public WithSizeOf<PPPoEDiscoveryLayer, PPPoELayer>
+	class PPPoEDiscoveryLayer : public WithDynamicSizeOf<PPPoEDiscoveryLayer, PPPoELayer>
 	{
-		using BaseLayer = WithSizeOf<PPPoEDiscoveryLayer, PPPoELayer>;
+		using BaseLayer = WithDynamicSizeOf<PPPoEDiscoveryLayer, PPPoELayer>;
 	public:
 		/// PPPoE tag types
 		enum PPPoETagTypes

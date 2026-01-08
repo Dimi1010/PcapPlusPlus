@@ -38,9 +38,9 @@ namespace pcpp
 
 	/// @class Sll2Layer
 	/// Represents an SLL2 (Linux cooked capture) protocol layer
-	class Sll2Layer : public WithSizeOf<Sll2Layer, Layer>
+	class Sll2Layer : public WithDynamicSizeOf<Sll2Layer, Layer>
 	{
-		using BaseLayer = WithSizeOf<Sll2Layer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<Sll2Layer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to ether_header)

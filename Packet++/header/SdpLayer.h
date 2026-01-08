@@ -52,9 +52,9 @@ namespace pcpp
 	/// (for example: PCPP_SDP_ORIGINATOR_FIELD is a macro for the originator field (o=) ).<BR>
 	/// For more details about SDP structure please refer to its Wikipedia page:
 	/// https://en.wikipedia.org/wiki/Session_Description_Protocol
-	class SdpLayer : public WithSizeOf<SdpLayer, TextBasedProtocolMessage>
+	class SdpLayer : public WithDynamicSizeOf<SdpLayer, TextBasedProtocolMessage>
 	{
-		using BaseLayer = WithSizeOf<SdpLayer, TextBasedProtocolMessage>;
+		using BaseLayer = WithDynamicSizeOf<SdpLayer, TextBasedProtocolMessage>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

@@ -70,9 +70,9 @@ namespace pcpp
 	/// It holds some common functionality, but its most important method is createSSHMessage()
 	/// which takes raw data and creates an SSH message according to the heuristics described
 	/// in the SSHLayer.h file description
-	class SSHLayer : public WithSizeOf<SSHLayer, Layer>
+	class SSHLayer : public WithDynamicSizeOf<SSHLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<SSHLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<SSHLayer, Layer>;
 
 	public:
 		/// A static method that takes raw packet data and uses the heuristics described in the
@@ -128,9 +128,9 @@ namespace pcpp
 	///
 	/// The message content is typically a string that contains the protocol version, software version and a few more
 	/// details. This string can be retrieved using the getIdentificationMessage() method
-	class SSHIdentificationMessage : public WithSizeOf<SSHIdentificationMessage, SSHLayer>
+	class SSHIdentificationMessage : public WithDynamicSizeOf<SSHIdentificationMessage, SSHLayer>
 	{
-		using BaseLayer = WithSizeOf<SSHIdentificationMessage, SSHLayer>;
+		using BaseLayer = WithDynamicSizeOf<SSHIdentificationMessage, SSHLayer>;
 
 	public:
 		/// @return The SSH identification message which is typically the content of this message
@@ -186,9 +186,9 @@ namespace pcpp
 	/// This class provides access to all of these values. The message content itself is not parse with the exception of
 	/// SSHKeyExchangeInitMessage
 	/// which inherits from this class and provides parsing of the Key Exchange Init message.
-	class SSHHandshakeMessage : public WithSizeOf<SSHHandshakeMessage, SSHLayer>
+	class SSHHandshakeMessage : public WithDynamicSizeOf<SSHHandshakeMessage, SSHLayer>
 	{
-		using BaseLayer = WithSizeOf<SSHHandshakeMessage, SSHLayer>;
+		using BaseLayer = WithDynamicSizeOf<SSHHandshakeMessage, SSHLayer>;
 
 	public:
 		/// An enum that represents SSH non-encrypted message types
@@ -277,9 +277,9 @@ namespace pcpp
 	/// A class representing the SSH Key Exchange Init message. This is a non-encrypted message that contains
 	/// information about the algorithms used for key exchange, encryption, MAC and compression. This class provides
 	/// methods to access these details
-	class SSHKeyExchangeInitMessage : public WithSizeOf<SSHKeyExchangeInitMessage, SSHHandshakeMessage>
+	class SSHKeyExchangeInitMessage : public WithDynamicSizeOf<SSHKeyExchangeInitMessage, SSHHandshakeMessage>
 	{
-		using BaseLayer = WithSizeOf<SSHKeyExchangeInitMessage, SSHHandshakeMessage>;
+		using BaseLayer = WithDynamicSizeOf<SSHKeyExchangeInitMessage, SSHHandshakeMessage>;
 
 	public:
 		/// A c'tor for this class that accepts raw message data. Please avoid using it as it's used internally
@@ -394,9 +394,9 @@ namespace pcpp
 	///
 	/// It is assumed that any SSH message which does not fit to any of the other SSH message types, according to the
 	/// heuristics described in the SSHLayer.h file description, is considered as an encrypted message.
-	class SSHEncryptedMessage : public WithSizeOf<SSHEncryptedMessage, SSHLayer>
+	class SSHEncryptedMessage : public WithDynamicSizeOf<SSHEncryptedMessage, SSHLayer>
 	{
-		using BaseLayer = WithSizeOf<SSHEncryptedMessage, SSHLayer>;
+		using BaseLayer = WithDynamicSizeOf<SSHEncryptedMessage, SSHLayer>;
 	public:
 		/// A c'tor for this class that accepts raw message data. Please avoid using it as it's used internally
 		/// when parsing SSH messages in SSHLayer#createSSHMessage()

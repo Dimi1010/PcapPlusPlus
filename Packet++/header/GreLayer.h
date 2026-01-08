@@ -93,9 +93,9 @@ namespace pcpp
 	/// @class GreLayer
 	/// Abstract base class for GRE layers (GREv0Layer and GREv1Layer). Cannot be instantiated and contains common logic
 	/// for derived classes
-	class GreLayer : public WithSizeOf<GreLayer, Layer>
+	class GreLayer : public WithDynamicSizeOf<GreLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<GreLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<GreLayer, Layer>;
 	public:
 		~GreLayer() override = default;
 
@@ -164,9 +164,9 @@ namespace pcpp
 	/// Represents a GRE version 0 protocol. Limitation: currently this layer doesn't support GRE routing information
 	/// parsing and editing. So if a GREv0 packet includes routing information it won't be parse correctly. I didn't add
 	/// it because of lack of time, but if you need it please tell me and I'll add it
-	class GREv0Layer : public WithSizeOf<GREv0Layer, GreLayer>
+	class GREv0Layer : public WithDynamicSizeOf<GREv0Layer, GreLayer>
 	{
-		using BaseLayer = WithSizeOf<GREv0Layer, GreLayer>;
+		using BaseLayer = WithDynamicSizeOf<GREv0Layer, GreLayer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -263,9 +263,9 @@ namespace pcpp
 
 	/// @class GREv1Layer
 	/// Represents a GRE version 1 protocol
-	class GREv1Layer : public WithSizeOf<GREv1Layer, GreLayer>
+	class GREv1Layer : public WithDynamicSizeOf<GREv1Layer, GreLayer>
 	{
-		using BaseLayer = WithSizeOf<GREv1Layer, GreLayer>;
+		using BaseLayer = WithDynamicSizeOf<GREv1Layer, GreLayer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -335,9 +335,9 @@ namespace pcpp
 	/// @class PPP_PPTPLayer
 	/// Represent a PPP (point-to-point) protocol header that comes after GREv1 header, as part of PPTP - Point-to-Point
 	/// Tunneling Protocol
-	class PPP_PPTPLayer : public WithSizeOf<PPP_PPTPLayer, Layer>
+	class PPP_PPTPLayer : public WithDynamicSizeOf<PPP_PPTPLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<PPP_PPTPLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<PPP_PPTPLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref ppp_pptp_header)

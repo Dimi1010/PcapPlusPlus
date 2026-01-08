@@ -30,9 +30,9 @@ namespace pcpp
 
 	/// @class VlanLayer
 	/// Represents a VLAN tunnel layer
-	class VlanLayer : public WithSizeOf<VlanLayer, Layer>
+	class VlanLayer : public WithDynamicSizeOf<VlanLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<VlanLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<VlanLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

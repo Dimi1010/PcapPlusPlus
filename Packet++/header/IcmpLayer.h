@@ -322,9 +322,9 @@ namespace pcpp
 
 	/// @class IcmpLayer
 	/// Represents an ICMP protocol layer (for IPv4 only)
-	class IcmpLayer : public WithSizeOf<IcmpLayer, Layer>
+	class IcmpLayer : public WithDynamicSizeOf<IcmpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<IcmpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<IcmpLayer, Layer>;
 	private:
 		icmp_echo_request m_EchoData;
 		mutable icmp_router_advertisement m_RouterAdvData;

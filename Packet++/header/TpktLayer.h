@@ -26,9 +26,9 @@ namespace pcpp
 
 	/// @class TpktLayer
 	/// Represents a TPKT (Transport Service on top of the TCP) protocol layer
-	class TpktLayer : public WithSizeOf<TpktLayer, Layer>
+	class TpktLayer : public WithDynamicSizeOf<TpktLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<TpktLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<TpktLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref tpkthdr)

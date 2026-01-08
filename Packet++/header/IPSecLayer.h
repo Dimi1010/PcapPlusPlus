@@ -42,9 +42,9 @@ namespace pcpp
 
 	/// @class AuthenticationHeaderLayer
 	/// Represents an IPSec AuthenticationHeader (AH) layer
-	class AuthenticationHeaderLayer : public WithSizeOf<AuthenticationHeaderLayer, Layer>
+	class AuthenticationHeaderLayer : public WithDynamicSizeOf<AuthenticationHeaderLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<AuthenticationHeaderLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<AuthenticationHeaderLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data
@@ -115,9 +115,9 @@ namespace pcpp
 
 	/// @class ESPLayer
 	/// Represents an IPSec Encapsulating Security Payload (ESP) layer
-	class ESPLayer : public WithSizeOf<ESPLayer, Layer>
+	class ESPLayer : public WithDynamicSizeOf<ESPLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<ESPLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<ESPLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

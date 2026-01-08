@@ -64,9 +64,9 @@ namespace pcpp
 
 	/// @class EthLayer
 	/// Represents an Ethernet II protocol layer
-	class EthLayer : public WithSizeOf<EthLayer, Layer>
+	class EthLayer : public WithDynamicSizeOf<EthLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<EthLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<EthLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to ether_header)

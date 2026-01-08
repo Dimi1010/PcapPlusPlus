@@ -438,9 +438,9 @@ namespace pcpp
 
 	/// @class TcpLayer
 	/// Represents a TCP (Transmission Control Protocol) protocol layer
-	class TcpLayer : public WithSizeOf<TcpLayer, Layer>
+	class TcpLayer : public WithDynamicSizeOf<TcpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<TcpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<TcpLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref tcphdr)

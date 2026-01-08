@@ -10,9 +10,9 @@ namespace pcpp
 {
 	/// @class MplsLayer
 	/// Represents a MPLS (Multi-Protocol Label Switching) layer
-	class MplsLayer : public WithSizeOf<MplsLayer, Layer>
+	class MplsLayer : public WithDynamicSizeOf<MplsLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<MplsLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<MplsLayer, Layer>;
 	private:
 #pragma pack(push, 1)
 		struct mpls_header

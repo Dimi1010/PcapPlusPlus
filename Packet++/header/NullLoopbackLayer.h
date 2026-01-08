@@ -28,9 +28,9 @@ namespace pcpp
 
 	/// @class NullLoopbackLayer
 	/// Represents a Null/Loopback layer
-	class NullLoopbackLayer : public WithSizeOf<NullLoopbackLayer, Layer>
+	class NullLoopbackLayer : public WithDynamicSizeOf<NullLoopbackLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<NullLoopbackLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<NullLoopbackLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

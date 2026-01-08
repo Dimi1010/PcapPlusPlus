@@ -130,9 +130,9 @@ namespace pcpp
 
 	/// @class RadiusLayer
 	/// Represents a RADIUS (Remote Authentication Dial-In User Service) protocol layer
-	class RadiusLayer : public WithSizeOf<RadiusLayer, Layer>
+	class RadiusLayer : public WithDynamicSizeOf<RadiusLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<RadiusLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<RadiusLayer, Layer>;
 	private:
 		TLVRecordReader<RadiusAttribute> m_AttributeReader;
 

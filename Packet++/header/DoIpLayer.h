@@ -556,9 +556,9 @@ namespace pcpp
 
 	/// @class DoIpLayer
 	/// Represents an DoIP protocol layer. Currently only IPv4 DoIP messages are supported
-	class DoIpLayer : public WithSizeOf<DoIpLayer, Layer>
+	class DoIpLayer : public WithDynamicSizeOf<DoIpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<DoIpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpLayer, Layer>;
 
 	public:
 		/// Get the doip payload type
@@ -764,9 +764,9 @@ namespace pcpp
 	/// @brief Represents a DoIP Generic Header Negative Acknowledgement message.
 	///
 	/// This message indicates that a received DoIP header was invalid or unsupported.
-	class DoIpGenericHeaderNack : public WithSizeOf<DoIpGenericHeaderNack, DoIpLayer>
+	class DoIpGenericHeaderNack : public WithDynamicSizeOf<DoIpGenericHeaderNack, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpGenericHeaderNack, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpGenericHeaderNack, DoIpLayer>;
 
 	public:
 		/// @brief Constructs the layer from raw DoIP packet data.
@@ -828,9 +828,9 @@ namespace pcpp
 	///
 	/// This message is sent by a tester to request vehicle identification information
 	/// such as VIN, logical addresses, and other metadata. It can be broadcast or directed.
-	class DoIpVehicleIdentificationRequest : public WithSizeOf<DoIpVehicleIdentificationRequest, DoIpLayer>
+	class DoIpVehicleIdentificationRequest : public WithDynamicSizeOf<DoIpVehicleIdentificationRequest, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpVehicleIdentificationRequest, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpVehicleIdentificationRequest, DoIpLayer>;
 
 	public:
 		/// @brief Constructs a VehicleIdentificationRequest from raw packet data.
@@ -869,9 +869,9 @@ namespace pcpp
 	///
 	/// This message is used to identify a vehicle based on its Entity ID (EID).
 	class DoIpVehicleIdentificationRequestWithEID
-	    : public WithSizeOf<DoIpVehicleIdentificationRequestWithEID, DoIpLayer>
+	    : public WithDynamicSizeOf<DoIpVehicleIdentificationRequestWithEID, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpVehicleIdentificationRequestWithEID, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpVehicleIdentificationRequestWithEID, DoIpLayer>;
 
 	public:
 		/// @brief Constructs the layer from raw DoIP packet data.
@@ -933,9 +933,9 @@ namespace pcpp
 	///
 	/// This message is used to identify a vehicle based on its Vehicle Identification Number (VIN).
 	class DoIpVehicleIdentificationRequestWithVIN
-	    : public WithSizeOf<DoIpVehicleIdentificationRequestWithVIN, DoIpLayer>
+	    : public WithDynamicSizeOf<DoIpVehicleIdentificationRequestWithVIN, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpVehicleIdentificationRequestWithVIN, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpVehicleIdentificationRequestWithVIN, DoIpLayer>;
 
 	public:
 		/// @brief Constructs the layer from raw DoIP packet data.
@@ -997,9 +997,9 @@ namespace pcpp
 	///
 	/// This message is broadcasted by a vehicle to announce its presence, including VIN,
 	/// logical address, EID, GID, and optionally synchronization status.
-	class DoIpVehicleAnnouncementMessage : public WithSizeOf<DoIpVehicleAnnouncementMessage, DoIpLayer>
+	class DoIpVehicleAnnouncementMessage : public WithDynamicSizeOf<DoIpVehicleAnnouncementMessage, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpVehicleAnnouncementMessage, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpVehicleAnnouncementMessage, DoIpLayer>;
 
 	public:
 		/// @brief Constructs the layer from raw DoIP packet data.
@@ -1128,9 +1128,9 @@ namespace pcpp
 	///
 	/// Provides parsing and construction for Routing Activation Request messages
 	/// as defined by the DoIP protocol.
-	class DoIpRoutingActivationRequest : public WithSizeOf<DoIpRoutingActivationRequest, DoIpLayer>
+	class DoIpRoutingActivationRequest : public WithDynamicSizeOf<DoIpRoutingActivationRequest, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpRoutingActivationRequest, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpRoutingActivationRequest, DoIpLayer>;
 
 	public:
 		/// @brief Constructs the layer from raw DoIP packet data.
@@ -1233,9 +1233,9 @@ namespace pcpp
 	///
 	/// Provides parsing and construction for Routing Activation Response messages
 	/// as defined by the DoIP protocol.
-	class DoIpRoutingActivationResponse : public WithSizeOf<DoIpRoutingActivationResponse, DoIpLayer>
+	class DoIpRoutingActivationResponse : public WithDynamicSizeOf<DoIpRoutingActivationResponse, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpRoutingActivationResponse, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpRoutingActivationResponse, DoIpLayer>;
 
 	public:
 		/// @brief Constructs the layer from raw DoIP packet data.
@@ -1349,9 +1349,9 @@ namespace pcpp
 	///
 	/// This message is sent by a tester to verify if a DoIP entity is responsive.
 	/// The responding DoIP node should reply with an Alive Check Response.
-	class DoIpAliveCheckRequest : public WithSizeOf<DoIpAliveCheckRequest, DoIpLayer>
+	class DoIpAliveCheckRequest : public WithDynamicSizeOf<DoIpAliveCheckRequest, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpAliveCheckRequest, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpAliveCheckRequest, DoIpLayer>;
 
 	public:
 		/// @brief Constructs an AliveCheckRequest from raw packet data.
@@ -1390,9 +1390,9 @@ namespace pcpp
 	///
 	/// The Alive Check Response is used to confirm that an entity is still active in the network.
 	/// It contains the source address of the responder.
-	class DoIpAliveCheckResponse : public WithSizeOf<DoIpAliveCheckResponse, DoIpLayer>
+	class DoIpAliveCheckResponse : public WithDynamicSizeOf<DoIpAliveCheckResponse, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpAliveCheckResponse, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpAliveCheckResponse, DoIpLayer>;
 
 	public:
 		/// @brief Constructs the layer from raw DoIP packet data.
@@ -1455,9 +1455,9 @@ namespace pcpp
 	/// This message is sent by a tester to request the current status of the DoIP entity,
 	/// including capabilities such as maximum number of concurrent socket connections
 	/// and optionally the maximum data size supported.
-	class DoIpEntityStatusRequest : public WithSizeOf<DoIpEntityStatusRequest, DoIpLayer>
+	class DoIpEntityStatusRequest : public WithDynamicSizeOf<DoIpEntityStatusRequest, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpEntityStatusRequest, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpEntityStatusRequest, DoIpLayer>;
 
 	public:
 		/// @brief Constructs an EntityStatusRequest from raw packet data.
@@ -1496,9 +1496,9 @@ namespace pcpp
 	///
 	/// This message provides the status of a DoIP entity, such as its type,
 	/// the number of concurrent sockets it can support, and optionally the max data size.
-	class DoIpEntityStatusResponse : public WithSizeOf<DoIpEntityStatusResponse, DoIpLayer>
+	class DoIpEntityStatusResponse : public WithDynamicSizeOf<DoIpEntityStatusResponse, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpEntityStatusResponse, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpEntityStatusResponse, DoIpLayer>;
 
 	public:
 		/// @brief Constructs the layer from raw DoIP packet data.
@@ -1606,9 +1606,9 @@ namespace pcpp
 	///
 	/// This message is sent to inquire about the current power mode status of the vehicle,
 	/// which helps determine if diagnostic communication can be initiated or continued.
-	class DoIpDiagnosticPowerModeRequest : public WithSizeOf<DoIpDiagnosticPowerModeRequest, DoIpLayer>
+	class DoIpDiagnosticPowerModeRequest : public WithDynamicSizeOf<DoIpDiagnosticPowerModeRequest, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpDiagnosticPowerModeRequest, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpDiagnosticPowerModeRequest, DoIpLayer>;
 
 	public:
 		/// @brief Constructs a DiagnosticPowerModeRequest from raw packet data.
@@ -1647,9 +1647,9 @@ namespace pcpp
 	///
 	/// This message is used to communicate the current power mode of the vehicle
 	/// or control unit in response to a diagnostic power mode request.
-	class DoIpDiagnosticPowerModeResponse : public WithSizeOf<DoIpDiagnosticPowerModeResponse, DoIpLayer>
+	class DoIpDiagnosticPowerModeResponse : public WithDynamicSizeOf<DoIpDiagnosticPowerModeResponse, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpDiagnosticPowerModeResponse, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpDiagnosticPowerModeResponse, DoIpLayer>;
 
 	public:
 		/// @brief Constructs the layer from raw DoIP packet data.
@@ -1710,9 +1710,9 @@ namespace pcpp
 	/// @class DoIpDiagnosticBase
 	/// @brief Represents a DoIP Diagnostic Message sent between tester and ECU.
 	/// This class includes source and target addresses.
-	class DoIpDiagnosticBase : public WithSizeOf<DoIpDiagnosticBase, DoIpLayer>
+	class DoIpDiagnosticBase : public WithDynamicSizeOf<DoIpDiagnosticBase, DoIpLayer>
 	{
-		using BaseLayer = WithSizeOf<DoIpDiagnosticBase, DoIpLayer>;
+		using BaseLayer = WithDynamicSizeOf<DoIpDiagnosticBase, DoIpLayer>;
 
 	public:
 		/// @brief Gets the source logical address of the message.
@@ -1763,9 +1763,9 @@ namespace pcpp
 	/// @brief Represents a DoIP Diagnostic message sent between tester and ECU.
 	///
 	/// This message includes source and target addresses and carries diagnostic service data.
-	class DoIpDiagnosticMessage : public WithSizeOf<DoIpDiagnosticMessage, DoIpDiagnosticBase>
+	class DoIpDiagnosticMessage : public WithDynamicSizeOf<DoIpDiagnosticMessage, DoIpDiagnosticBase>
 	{
-		using BaseLayer = WithSizeOf<DoIpDiagnosticMessage, DoIpDiagnosticBase>;
+		using BaseLayer = WithDynamicSizeOf<DoIpDiagnosticMessage, DoIpDiagnosticBase>;
 
 	public:
 		/// @brief Constructs the DiagnosticMessage from raw packet data.
@@ -1824,9 +1824,9 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	/// @class DoIpDiagnosticResponseMessageBase
 	/// @brief Represents a Basic class for Diagnostic message (ACK/NACK) sent back to tester.
-	class DoIpDiagnosticResponseMessageBase : public WithSizeOf<DoIpDiagnosticResponseMessageBase, DoIpDiagnosticBase>
+	class DoIpDiagnosticResponseMessageBase : public WithDynamicSizeOf<DoIpDiagnosticResponseMessageBase, DoIpDiagnosticBase>
 	{
-		using BaseLayer = WithSizeOf<DoIpDiagnosticResponseMessageBase, DoIpDiagnosticBase>;
+		using BaseLayer = WithDynamicSizeOf<DoIpDiagnosticResponseMessageBase, DoIpDiagnosticBase>;
 
 	public:
 		/// @brief Gets the acknowledgment/nack code (1-byte).
@@ -1888,9 +1888,9 @@ namespace pcpp
 	///
 	/// This message is sent by a DoIP node to acknowledge the correct reception and processing
 	/// of a diagnostic message. Optionally, the original message (or part of it) may be echoed back.
-	class DoIpDiagnosticMessageAck : public WithSizeOf<DoIpDiagnosticMessageAck, DoIpDiagnosticResponseMessageBase>
+	class DoIpDiagnosticMessageAck : public WithDynamicSizeOf<DoIpDiagnosticMessageAck, DoIpDiagnosticResponseMessageBase>
 	{
-		using BaseLayer = WithSizeOf<DoIpDiagnosticMessageAck, DoIpDiagnosticResponseMessageBase>;
+		using BaseLayer = WithDynamicSizeOf<DoIpDiagnosticMessageAck, DoIpDiagnosticResponseMessageBase>;
 
 	public:
 		/// @brief Constructs a DiagnosticAckMessage from raw packet data.
@@ -1933,9 +1933,9 @@ namespace pcpp
 	///
 	/// This message is sent by a DoIP node when a diagnostic message is received but could not
 	/// be processed successfully. It may include the original message for reference.
-	class DoIpDiagnosticMessageNack : public WithSizeOf<DoIpDiagnosticMessageNack, DoIpDiagnosticResponseMessageBase>
+	class DoIpDiagnosticMessageNack : public WithDynamicSizeOf<DoIpDiagnosticMessageNack, DoIpDiagnosticResponseMessageBase>
 	{
-		using BaseLayer = WithSizeOf<DoIpDiagnosticMessageNack, DoIpDiagnosticResponseMessageBase>;
+		using BaseLayer = WithDynamicSizeOf<DoIpDiagnosticMessageNack, DoIpDiagnosticResponseMessageBase>;
 	public:
 		/// @brief Constructs a DiagnosticNackMessage from raw packet data.
 		/// @param[in] data Pointer to the raw payload data.

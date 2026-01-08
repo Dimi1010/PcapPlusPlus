@@ -27,9 +27,9 @@ namespace pcpp
 
 	/// @class EthDot3Layer
 	/// Represents an IEEE 802.3 Ethernet protocol layer
-	class EthDot3Layer : public WithSizeOf<EthDot3Layer, Layer>
+	class EthDot3Layer : public WithDynamicSizeOf<EthDot3Layer, Layer>
 	{
-		using BaseLayer = WithSizeOf<EthDot3Layer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<EthDot3Layer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to ether_dot3_header)

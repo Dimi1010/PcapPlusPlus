@@ -26,9 +26,9 @@ namespace pcpp
 
 	/// @class CotpLayer
 	/// Represents a COTP (Connection Oriented Transport Protocol)
-	class CotpLayer : public WithSizeOf<CotpLayer, Layer>
+	class CotpLayer : public WithDynamicSizeOf<CotpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<CotpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<CotpLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref cotphdr)

@@ -65,9 +65,9 @@ namespace pcpp
 	/// |                                                               |
 	/// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	/// @endcode
-	class NtpLayer : public WithSizeOf<NtpLayer, Layer>
+	class NtpLayer : public WithDynamicSizeOf<NtpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<NtpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<NtpLayer, Layer>;
 	private:
 #pragma pack(push, 1)
 		struct ntp_header

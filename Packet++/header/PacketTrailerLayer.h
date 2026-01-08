@@ -28,9 +28,9 @@ namespace pcpp
 	/// This layer can be removed by the user or extended/shortened, as any layer.
 	///
 	/// It also contains method to extract the trailer data
-	class PacketTrailerLayer : public WithSizeOf<PacketTrailerLayer, Layer>
+	class PacketTrailerLayer : public WithDynamicSizeOf<PacketTrailerLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<PacketTrailerLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<PacketTrailerLayer, Layer>;
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data

@@ -135,9 +135,9 @@ namespace pcpp
 	/// A base class for all IGMP (Internet Group Management Protocol) protocol classes. This is an abstract class and
 	/// cannot be instantiated, only its child classes can be instantiated. The inherited classes represent the
 	/// different versions of the protocol: IGMPv1, IGMPv2 and IGMPv3
-	class IgmpLayer : public WithSizeOf<IgmpLayer, Layer>
+	class IgmpLayer : public WithDynamicSizeOf<IgmpLayer, Layer>
 	{
-		using BaseLayer = WithSizeOf<IgmpLayer, Layer>;
+		using BaseLayer = WithDynamicSizeOf<IgmpLayer, Layer>;
 
 	protected:
 		IgmpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType igmpVer)
@@ -210,9 +210,9 @@ namespace pcpp
 	/// @class IgmpV1Layer
 	/// Represents IGMPv1 (Internet Group Management Protocol ver 1) layer. This class represents all the different
 	/// messages of IGMPv1
-	class IgmpV1Layer : public WithSizeOf<IgmpV1Layer, IgmpLayer>
+	class IgmpV1Layer : public WithDynamicSizeOf<IgmpV1Layer, IgmpLayer>
 	{
-		using BaseLayer = WithSizeOf<IgmpV1Layer, IgmpLayer>;
+		using BaseLayer = WithDynamicSizeOf<IgmpV1Layer, IgmpLayer>;
 
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
@@ -253,9 +253,9 @@ namespace pcpp
 	/// @class IgmpV2Layer
 	/// Represents IGMPv2 (Internet Group Management Protocol ver 2) layer. This class represents all the different
 	/// messages of IGMPv2
-	class IgmpV2Layer : public WithSizeOf<IgmpV2Layer, IgmpLayer>
+	class IgmpV2Layer : public WithDynamicSizeOf<IgmpV2Layer, IgmpLayer>
 	{
-		using BaseLayer = WithSizeOf<IgmpV2Layer, IgmpLayer>;
+		using BaseLayer = WithDynamicSizeOf<IgmpV2Layer, IgmpLayer>;
 
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
@@ -297,9 +297,9 @@ namespace pcpp
 
 	/// @class IgmpV3QueryLayer
 	/// Represents an IGMPv3 (Internet Group Management Protocol ver 3) membership query message
-	class IgmpV3QueryLayer : public WithSizeOf<IgmpV3QueryLayer, IgmpLayer>
+	class IgmpV3QueryLayer : public WithDynamicSizeOf<IgmpV3QueryLayer, IgmpLayer>
 	{
-		using BaseLayer = WithSizeOf<IgmpV3QueryLayer, IgmpLayer>;
+		using BaseLayer = WithDynamicSizeOf<IgmpV3QueryLayer, IgmpLayer>;
 
 	public:
 		/// A constructor that creates the layer from an existing packet raw data
@@ -386,9 +386,9 @@ namespace pcpp
 
 	/// @class IgmpV3ReportLayer
 	/// Represents an IGMPv3 (Internet Group Management Protocol ver 3) membership report message
-	class IgmpV3ReportLayer : public WithSizeOf<IgmpV3ReportLayer, IgmpLayer>
+	class IgmpV3ReportLayer : public WithDynamicSizeOf<IgmpV3ReportLayer, IgmpLayer>
 	{
-		using BaseLayer = WithSizeOf<IgmpV3ReportLayer, IgmpLayer>;
+		using BaseLayer = WithDynamicSizeOf<IgmpV3ReportLayer, IgmpLayer>;
 	private:
 		igmpv3_group_record* addGroupRecordAt(uint8_t recordType, const IPv4Address& multicastAddress,
 		                                      const std::vector<IPv4Address>& sourceAddresses, int offset);
