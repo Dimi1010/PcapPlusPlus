@@ -149,7 +149,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		ArpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		ArpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet, ARP)
 		{
 			m_DataLen = sizeof(arphdr);

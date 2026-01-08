@@ -16,7 +16,7 @@ namespace pcpp
 		using BaseLayer = WithDynamicSizeOf<SmtpLayer, SingleCommandTextProtocol>;
 
 	protected:
-		SmtpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		SmtpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet, SMTP) {};
 
 		SmtpLayer(const std::string& command, const std::string& option) : BaseLayer(command, option, SMTP) {};
@@ -119,7 +119,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SmtpRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		SmtpRequestLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet) {};
 
 		/// A constructor that creates layer with provided input values
@@ -250,7 +250,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SmtpResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		SmtpResponseLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet) {};
 
 		/// A constructor that creates layer with provided input values

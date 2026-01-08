@@ -429,7 +429,7 @@ namespace pcpp
 
 	// -------- Class SomeIpSdLayer -----------------
 
-	SomeIpSdLayer::SomeIpSdLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	SomeIpSdLayer::SomeIpSdLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{
 		countOptions(m_NumOptions, data);

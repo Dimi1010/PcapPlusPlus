@@ -27,7 +27,7 @@ namespace pcpp
 		memset(m_Data, 0, sizeof(ip6_hdr));
 	}
 
-	IPv6Layer::IPv6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	IPv6Layer::IPv6Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet, IPv6)
 	{
 		m_FirstExtension = nullptr;

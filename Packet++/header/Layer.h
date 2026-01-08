@@ -352,7 +352,7 @@ namespace pcpp
 		/// @param[in] extraArgs Extra arguments to be forwarded to the layer constructor
 		/// @return The constructed layer
 		template <typename T, typename... Args>
-		Layer* constructNextLayer(uint8_t* data, size_t dataLen, ILayerOwner* packet, Args&&... extraArgs)
+		Layer* constructNextLayer(uint8_t* data, size_t dataLen, Packet* packet, Args&&... extraArgs)
 		{
 			if (hasNextLayer())
 			{
@@ -378,7 +378,7 @@ namespace pcpp
 		///	@param[in] extraArgs Extra arguments to be forwarded to the layer constructor of T
 		/// @return The constructed layer of type T or TFallback
 		template <typename T, typename TFallback, typename... Args>
-		Layer* tryConstructNextLayerWithFallback(uint8_t* data, size_t dataLen, ILayerOwner* packet,
+		Layer* tryConstructNextLayerWithFallback(uint8_t* data, size_t dataLen, Packet* packet,
 		                                         Args&&... extraArgs)
 		{
 			if (tryConstructNextLayer<T>(data, dataLen, packet, std::forward<Args>(extraArgs)...))
@@ -416,7 +416,7 @@ namespace pcpp
 		/// @param[in] extraArgs Extra arguments to be forwarded to the layer constructor
 		/// @return The constructed layer or nullptr if the data is invalid
 		template <typename T, typename... Args>
-		Layer* tryConstructNextLayer(uint8_t* data, size_t dataLen, ILayerOwner* packet, Args&&... extraArgs)
+		Layer* tryConstructNextLayer(uint8_t* data, size_t dataLen, Packet* packet, Args&&... extraArgs)
 		{
 			if (T::isDataValid(data, dataLen))
 			{

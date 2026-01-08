@@ -98,7 +98,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		DnsLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
+		DnsLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
 
 		/// A constructor that creates an empty DNS layer: all members of dnshdr are set to 0 and layer will contain no
 		/// records
@@ -387,7 +387,7 @@ namespace pcpp
 		static inline bool isDataValid(const uint8_t* data, size_t dataLen, bool dnsOverTcp = false);
 
 	protected:
-		DnsLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, size_t offsetAdjustment);
+		DnsLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet, size_t offsetAdjustment);
 		explicit DnsLayer(size_t offsetAdjustment);
 
 	private:
@@ -439,7 +439,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		DnsOverTcpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		DnsOverTcpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet, sizeof(uint16_t))
 		{}
 

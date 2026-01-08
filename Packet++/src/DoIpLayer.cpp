@@ -196,7 +196,7 @@ namespace pcpp
 		m_Data = new uint8_t[m_DataLen]{};
 	}
 
-	DoIpLayer::DoIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	DoIpLayer::DoIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet, DOIP)
 	{}
 
@@ -224,7 +224,7 @@ namespace pcpp
 		return true;
 	}
 
-	DoIpLayer* DoIpLayer::parseDoIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	DoIpLayer* DoIpLayer::parseDoIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	{
 		doiphdr* doipHeader = reinterpret_cast<doiphdr*>(data);
 		uint16_t payloadType = doipHeader->payloadType;
@@ -403,7 +403,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~|
 	// DoIpGenericHeaderNack|
 	//~~~~~~~~~~~~~~~~~~~~~~|
-	DoIpGenericHeaderNack::DoIpGenericHeaderNack(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	DoIpGenericHeaderNack::DoIpGenericHeaderNack(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -451,7 +451,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpVehicleIdentificationRequestWithEID::DoIpVehicleIdentificationRequestWithEID(uint8_t* data, size_t dataLen,
 	                                                                                 Layer* prevLayer,
-	                                                                                 ILayerOwner* packet)
+	                                                                                 Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -485,7 +485,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpVehicleIdentificationRequestWithVIN::DoIpVehicleIdentificationRequestWithVIN(uint8_t* data, size_t dataLen,
 	                                                                                 Layer* prevLayer,
-	                                                                                 ILayerOwner* packet)
+	                                                                                 Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -518,7 +518,7 @@ namespace pcpp
 	// DoIpVehicleAnnouncementMessage|
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpVehicleAnnouncementMessage::DoIpVehicleAnnouncementMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                               ILayerOwner* packet)
+	                                                               Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -658,7 +658,7 @@ namespace pcpp
 	// DoIpRoutingActivationRequest|
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpRoutingActivationRequest::DoIpRoutingActivationRequest(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                           ILayerOwner* packet)
+	                                                           Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -773,7 +773,7 @@ namespace pcpp
 	// DoIpRoutingActivationResponse|
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpRoutingActivationResponse::DoIpRoutingActivationResponse(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                             ILayerOwner* packet)
+	                                                             Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -903,7 +903,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~~|
 	// DoIpAliveCheckResponse|
 	//~~~~~~~~~~~~~~~~~~~~~~~|
-	DoIpAliveCheckResponse::DoIpAliveCheckResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	DoIpAliveCheckResponse::DoIpAliveCheckResponse(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -942,7 +942,7 @@ namespace pcpp
 	// DoIpEntityStatusResponse|
 	//~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpEntityStatusResponse::DoIpEntityStatusResponse(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                   ILayerOwner* packet)
+	                                                   Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -1058,7 +1058,7 @@ namespace pcpp
 	// DoIpDiagnosticPowerModeResponse|
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpDiagnosticPowerModeResponse::DoIpDiagnosticPowerModeResponse(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                                 ILayerOwner* packet)
+	                                                                 Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -1097,7 +1097,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~|
 	// DoIpDiagnosticBase|
 	//~~~~~~~~~~~~~~~~~~~|
-	DoIpDiagnosticBase::DoIpDiagnosticBase(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	DoIpDiagnosticBase::DoIpDiagnosticBase(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -1124,7 +1124,7 @@ namespace pcpp
 	//~~~~~~~~~~~~~~~~~~~~~~|
 	// DoIpDiagnosticMessage|
 	//~~~~~~~~~~~~~~~~~~~~~~|
-	DoIpDiagnosticMessage::DoIpDiagnosticMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	DoIpDiagnosticMessage::DoIpDiagnosticMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -1176,7 +1176,7 @@ namespace pcpp
 	// DoIpDiagnosticResponseMessageBase|
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpDiagnosticResponseMessageBase::DoIpDiagnosticResponseMessageBase(uint8_t* data, size_t dataLen,
-	                                                                     Layer* prevLayer, ILayerOwner* packet)
+	                                                                     Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -1247,7 +1247,7 @@ namespace pcpp
 	// DoIpDiagnosticMessageAck|
 	//~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpDiagnosticMessageAck::DoIpDiagnosticMessageAck(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                   ILayerOwner* packet)
+	                                                   Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 
@@ -1290,7 +1290,7 @@ namespace pcpp
 	// DoIpDiagnosticMessageNack|
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~|
 	DoIpDiagnosticMessageNack::DoIpDiagnosticMessageNack(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                     ILayerOwner* packet)
+	                                                     Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{}
 

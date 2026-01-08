@@ -82,7 +82,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SomeIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		SomeIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet, SomeIP)
 		{}
 
@@ -112,7 +112,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored
 		/// @return Layer* A newly allocated layer
-		static Layer* parseSomeIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
+		static Layer* parseSomeIpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
 
 		/// Get a pointer to the basic SOME/IP header. Notice this points directly to the data, so every change will
 		/// change the actual packet data
@@ -308,7 +308,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SomeIpTpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		SomeIpTpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 

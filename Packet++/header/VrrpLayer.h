@@ -125,7 +125,7 @@ namespace pcpp
 		IPAddress::AddressType m_AddressType;
 
 	protected:
-		VrrpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType vrrpVer,
+		VrrpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet, ProtocolType vrrpVer,
 		          IPAddress::AddressType addressType)
 		    : BaseLayer(data, dataLen, prevLayer, packet, vrrpVer), m_AddressType(addressType)
 		{}
@@ -300,7 +300,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		VrrpV2Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		VrrpV2Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet, VRRPv2, IPAddress::IPv4AddressType)
 		{}
 
@@ -366,7 +366,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		/// @param[in] addressType The IP address type to set for this layer
-		VrrpV3Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet,
+		VrrpV3Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet,
 		            IPAddress::AddressType addressType)
 		    : BaseLayer(data, dataLen, prevLayer, packet, VRRPv3, addressType)
 		{}

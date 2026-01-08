@@ -61,7 +61,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SdpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
+		SdpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
 
 		/// An empty c'tor which initialize an empty message with no fields
 		SdpLayer();

@@ -413,7 +413,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		IPv4Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
+		IPv4Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
 
 		/// A constructor that creates the layer from an existing packet raw data
 		/// @param[in] data A pointer to the raw data (will be casted to @ref iphdr)
@@ -425,7 +425,7 @@ namespace pcpp
 		/// the value of dataLen parameter. Please notice that if iphdr#totalLength is equal to zero (which can happen
 		/// in TCP Segmentation Offloading), this flag is ignored and the layer data length is calculated by the actual
 		/// data captured on the wire
-		IPv4Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, bool setTotalLenAsDataLen);
+		IPv4Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet, bool setTotalLenAsDataLen);
 
 		/// A constructor that allocates a new IPv4 header with empty fields
 		IPv4Layer();

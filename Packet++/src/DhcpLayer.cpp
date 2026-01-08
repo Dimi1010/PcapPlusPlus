@@ -41,7 +41,7 @@ namespace pcpp
 		return DhcpOption(recordBuffer);
 	}
 
-	DhcpLayer::DhcpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	DhcpLayer::DhcpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet, DHCP)
 	{}
 

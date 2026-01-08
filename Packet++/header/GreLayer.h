@@ -140,7 +140,7 @@ namespace pcpp
 		}
 
 	protected:
-		GreLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet, ProtocolType protocol)
+		GreLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet, ProtocolType protocol)
 		    : BaseLayer(data, dataLen, prevLayer, packet, protocol)
 		{}
 
@@ -173,7 +173,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		GREv0Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		GREv0Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet, GREv0)
 		{}
 
@@ -272,7 +272,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		GREv1Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		GREv1Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet, GREv1)
 		{}
 
@@ -344,7 +344,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		PPP_PPTPLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		PPP_PPTPLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet, PPP_PPTP)
 		{}
 

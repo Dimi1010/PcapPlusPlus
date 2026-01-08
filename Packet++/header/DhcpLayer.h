@@ -576,7 +576,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		DhcpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
+		DhcpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
 
 		/// A constructor that creates the layer from scratch. Adds a ::DHCPOPT_DHCP_MESSAGE_TYPE and a ::DHCPOPT_END
 		/// options

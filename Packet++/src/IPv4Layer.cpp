@@ -210,14 +210,14 @@ namespace pcpp
 		initLayer();
 	}
 
-	IPv4Layer::IPv4Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet,
+	IPv4Layer::IPv4Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet,
 	                     bool setTotalLenAsDataLen)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{
 		initLayerInPacket(setTotalLenAsDataLen);
 	}
 
-	IPv4Layer::IPv4Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	IPv4Layer::IPv4Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{
 		initLayerInPacket(true);

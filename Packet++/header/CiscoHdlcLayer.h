@@ -27,7 +27,7 @@ namespace pcpp
 		/// @param[in] data A pointer to the raw data
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored
-		CiscoHdlcLayer(uint8_t* data, size_t dataLen, ILayerOwner* packet)
+		CiscoHdlcLayer(uint8_t* data, size_t dataLen, Packet* packet)
 		    : BaseLayer(data, dataLen, nullptr, packet, CiscoHDLC)
 		{}
 

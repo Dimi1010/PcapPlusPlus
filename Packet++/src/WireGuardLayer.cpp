@@ -8,7 +8,7 @@
 namespace pcpp
 {
 	WireGuardLayer* WireGuardLayer::parseWireGuardLayer(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                    ILayerOwner* packet)
+	                                                    Packet* packet)
 	{
 		if (dataLen < sizeof(WireGuardLayer::wg_common_header))
 			return nullptr;

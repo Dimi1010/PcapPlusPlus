@@ -220,7 +220,7 @@ namespace pcpp
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		/// @return A pointer to the newly created record layer. If no SSL/TLS record could be identified from the raw
 		/// data nullptr is returned
-		static SSLLayer* createSSLMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
+		static SSLLayer* createSSLMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
 
 		/// Get a pointer to the record header. Notice this points directly to the data, so every change will change the
 		/// actual packet data
@@ -251,7 +251,7 @@ namespace pcpp
 		}
 
 	protected:
-		SSLLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		SSLLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet, SSL)
 		{}
 
@@ -311,7 +311,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SSLHandshakeLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
+		SSLHandshakeLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
 
 		/// @return The number of messages in this layer instance
 		size_t getHandshakeMessagesCount() const
@@ -366,7 +366,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SSLChangeCipherSpecLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		SSLChangeCipherSpecLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -394,7 +394,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SSLAlertLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		SSLAlertLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -427,7 +427,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		SSLApplicationDataLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		SSLApplicationDataLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 

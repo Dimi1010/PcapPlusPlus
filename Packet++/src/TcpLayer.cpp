@@ -318,7 +318,7 @@ namespace pcpp
 		getTcpHeader()->dataOffset = sizeof(tcphdr) / 4;
 	}
 
-	TcpLayer::TcpLayer(uint8_t* data, const size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	TcpLayer::TcpLayer(uint8_t* data, const size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet, TCP)
 	{
 		m_NumOfTrailingBytes = 0;

@@ -121,7 +121,7 @@ namespace pcpp
 		using BaseLayer = WithDynamicSizeOf<StpLayer, Layer>;
 
 	protected:
-		StpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		StpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet, STP)
 		{}
 
@@ -223,7 +223,7 @@ namespace pcpp
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored
 		/// @return A newly allocated STP layer of one of the following types (according to the message type):
 		/// StpConfigurationBPDULayer, StpTopologyChangeBPDULayer, RapidStpLayer, MultipleStpLayer
-		static StpLayer* parseStpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
+		static StpLayer* parseStpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
 	};
 
 	/// @class StpTopologyChangeBPDULayer
@@ -242,7 +242,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		StpTopologyChangeBPDULayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		StpTopologyChangeBPDULayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -301,7 +301,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		StpConfigurationBPDULayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		StpConfigurationBPDULayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -490,7 +490,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		RapidStpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		RapidStpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 
@@ -558,7 +558,7 @@ namespace pcpp
 		/// @param[in] dataLen Size of the data in bytes
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
-		MultipleStpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+		MultipleStpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 		    : BaseLayer(data, dataLen, prevLayer, packet)
 		{}
 

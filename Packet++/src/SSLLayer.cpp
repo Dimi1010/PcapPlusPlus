@@ -39,7 +39,7 @@ namespace pcpp
 			return false;
 	}
 
-	SSLLayer* SSLLayer::createSSLMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	SSLLayer* SSLLayer::createSSLMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	{
 		ssl_tls_record_layer* recordLayer = (ssl_tls_record_layer*)data;
 		switch (recordLayer->recordType)
@@ -117,7 +117,7 @@ namespace pcpp
 		return result.str();
 	}
 
-	SSLHandshakeLayer::SSLHandshakeLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	SSLHandshakeLayer::SSLHandshakeLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet)
 	{
 		uint8_t* curPos = m_Data + sizeof(ssl_tls_record_layer);

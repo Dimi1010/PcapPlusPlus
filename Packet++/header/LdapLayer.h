@@ -356,7 +356,7 @@ namespace pcpp
 		/// @param[in] prevLayer A pointer to the previous layer
 		/// @param[in] packet A pointer to the Packet instance where layer will be stored in
 		/// @return An instance of LdapLayer if this is indeed an LDAP message, nullptr otherwise
-		static LdapLayer* parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet);
+		static LdapLayer* parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet);
 
 		// implement abstract methods
 
@@ -383,7 +383,7 @@ namespace pcpp
 		std::unique_ptr<Asn1Record> m_Asn1Record;
 
 		LdapLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
-		          ILayerOwner* packet);
+		          Packet* packet);
 		LdapLayer() = default;
 		void init(uint16_t messageId, LdapOperationType operationType, const std::vector<Asn1Record*>& messageRecords,
 		          const std::vector<LdapControl>& controls);
@@ -447,7 +447,7 @@ namespace pcpp
 
 		LdapResponseLayer() = default;
 		LdapResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                  ILayerOwner* packet)
+		                  Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 
@@ -555,10 +555,10 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		LdapBindRequestLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                     ILayerOwner* packet)
+		                     Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 
@@ -603,12 +603,12 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		static constexpr int serverSaslCredentialsTagType = 7;
 
 		LdapBindResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                      ILayerOwner* packet)
+		                      Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
@@ -642,10 +642,10 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		LdapUnbindRequestLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                       ILayerOwner* packet)
+		                       Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
@@ -820,7 +820,7 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		static constexpr int baseObjectIndex = 0;
 		static constexpr int scopeIndex = 1;
@@ -832,7 +832,7 @@ namespace pcpp
 		static constexpr int attributesIndex = 7;
 
 		LdapSearchRequestLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                       ILayerOwner* packet)
+		                       Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 
@@ -869,7 +869,7 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		static constexpr int objectNameIndex = 0;
 		static constexpr int attributesIndex = 1;
@@ -877,7 +877,7 @@ namespace pcpp
 		static constexpr int attributeValueIndex = 1;
 
 		LdapSearchResultEntryLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen,
-		                           Layer* prevLayer, ILayerOwner* packet)
+		                           Layer* prevLayer, Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
@@ -910,10 +910,10 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		LdapSearchResultDoneLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen,
-		                          Layer* prevLayer, ILayerOwner* packet)
+		                          Layer* prevLayer, Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
@@ -946,10 +946,10 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		LdapModifyResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                        ILayerOwner* packet)
+		                        Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
@@ -982,10 +982,10 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		LdapAddResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                     ILayerOwner* packet)
+		                     Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
@@ -1018,10 +1018,10 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		LdapDeleteResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                        ILayerOwner* packet)
+		                        Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
@@ -1054,10 +1054,10 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		LdapModifyDNResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen,
-		                          Layer* prevLayer, ILayerOwner* packet)
+		                          Layer* prevLayer, Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};
@@ -1089,10 +1089,10 @@ namespace pcpp
 
 	protected:
 		friend LdapLayer* LdapLayer::parseLdapMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-		                                              ILayerOwner* packet);
+		                                              Packet* packet);
 
 		LdapCompareResponseLayer(std::unique_ptr<Asn1Record> asn1Record, uint8_t* data, size_t dataLen,
-		                         Layer* prevLayer, ILayerOwner* packet)
+		                         Layer* prevLayer, Packet* packet)
 		    : BaseLayer(std::move(asn1Record), data, dataLen, prevLayer, packet)
 		{}
 	};

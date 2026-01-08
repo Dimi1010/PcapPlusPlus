@@ -15,7 +15,7 @@ namespace pcpp
 	// SSHLayer methods
 	// ----------------
 
-	SSHLayer* SSHLayer::createSSHMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, ILayerOwner* packet)
+	SSHLayer* SSHLayer::createSSHMessage(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
 	{
 		SSHIdentificationMessage* sshIdnetMsg = SSHIdentificationMessage::tryParse(data, dataLen, prevLayer, packet);
 		if (sshIdnetMsg != nullptr)
@@ -41,7 +41,7 @@ namespace pcpp
 	// --------------------------------
 
 	SSHIdentificationMessage* SSHIdentificationMessage::tryParse(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                             ILayerOwner* packet)
+	                                                             Packet* packet)
 	{
 		// Payload must be at least as long as the string "SSH-"
 		if (dataLen < 5)
@@ -128,7 +128,7 @@ namespace pcpp
 	}
 
 	SSHHandshakeMessage* SSHHandshakeMessage::tryParse(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                   ILayerOwner* packet)
+	                                                   Packet* packet)
 	{
 		if (dataLen < sizeof(SSHHandshakeMessage::ssh_message_base))
 		{
@@ -174,7 +174,7 @@ namespace pcpp
 	// ---------------------------------
 
 	SSHKeyExchangeInitMessage::SSHKeyExchangeInitMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                     ILayerOwner* packet)
+	                                                     Packet* packet)
 	    : BaseLayer(data, dataLen, prevLayer, packet), m_OffsetsInitialized(false)
 	{
 		memset(m_FieldOffsets, 0, 11 * sizeof(size_t));

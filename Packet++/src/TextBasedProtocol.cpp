@@ -23,7 +23,7 @@ namespace pcpp
 	// -------- Class TextBasedProtocolMessage -----------------
 
 	TextBasedProtocolMessage::TextBasedProtocolMessage(uint8_t* data, size_t dataLen, Layer* prevLayer,
-	                                                   ILayerOwner* packet, ProtocolType protocol)
+	                                                   Packet* packet, ProtocolType protocol)
 	    : BaseLayer(data, dataLen, prevLayer, packet, protocol), m_FieldList(nullptr), m_LastField(nullptr),
 	      m_FieldsOffset(0)
 	{}
