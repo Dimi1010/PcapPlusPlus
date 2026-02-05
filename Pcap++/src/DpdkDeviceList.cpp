@@ -1,6 +1,7 @@
-// GCOVR_EXCL_START
-
 #define LOG_MODULE PcapLogModuleDpdkDevice
+
+#include "DpdkDeviceList.h"
+// GCOVR_EXCL_START
 
 #define __STDC_LIMIT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -174,7 +175,7 @@ namespace pcpp
 
 		if (ret < 0)
 		{
-			PCPP_LOG_ERROR("failed to init the DPDK EAL");
+			PCPP_LOG_ERROR("failed to init the DPDK EAL" << rte_errno);
 			return false;
 		}
 
