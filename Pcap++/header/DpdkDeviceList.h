@@ -55,7 +55,7 @@ namespace pcpp
 		uint16_t mBufDataSize = 0;
 		uint8_t masterCore = 0;
 
-		std::vector<char*> initDpdkArgs;
+		std::vector<char const*> initDpdkArgs;
 		std::string appName = "pcapplusplusapp";
 		bool verifyHugePagesAndDriver = true;
 	};
