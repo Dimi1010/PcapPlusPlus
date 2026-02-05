@@ -53,6 +53,14 @@
 namespace pcpp
 {
 
+	namespace
+	{
+		std::string getRteErrnoError()
+		{
+			return rte_strerror(rte_errno);
+		}
+	}  // namespace
+
 	bool DpdkDeviceList::m_IsDpdkInitialized = false;
 	CoreMask DpdkDeviceList::m_CoreMask = 0;
 	uint32_t DpdkDeviceList::m_MBufPoolSizePerDevice = 0;
@@ -175,7 +183,7 @@ namespace pcpp
 
 		if (ret < 0)
 		{
-			PCPP_LOG_ERROR("failed to init the DPDK EAL" << rte_errno);
+			PCPP_LOG_ERROR("failed to init the DPDK EAL: " << getRteErrnoError());
 			return false;
 		}
 
