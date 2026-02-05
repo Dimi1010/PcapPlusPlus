@@ -48,6 +48,18 @@ namespace pcpp
 
 	class KniDeviceList;
 
+	struct DpdkInitConfig
+	{
+		CoreMask coreMask = 0;
+		uint32_t mBufPoolSizePerDevice = 0;
+		uint16_t mBufDataSize = 0;
+		uint8_t masterCore = 0;
+
+		std::vector<char*> initDpdkArgs;
+		std::string appName = "pcapplusplusapp";
+		bool verifyHugePagesAndDriver = true;
+	};
+
 	/// @class DpdkDeviceList
 	/// A singleton class that encapsulates DPDK initialization and holds the list of DpdkDevice instances. As it's a
 	/// singleton, it has only one active instance doesn't have a public c'tor. This class has several main uses:
@@ -128,6 +140,8 @@ namespace pcpp
 		static bool initDpdk(CoreMask coreMask, uint32_t mBufPoolSizePerDevice, uint16_t mBufDataSize = 0,
 		                     uint8_t masterCore = 0, uint32_t initDpdkArgc = 0, char** initDpdkArgv = nullptr,
 		                     const std::string& appName = "pcapplusplusapp", bool verifyHugePagesAndDriver = true);
+
+		static bool initDpdk(DpdkInitConfig const& config);
 
 		/// Get a DpdkDevice by port ID
 		/// @param[in] portId The port ID

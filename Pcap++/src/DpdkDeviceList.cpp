@@ -79,11 +79,27 @@ namespace pcpp
 	                              uint8_t masterCore, uint32_t initDpdkArgc, char** initDpdkArgv,
 	                              const std::string& appName, bool verifyHugePagesAndDriver)
 	{
-		char** initDpdkArgvBuffer;
+		DpdkInitConfig config;
+		config.coreMask = coreMask;
+		config.mBufPoolSizePerDevice = mBufPoolSizePerDevice;
+		config.mBufDataSize = mBufDataSize;
+		config.masterCore = masterCore;
 
+		for (uint32_t i = 0; i < initDpdkArgc; i++)
+		{
+			config.initDpdkArgs.push_back(initDpdkArgv[i]);
+		}
+
+		config.appName = appName;
+		config.verifyHugePagesAndDriver = verifyHugePagesAndDriver;
+		return initDpdk(config);
+	}
+
+	bool DpdkDeviceList::initDpdk(DpdkInitConfig const& config)
+	{
 		if (m_IsDpdkInitialized)
 		{
-			if (coreMask == m_CoreMask)
+			if (config.coreMask == m_CoreMask)
 				return true;
 			else
 			{
@@ -92,79 +108,81 @@ namespace pcpp
 			}
 		}
 
-		if (verifyHugePagesAndDriver && !verifyHugePagesAndDpdkDriver())
+		if (config.verifyHugePagesAndDriver && !verifyHugePagesAndDpdkDriver())
 		{
 			return false;
 		}
 
 		// verify mBufPoolSizePerDevice is power of 2 minus 1
-		bool isPoolSizePowerOfTwoMinusOne =
-		    !(mBufPoolSizePerDevice == 0) && !((mBufPoolSizePerDevice + 1) & (mBufPoolSizePerDevice));
+		bool isPoolSizePowerOfTwoMinusOne = !(config.mBufPoolSizePerDevice == 0) &&
+		                                    !((config.mBufPoolSizePerDevice + 1) & (config.mBufPoolSizePerDevice));
 		if (!isPoolSizePowerOfTwoMinusOne)
 		{
 			PCPP_LOG_ERROR("mBuf pool size must be a power of two minus one: n = (2^q - 1). It's currently: "
-			               << mBufPoolSizePerDevice);
+			               << config.mBufPoolSizePerDevice);
 			return false;
 		}
 
 		std::stringstream dpdkParamsStream;
-		dpdkParamsStream << appName << " ";
+		dpdkParamsStream << config.appName << " ";
 		dpdkParamsStream << "-n ";
 		dpdkParamsStream << "2 ";
 		dpdkParamsStream << "-c ";
-		dpdkParamsStream << "0x" << std::hex << std::setw(2) << std::setfill('0') << coreMask << " ";
+		dpdkParamsStream << "0x" << std::hex << std::setw(2) << std::setfill('0') << config.coreMask << " ";
 		dpdkParamsStream << MASTER_LCORE << " ";
-		dpdkParamsStream << (int)masterCore << " ";
+		dpdkParamsStream << (int)config.masterCore << " ";
 
-		uint32_t i = 0;
-		while (i < initDpdkArgc && initDpdkArgv[i] != nullptr)
+		for (auto* argStr : config.initDpdkArgs)
 		{
-			dpdkParamsStream << initDpdkArgv[i] << " ";
-			i++;
+			dpdkParamsStream << argStr << " ";
 		}
 
 		// Should be equal to the number of static params
-		initDpdkArgc += 7;
-		std::vector<std::string> dpdkParamsArray(initDpdkArgc);
-		initDpdkArgvBuffer = new char*[initDpdkArgc];
-		i = 0;
-		while (dpdkParamsStream.good() && i < initDpdkArgc)
+		uint32_t initDpdkArgc = config.initDpdkArgs.size() + 7;
+		std::vector<char*> initDpdkArgvBuffer(initDpdkArgc, nullptr);  // Init vector with nullptrs
+		for (uint32_t i = 0; dpdkParamsStream.good() && i < initDpdkArgc; i++)
 		{
-			dpdkParamsStream >> dpdkParamsArray[i];
-			initDpdkArgvBuffer[i] = new char[dpdkParamsArray[i].length() + 1];
-			strcpy(initDpdkArgvBuffer[i], dpdkParamsArray[i].c_str());
-			i++;
+			std::string tempStr;
+			dpdkParamsStream >> tempStr;
+			initDpdkArgvBuffer[i] = new char[tempStr.size() + 1];
+			strcpy(initDpdkArgvBuffer[i], tempStr.c_str());
 		}
 
-		char* lastParam = initDpdkArgvBuffer[i - 1];
-
-		for (i = 0; i < initDpdkArgc; i++)
+		if (Logger::getInstance().shouldLog(LogLevel::Debug, LOG_MODULE))
 		{
-			PCPP_LOG_DEBUG("DPDK initialization params: " << initDpdkArgvBuffer[i]);
+			for (uint32_t i = 0; i < initDpdkArgc; i++)
+			{
+				PCPP_LOG_DEBUG("DPDK initialization params: " << initDpdkArgvBuffer[i]);
+			}
 		}
+
+		// Init will copy argv[0] into argv[argc - 1].
+		// Keep an additional handle to original argv[argc - 1] to restore it.
+		char* lastParam = initDpdkArgvBuffer.back();
 
 		optind = 1;
-		// init the EAL
-		int ret = rte_eal_init(initDpdkArgc, (char**)initDpdkArgvBuffer);
+		// Init the EAL
+		int ret = rte_eal_init(initDpdkArgc, initDpdkArgvBuffer.data());
+		// Restore the last param before deallocating the memory
+		initDpdkArgvBuffer.back() = std::exchange(lastParam, nullptr);
+
+		for (auto* argStr : initDpdkArgvBuffer)
+		{
+			delete[] argStr;
+		}
+		initDpdkArgvBuffer.clear();
+
 		if (ret < 0)
 		{
 			PCPP_LOG_ERROR("failed to init the DPDK EAL");
 			return false;
 		}
 
-		for (i = 0; i < initDpdkArgc - 1; i++)
-		{
-			delete[] initDpdkArgvBuffer[i];
-		}
-		delete[] lastParam;
-
-		delete[] initDpdkArgvBuffer;
-
-		m_CoreMask = coreMask;
+		m_CoreMask = config.coreMask;
 		m_IsDpdkInitialized = true;
 
-		m_MBufPoolSizePerDevice = mBufPoolSizePerDevice;
-		m_MBufDataSize = mBufDataSize;
+		m_MBufPoolSizePerDevice = config.mBufPoolSizePerDevice;
+		m_MBufDataSize = config.mBufDataSize;
 		DpdkDeviceList::getInstance().setDpdkLogLevel(Logger::Info);
 		return DpdkDeviceList::getInstance().initDpdkDevices(m_MBufPoolSizePerDevice, m_MBufDataSize);
 	}
