@@ -44,6 +44,7 @@ add_library(
   src/PemCodec.cpp
   src/PostgresLayer.cpp
   src/PPPoELayer.cpp
+  src/QuicLayer.cpp
   src/RadiusLayer.cpp
   src/RawPacket.cpp
   src/S7CommLayer.cpp
@@ -124,6 +125,7 @@ set(
   header/PostgresLayer.h
   header/PPPoELayer.h
   header/ProtocolType.h
+  header/QuicLayer.h
   header/RadiusLayer.h
   header/RawPacket.h
   header/S7CommLayer.h
