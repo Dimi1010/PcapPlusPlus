@@ -545,7 +545,7 @@ namespace pcpp
 				return &m_Parts.back();
 			}
 
-			// TODO: Assert range.
+			PCPP_ASSERT(m_FreeSlotsList.head < m_Parts.size(), "Free part id is out of range of the parts vector");
 			StreamSeqPart* newPart = nullptr;
 			newPart = &m_Parts[m_FreeSlotsList.head];
 
