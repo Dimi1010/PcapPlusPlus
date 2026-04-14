@@ -510,6 +510,45 @@ namespace pcpp
 			}
 		}
 
+		/// @brief Unlinks a node from a linked list, connecting its previous and next nodes together.
+		/// @param[in] list The list the node belongs to.
+		/// @param[in] node The node to unlink from the list. The node must be currently linked in the list.
+		void unlinkNode(NodeIndexList& list, StreamSeqPart* node)
+		{
+			PCPP_ASSERT(node != nullptr, "Node to unlink cannot be null");
+
+			uint32_t nodeId = getPartIdSafe(node);
+			uint32_t prevId = node->prevId;
+			uint32_t nextId = node->nextId;
+
+			auto prev = getPartSafe(prevId);
+			auto next = getPartSafe(nextId);
+
+			PCPP_ASSERT(prev == nullptr || prev->nextId == nodeId, "prev->next must be node's id");
+			PCPP_ASSERT(next == nullptr || next->prevId == nodeId, "next->prev must be node's id");
+
+			if (prev != nullptr)
+			{
+				// Unlinking from prev node.
+				prev->nextId = nextId;
+			}
+			else
+			{
+				// No prev node. Unlinking the head.
+				PCPP_ASSERT(nodeId == list.head, "Node should be the head of the list since it has no prev");
+				list.head = nextId;  // If nextId is invalid, this correctly sets the head to invalid as well.
+			}
+
+			if (next != nullptr)
+			{
+				// Unlinking from next node.
+				next->prevId = prevId;
+			}
+
+			node->nextId = StreamSeqPart::INVALID_PART_ID;
+			node->prevId = StreamSeqPart::INVALID_PART_ID;
+		}
+
 		StreamSeqPart* getPartSafe(uint32_t partId)
 		{
 			if (partId == StreamSeqPart::INVALID_PART_ID)
@@ -527,7 +566,9 @@ namespace pcpp
 			{
 				return StreamSeqPart::INVALID_PART_ID;
 			}
-			uint32_t partId = part - &m_Parts[0];
+
+			auto partId = part - &m_Parts[0];
+			PCPP_ASSERT(partId > 0 && partId < m_Parts.size(), "Part pointer is out of range of the parts vector");
 			return partId;
 		}
 
@@ -556,6 +597,21 @@ namespace pcpp
 			newPart->nextId = StreamSeqPart::INVALID_PART_ID;
 			newPart->prevId = StreamSeqPart::INVALID_PART_ID;
 			return newPart;
+		}
+
+		StreamSeqPart* returnFreePart(StreamSeqPart* part)
+		{
+			PCPP_ASSERT(part != nullptr, "Returned part cannot be null");
+
+			uint32_t partId = getPartIdSafe(part);
+			PCPP_ASSERT(partId < m_Parts.size(), "Returned part id is out of range of the parts vector");
+
+			// When parts are not in use, they are linked together with other free parts using the nextId
+			// attribute. This makes the logical free list of parts, and allows us to reuse parts without
+			// having to search for them or maintain a separate free list.
+
+			linkNode(m_FreeSlotsList, part, nullptr, getPartSafe(m_FreeSlotsList.head));
+			return part;
 		}
 
 	private:
