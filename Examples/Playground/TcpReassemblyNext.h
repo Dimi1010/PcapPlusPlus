@@ -146,12 +146,46 @@ namespace pcpp
 		{
 			PCPP_ASSERT(dataLen <= std::numeric_limits<uint32_t>::max(), "Fragment dataLen field is only 32bit wide.");
 
-			// Good case: The new part is exactly the next expected sequence number.
-			//  - Update the expected sequence number and send the data to the user.
 			int c = internal::compareSeqNum(seqNum, m_ExpectedSeqNum);
 			uint32_t nextSeqNum = internal::calcNextSeqNum(seqNum, dataLen, flags);
 
-			if (c == 0)
+			// Past OOS: The new part is before the next expected sequence number.
+			//  - We haven't received it and it is filling missing data.
+			//  - We have received it and this is a retransmission.
+			//  - We have received it, but the part extends past the expected sequence number and contains new data.
+
+			// Past OOS.B: The new part is before the next expected sequence number,
+			// but it has data that fills after the expected sequence number.
+			//
+			// This can happen when we have received part of the data, and then we receive a retransmission of an
+			// earlier part that overlaps with the data we have already received. In this case, we should trim the
+			// overlapping part and only keep the new data that fills after the expected sequence number.
+			if (c < 0)
+			{
+				PCPP_LOG_DEBUG("[BEHIND HEAD OF LINE]");
+				
+				// The difference between the next expected sequence and the end of this part.
+				if (internal::compareSeqNum(nextSeqNum, m_ExpectedSeqNum) <= 0)
+				{
+					// FULL RETRANSMISSON:
+					// The head of line is past the end of this segment. Ignore it.
+					return;
+				}
+
+				// PARTIAL RETRANSMISSION:
+				// The head of line is past the start of this segment, but before its end.
+				// Trim the left of the segment to remove the stale part.
+				// Keep the new part that fills after the head of line.
+
+				data += m_ExpectedSeqNum - seqNum;
+				dataLen = nextSeqNum - m_ExpectedSeqNum;
+				seqNum = m_ExpectedSeqNum;
+				flags.synFlag = false;  // Clear the SYN flag since we are trimming from the
+			}
+
+			// Good case: The new part is exactly the next expected sequence number.
+			//  - Update the expected sequence number and send the data to the user.
+			if (c <= 0)
 			{
 				// TODO: Send the data to the user.
 				PCPP_LOG_DEBUG("[IN-ORDER] Received SEQ=" << seqNum << " with LEN=" << dataLen << " bytes. SYN="
@@ -175,42 +209,6 @@ namespace pcpp
 
 				// TODO: Advance expected number and attempt to unblock out-of-order.
 				m_ExpectedSeqNum = nextSeqNum;
-
-				return;
-			}
-
-			// Past OOS: The new part is before the next expected sequence number.
-			//  - We haven't received it and it is filling missing data.
-			//  - We have received it and this is a retransmission.
-			//  - We have received it, but the part extends past the expected sequence number and contains new data.
-
-			// Past OOS.B: The new part is before the next expected sequence number,
-			// but it has data that fills after the expected sequence number.
-			//
-			// This can happen when we have received part of the data, and then we receive a retransmission of an
-			// earlier part that overlaps with the data we have already received. In this case, we should trim the
-			// overlapping part and only keep the new data that fills after the expected sequence number.
-
-			if (c < 0)
-			{
-				PCPP_LOG_DEBUG("[RTX] Received SEQ=" << seqNum << " with LEN=" << dataLen
-				                                     << " bytes, but it fills after expected SEQ=" << m_ExpectedSeqNum
-				                                     << ". SYN=" << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
-
-				// The difference between the next expected sequence and the end of this part.
-				// Also the length of the new data that is not overlapping with the already received data.
-				auto newSeqDiff = internal::compareSeqNum(nextSeqNum, m_ExpectedSeqNum);
-				if (newSeqDiff > 0)
-				{
-					// TODO: Trim the overlapping part and send the new data to the user.
-					PCPP_LOG_DEBUG("[RTX] SEQ=" << seqNum << " with LEN=" << dataLen << " contains new data");
-
-					auto newData = data + (m_ExpectedSeqNum - seqNum);
-					auto newDataLen = nextSeqNum - m_ExpectedSeqNum;
-
-					// TODO: Attempt to merge with other OOS parts.
-					m_ExpectedSeqNum = nextSeqNum;
-				}
 
 				return;
 			}

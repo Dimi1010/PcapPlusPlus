@@ -33,47 +33,10 @@ namespace pcpp
 	{
 		uint32_t nextSeqNum = internal::calcNextSeqNum(seqNum, dataLen, flags);
 
-		// TODO: Insert the part into the OOS buffer and link to the nearest parts in the stream.
 		// TODO: Attempt to merge with other OOS parts if they are contiguous.
 		// If the new part is not contiguous with any existing OOS part, we can simply add it as a new part
 		// in the stream.
 
-		// StreamSeqPart* newPart = getFreePart();
-
-		// Populate the new part.
-
-		// Types of overlap between newP and p[N]:
-		//
-		// Legend: [n ... n] = new segment range, {p ... p} = existing part range
-		//
-		// Overlap cases between new segment (n) and existing part p[N]:
-		//
-		// 1. Left overlap (n starts before p, ends inside p):
-		//    [n ----{p--- n] -----p}
-		//
-		//    Trim the new part to remove the overlapping part, and link it before p.
-		//
-		// 2. Right overlap (n starts inside p, ends after p):
-		//    {p ----[n--- p} -----n]
-		//
-		//    Trim p to remove the overlapping part, and link n after p.
-		//
-		// 3. n envelops p (n starts before and ends after p):
-		//    [n ---{p------p}--- n]
-		//
-		//    Possibly replace p with n, and free n.
-		//
-		// 4. p envelops n (n is fully inside p):
-		//    {p ---[n------n]--- p}
-		//
-		//    Segment n is fully redundant; discard it.
-		//
-		//
-		// Overlap cases between new segment (n) and existing part p[N + 1] after overlap with p[N]:
-		//
-		// a
-
-		// Insert the new part into the reorder buffer and link it to its closest neighbors in the stream.
 		auto* firstPart = getPartSafe(m_ReorderList.head);
 		if (firstPart == nullptr)
 		{
@@ -95,7 +58,7 @@ namespace pcpp
 		}
 
 		// We have at least one part in the reorder buffer.
-		// Find the correct place to insert the new part.
+		// Insert the new part into the reorder buffer and link it to its closest neighbors in the stream.
 		PCPP_ASSERT(firstPart != nullptr, "Reorder buffer should not be empty");
 
 		StreamSeqPart* nextPart = firstPart;
