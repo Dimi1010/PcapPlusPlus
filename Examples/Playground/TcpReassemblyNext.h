@@ -11,27 +11,6 @@
 
 namespace pcpp
 {
-	namespace internal
-	{
-		/// @brief Compares two sequence numbers using modular arithmetic to handle wraparound.
-		/// @param seqNum1 The first sequence number to compare.
-		/// @param seqNum2 The second sequence number to compare.
-		/// @return A negative value if seqNum1 < seqNum2, zero if equal, or a positive value if seqNum1 > seqNum2.
-		int compareSeqNum(uint32_t seqNum1, uint32_t seqNum2);
-
-		/// @brief Compares two sequence numbers using modular arithmetic to handle wraparound.
-		/// @param seqNum1 The first sequence number to compare.
-		/// @param seqNum2 The second sequence number to compare.
-		/// @return '-1' if seqNum1 < seqNum2, '0' if equal, or a '1' if seqNum1 > seqNum2.
-		int compareSeqNumClamped(uint32_t seqNum1, uint32_t seqNum2);
-	}  // namespace internal
-
-	/*
-	  In cases where out of order parts are received:
-	  - If duplicated data is shared between part N and part N+1, part N will have its dataLen attribute trimmed
-	  down, so the shared data is present only in part N+1.
-	*/
-
 	struct SeqFlags
 	{
 		/// @brief A SYN flag is part of the sequence part.
@@ -46,6 +25,39 @@ namespace pcpp
 		/// which adds 1 byte of sequence space after the payload.
 		bool finFlag = false;
 	};
+
+	namespace internal
+	{
+		/// @brief Compares two sequence numbers using modular arithmetic to handle wraparound.
+		/// @param seqNum1 The first sequence number to compare.
+		/// @param seqNum2 The second sequence number to compare.
+		/// @return A negative value if seqNum1 < seqNum2, zero if equal, or a positive value if seqNum1 > seqNum2.
+		int compareSeqNum(uint32_t seqNum1, uint32_t seqNum2);
+
+		/// @brief Compares two sequence numbers using modular arithmetic to handle wraparound.
+		/// @param seqNum1 The first sequence number to compare.
+		/// @param seqNum2 The second sequence number to compare.
+		/// @return '-1' if seqNum1 < seqNum2, '0' if equal, or a '1' if seqNum1 > seqNum2.
+		int compareSeqNumClamped(uint32_t seqNum1, uint32_t seqNum2);
+
+		// Calculates the true sequence number with the extra pre-sequence padding.
+		inline uint32_t calcTrueSeqNum(uint32_t seqNum, SeqFlags flags)
+		{
+			return seqNum + (flags.synFlag ? 1 : 0);
+		};
+
+		// Calculates the true next expected sequence number with the extra pre and post sequence padding.
+		inline uint32_t calcNextSeqNum(uint32_t seqNum, size_t dataLen, SeqFlags flags)
+		{
+			return seqNum + dataLen + (flags.synFlag ? 1 : 0) + (flags.finFlag ? 1 : 0);
+		};
+	}  // namespace internal
+
+	/*
+	  In cases where out of order parts are received:
+	  - If duplicated data is shared between part N and part N+1, part N will have its dataLen attribute trimmed
+	  down, so the shared data is present only in part N+1.
+	*/
 
 	/// @brief Part of a sequential data stream. Used for Out-of-order resolution.
 	struct StreamSeqPart
@@ -79,9 +91,47 @@ namespace pcpp
 		}
 	};
 
-	class SequenceByteStream
+	class TcpByteStreamData
 	{
 	public:
+		uint8_t const* m_Data;
+		size_t dataLen = 0;
+		size_t missingBytes = 0;
+	};
+
+	class TcpByteStream;
+
+	class TcpOnDataReadyCallbackData
+	{
+	};
+
+	class TcpReassemblyV2
+	{
+	public:
+		bool reassemblePacket(Packet& packet);
+		bool reassemblePacket(RawPacket& rawPacket);
+
+	private:
+	};
+
+	/// @brief Represents a chain of sequential data parts from a TCP byte stream.
+	///
+	/// This class is used as an API to a user to access the reordered byte stream data.
+	class TcpByteStreamDataChain
+	{
+	public:
+	private:
+	};
+
+	/// @brief A class that handles a singular TCP byte stream reassembly.
+	///
+	/// The class provides an API for inserting newly received parts of the stream and a callback mechanism to notify
+	/// the user when new in-order data is ready.
+	class TcpByteStream
+	{
+	public:
+		std::function<void(TcpByteStreamDataChain const& dataChain)> m_OnDataReadyCallback;
+
 		/// @brief Inserts a new part into the stream. The part is defined by its sequence number and data length.
 		///
 		/// @param[in] seqNum The sequence number of the segment.
@@ -96,24 +146,32 @@ namespace pcpp
 		{
 			PCPP_ASSERT(dataLen <= std::numeric_limits<uint32_t>::max(), "Fragment dataLen field is only 32bit wide.");
 
-			// Calculates the true sequence number with the extra pre-sequence padding.
-			auto calcTrueSeqNum = [](uint32_t seqNum, SeqFlags flags) { return seqNum + (flags.synFlag ? 1 : 0); };
-
-			// Calculates the true next expected sequence number with the extra pre and post sequence padding.
-			auto calcNextSeqNum = [](uint32_t seqNum, size_t dataLen, SeqFlags flags) {
-				return seqNum + dataLen + (flags.synFlag ? 1 : 0) + (flags.finFlag ? 1 : 0);
-			};
-
 			// Good case: The new part is exactly the next expected sequence number.
 			//  - Update the expected sequence number and send the data to the user.
 			int c = internal::compareSeqNum(seqNum, m_ExpectedSeqNum);
-			uint32_t nextSeqNum = calcNextSeqNum(seqNum, dataLen, flags);
+			uint32_t nextSeqNum = internal::calcNextSeqNum(seqNum, dataLen, flags);
 
 			if (c == 0)
 			{
 				// TODO: Send the data to the user.
 				PCPP_LOG_DEBUG("[IN-ORDER] Received SEQ=" << seqNum << " with LEN=" << dataLen << " bytes. SYN="
 				                                          << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
+
+				// Attempt to unlink any buffered out-of-order parts that would be in-order after the new part.
+				uint32_t headId;
+				auto* parts = tryUnlinkOrderedChainFromHead(m_ReorderList, nextSeqNum, &headId);
+
+				StreamSeqPart tempPart;
+
+				// If there are any buffered out-of-order parts that are now in-order, link them after the new part.
+				// The linking is only forward link, due to inability to generate a valid PartID for the temporary
+				// part representing the new in-order part.
+				if (parts != nullptr)
+				{
+					tempPart.nextId = headId;
+				}
+
+				// TODO: Release the unlinked parts back to the free list.
 
 				// TODO: Advance expected number and attempt to unblock out-of-order.
 				m_ExpectedSeqNum = nextSeqNum;
@@ -148,7 +206,7 @@ namespace pcpp
 					PCPP_LOG_DEBUG("[RTX] SEQ=" << seqNum << " with LEN=" << dataLen << " contains new data");
 
 					auto newData = data + (m_ExpectedSeqNum - seqNum);
-					auto newDataLen = newSeqDiff;
+					auto newDataLen = nextSeqNum - m_ExpectedSeqNum;
 
 					// TODO: Attempt to merge with other OOS parts.
 					m_ExpectedSeqNum = nextSeqNum;
@@ -165,258 +223,7 @@ namespace pcpp
 				PCPP_LOG_DEBUG("[OOS] Received SEQ=" << seqNum << " with LEN=" << dataLen
 				                                     << " bytes, but expected SEQ=" << m_ExpectedSeqNum
 				                                     << ". SYN=" << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
-
-				// TODO: Insert the part into the OOS buffer and link to the nearest parts in the stream.
-				// TODO: Attempt to merge with other OOS parts if they are contiguous.
-				// If the new part is not contiguous with any existing OOS part, we can simply add it as a new part
-				// in the stream.
-
-				// StreamSeqPart* newPart = getFreePart();
-
-				// Populate the new part.
-
-				// Types of overlap between newP and p[N]:
-				//
-				// Legend: [n ... n] = new segment range, {p ... p} = existing part range
-				//
-				// Overlap cases between new segment (n) and existing part p[N]:
-				//
-				// 1. Left overlap (n starts before p, ends inside p):
-				//    [n ----{p--- n] -----p}
-				//
-				//    Trim the new part to remove the overlapping part, and link it before p.
-				//
-				// 2. Right overlap (n starts inside p, ends after p):
-				//    {p ----[n--- p} -----n]
-				//
-				//    Trim p to remove the overlapping part, and link n after p.
-				//
-				// 3. n envelops p (n starts before and ends after p):
-				//    [n ---{p------p}--- n]
-				//
-				//    Possibly replace p with n, and free n.
-				//
-				// 4. p envelops n (n is fully inside p):
-				//    {p ---[n------n]--- p}
-				//
-				//    Segment n is fully redundant; discard it.
-				//
-				//
-				// Overlap cases between new segment (n) and existing part p[N + 1] after overlap with p[N]:
-				//
-				// a
-
-				// Insert the new part into the reorder buffer and link it to its closest neighbors in the stream.
-				auto* firstPart = getPartSafe(m_ReorderList.head);
-				if (firstPart != nullptr)
-				{
-					StreamSeqPart* nextPart = firstPart;
-					StreamSeqPart* prevPart = nullptr;
-
-					// Find the first part that starts after or at the sequence number of the new part, if any.
-					while (nextPart != nullptr && internal::compareSeqNum(nextPart->seqNum, seqNum) < 0)
-					{
-						prevPart = nextPart;
-						nextPart = getPartSafe(nextPart->nextId);
-					}
-
-					// If prevPart is not null, that means we have a pending segment before the new part.
-					// If nextPart is not null, that means we have a segment after the new part.
-
-					// For prevPart and newPart the possible overlap cases are:
-					// 1. No overlap: No bytes are duplicated
-					// 2. Right overlap: Some of the bytes in prevPart are duplicated in newPart
-					//
-					// No full overlap is possible, since prevPart starts before newPart.
-					// Otherwise the loop would have stopped when prevPart was nextPart.
-
-					if (prevPart != nullptr)
-					{
-						if (internal::compareSeqNum(prevPart->nextSeqNum(), seqNum) > 0)
-						{
-							// Possible right overlap of prevPart.
-							uint32_t seqOverlap = prevPart->nextSeqNum() - seqNum;
-
-							// Data byte overlap, excluding possible phantom bytes
-							uint32_t leftTrimBytes = seqOverlap - prevPart->seqFlags.finFlag;
-
-							PCPP_ASSERT(
-							    leftTrimBytes < dataLen,
-							    "New part is fully enveloped by previous part, prevPart should have been nextPart on last cycle.");
-
-							// Retarget to the new effective span, ignoring the prevPart.
-							seqNum += seqOverlap;
-							// Remove the syn flag, since we are padding from the left.
-							flags.synFlag = false;
-
-							data += leftTrimBytes;
-							dataLen -= leftTrimBytes;
-
-							// NextSeqNum should be unaffected by the trim, since the right border is unchanged.
-							PCPP_ASSERT(nextSeqNum == calcNextSeqNum(seqNum, dataLen, flags),
-							            "Left trim should not affect the next expected sequence number");
-						}
-					}
-
-					// For nextPart and newPart the possible overlap cases are:
-					// 1. No overlap: No bytes are duplicated
-					// 2. Left overlap: Some of the bytes in nextPart are duplicated in newPart
-					// 3. Full overlap: nextPart is fully enveloped by newPart, meaning all of its bytes are duplicated
-					// in newPart.
-					// 3.a In this case, check further next parts, filling in the gaps until we consume all the new
-					//   part's bytes or we find a non-overlapping part.
-					while (nextPart != nullptr)
-					{
-						// Notable edge case:
-						// If nextPart contains a SYN flag, that means we are attempting to inject data before the SYN
-						// segment. which is ill-formed as it does not conform to TCP spec.
-						if (nextPart->seqFlags.synFlag)
-						{
-							throw std::runtime_error("Insertion prior to SYN flag");
-						}
-
-						// Compare if left border of nextPart is before or at the right border of the new part.
-						if (internal::compareSeqNum(nextPart->seqNum, nextSeqNum) < 0)
-						{
-							// Conceptually we have 2 cases to handle here.
-							// 1. The new buffer terminates inside nextPart.
-							// 2. The new buffer extends past the end of nextPart.
-							//    It may contain new data or overlap with nextPart + 1.
-							//
-							// In both cases we need to trim the overlapping part with nextPart.
-							// In case 2. we also need to save the extra data past nextPart, and redo with nextPart + 1.
-							//
-							// The buffer can thus be split into two subsections.
-							// 1. Valid new data prior to nextPart.
-							// 2. Unprocessed data past the end of nextPart.
-
-							size_t trimLen = nextPart->seqNum - calcTrueSeqNum(seqNum, flags);
-							SeqFlags trimFlags = flags;
-							flags.finFlag = false;  // Clear the FIN flag since we are trimming from the right.
-
-							if (internal::compareSeqNum(nextSeqNum, nextPart->nextSeqNum()) > 0)
-							{
-								// We may have new data that goes past nextPart.
-
-								// Notable edge case:
-								// If the nextPart contains a FIN flag, that means it is supposed to be the last
-								// sequence packet. In that case, any data after it is ill-formed as it does not conform
-								// to TCP spec.
-								if (nextPart->seqFlags.finFlag)
-								{
-									// TODO: Handle error.
-									throw std::runtime_error("Sequence Error. Injecting data after FIN segment");
-								}
-
-								// Records the extra data that extends past nextPart.
-								uint32_t offset = nextPart->nextSeqNum() - calcTrueSeqNum(seqNum, flags);
-								uint8_t const* exData = data + offset;
-								size_t exDataLen = dataLen - offset;
-								uint32_t exDataSeq = nextPart->nextSeqNum();
-								SeqFlags exFlags = flags;
-								exFlags.synFlag = false;  // Clear the SYN flag since we are trimming from the left.
-
-								// Write the buffer [seqNum, nextPart->seqNum).
-								// Only write if we actually have new data prior to nextPart
-								if (trimLen > 0)
-								{
-									// We have to save the part ids before we create the new part.
-									// Get free part MAY REALLOCATE the parts storage buffer, invalidating all pointers.
-									uint32_t prevId = getPartIdSafe(prevPart);
-									uint32_t nextId = getPartIdSafe(nextPart);
-
-									// Add the new part to the OOS buffer and link it to its neighbors.
-									StreamSeqPart* newPart = getFreePart();
-									uint32_t newId = getPartIdSafe(newPart);
-
-									// Restore the pointers after possible reallocation.
-									prevPart = getPartSafe(prevId);
-									nextPart = getPartSafe(nextId);
-
-									// Populate the new node.
-									newPart->data = data;
-									newPart->dataLen = trimLen;
-									newPart->seqNum = seqNum;
-									newPart->seqFlags = trimFlags;
-
-									PCPP_ASSERT(newPart->dataLen > 0, "Adding 0 data sequence is pointless.");
-
-									// Link the new node.
-									linkNode(m_ReorderList, newPart, prevPart, nextPart);
-								}
-
-								// Advance parts and redo check.
-								prevPart = nextPart;
-								nextPart = getPartSafe(nextPart->nextId);
-
-								data = exData;
-								dataLen = exDataLen;
-								seqNum = exDataSeq;
-								flags = exFlags;
-
-								PCPP_ASSERT(nextSeqNum == calcNextSeqNum(seqNum, dataLen, flags),
-								            "Next SEQ number should be unchanged.");
-							}
-							else
-							{
-								// No extended data after nextPart, we can simply trim the new part to the
-								// non-overlapping section and link it before nextPart.
-								dataLen = trimLen;
-								flags = trimFlags;
-								break;
-							}
-						}
-						else
-						{
-							// No overlap. nextPart is fully after newPart.
-							break;
-						}
-					}
-
-					// We have to save the part ids before we create the new part.
-					// Get free part MAY REALLOCATE the parts storage buffer, invalidating all pointers.
-					uint32_t prevId = getPartIdSafe(prevPart);
-					uint32_t nextId = getPartIdSafe(nextPart);
-
-					// Add the new part to the OOS buffer and link it to its neighbors.
-					StreamSeqPart* newPart = getFreePart();
-					uint32_t newId = getPartIdSafe(newPart);
-
-					// Restore the pointers after possible reallocation.
-					prevPart = getPartSafe(prevId);
-					nextPart = getPartSafe(nextId);
-
-					// Populate the new node.
-
-					newPart->data = data;
-					newPart->dataLen = dataLen;
-					newPart->seqNum = seqNum;
-					newPart->seqFlags = flags;
-
-					// TODO Edge: If a SYN or FIN flag is added without data, possibly merge it to a nearby fragment.
-					PCPP_ASSERT(newPart->dataLen > 0, "Adding 0 data sequence is pointless.");
-
-					linkNode(m_ReorderList, newPart, prevPart, nextPart);
-				}
-				else
-				{
-					// The reorder buffer is empty.
-					// Create a new part and fill it.
-
-					StreamSeqPart* newPart = getFreePart();
-					PCPP_ASSERT(newPart != nullptr, "Failed to get free part from the pool");
-					uint32_t index = getPartIdSafe(newPart);
-
-					newPart->data = data;
-					newPart->dataLen = dataLen;
-					newPart->seqNum = seqNum;
-					newPart->seqFlags = flags;
-
-					// First node, no other nodes to link to.
-					linkNode(m_ReorderList, newPart, nullptr, nullptr);
-				}
-
-				// TODO: Handle FIN or RST?
+				insertSeqToReorderBuffer(seqNum, data, dataLen, flags);
 			}
 		}
 
@@ -443,6 +250,17 @@ namespace pcpp
 		}
 
 	private:
+		/// @brief Inserts a new part into the reorder buffer.
+		///
+		/// This is used for buffering out-of-order packets until the head of the stream reaches them.
+		/// This method is meant to be used internally from insertSeq for out-of-order packets.
+		///
+		/// @param[in] seqNum The sequence number of the new part.
+		/// @param[in] data A pointer to the data buffer containing the bytes of this part.
+		/// @param[in] dataLen The length of the data buffer.
+		/// @param[in] flags Flags related to the sequence part, such as SYN and FIN flags.
+		void insertSeqToReorderBuffer(uint32_t seqNum, uint8_t const* data, size_t dataLen, SeqFlags flags);
+
 		struct NodeIndexList
 		{
 			uint32_t head = StreamSeqPart::INVALID_PART_ID;
@@ -510,6 +328,35 @@ namespace pcpp
 			}
 		}
 
+		/// @brief Inserts a chain of nodes into the list head, with the given node as the new head of the list.
+		/// @param[in] list The list to insert the chain into. The head of the list will be updated to point to the head
+		/// of the new chain.
+		/// @param[in] chainHead The head node of the chain to insert.
+		void insertChainAtHead(NodeIndexList& list, StreamSeqPart* chainHead)
+		{
+			PCPP_ASSERT(chainHead != nullptr, "Chain head cannot be null");
+			PCPP_ASSERT(chainHead->prevId == StreamSeqPart::INVALID_PART_ID,
+			            "Chain head must be unlinked from any previous nodes");
+
+			uint32_t chainHeadId = getPartIdSafe(chainHead);
+			PCPP_ASSERT(chainHeadId != StreamSeqPart::INVALID_PART_ID, "Chain head must have a valid id");
+
+			StreamSeqPart* chainTail = chainHead;
+			while (chainTail->nextId != StreamSeqPart::INVALID_PART_ID)
+			{
+				chainTail = getPartSafe(chainTail->nextId);
+			}
+
+			uint32_t oldHeadId = list.head;
+			StreamSeqPart* oldHead = getPartSafe(list.head);
+
+			chainTail->nextId = oldHeadId;
+			oldHead->prevId = chainTail->prevId;
+
+			list.head = chainHeadId;
+			chainHead->prevId = StreamSeqPart::INVALID_PART_ID;
+		}
+
 		/// @brief Unlinks a node from a linked list, connecting its previous and next nodes together.
 		/// @param[in] list The list the node belongs to.
 		/// @param[in] node The node to unlink from the list. The node must be currently linked in the list.
@@ -547,6 +394,67 @@ namespace pcpp
 
 			node->nextId = StreamSeqPart::INVALID_PART_ID;
 			node->prevId = StreamSeqPart::INVALID_PART_ID;
+		}
+
+		/// @brief Attempt to unlink a chain of contiguous parts starting from the given sequence number.
+		///
+		/// This is the primary mechanism for unblocking the reorder buffer when new in-order data is received.
+		///
+		/// The function will check the head of the list for a part with the expected sequence number.
+		/// If it finds such a part, it will unlink it and every contiguous part following it, until it reaches a part
+		/// that is not contiguous with the previous one.
+		///
+		/// NOTE: The list must be ordered by sequence number, with the head being the part with the lowest sequence
+		/// number. No overlapping sequence numbers can be present in the list.
+		///
+		/// @param[in] list The list to unlink the chain from. This is typically the reorder buffer list.
+		/// @param[in] expectedSeqNum The expected sequence number of the head part.
+		/// @param[out] headId An optional pointer to store the id of the head part of the unlinked chain.
+		/// @return A pointer to the head of the unlinked chain, or null if the head part does not have the expected
+		/// sequence number.
+		StreamSeqPart* tryUnlinkOrderedChainFromHead(NodeIndexList& list, uint32_t expectedSeqNum,
+		                                             uint32_t* headId = nullptr)
+		{
+			StreamSeqPart* head = getPartSafe(list.head);
+
+			PCPP_ASSERT(head == nullptr, "The head part must be valid.");
+			if (head == nullptr || internal::compareSeqNum(head->seqNum, expectedSeqNum) != 0)
+			{
+				// The head part does not have the expected sequence number, so we cannot unlink an ordered chain.
+				return nullptr;
+			}
+
+			StreamSeqPart* current = head;
+			StreamSeqPart* next = getPartSafe(current->nextId);
+
+			while (next != nullptr && internal::compareSeqNum(current->nextSeqNum(), next->seqNum) == 0)
+			{
+				current = next;
+				next = getPartSafe(current->nextId);
+			}
+
+			// Checks if the list is correctly ordered, with no overlaps and the head being the lowest sequence number.
+			PCPP_ASSERT(next == nullptr || internal::compareSeqNum(current->nextSeqNum(), next->seqNum) < 0,
+			            "If next part exists, it must be of higher sequence number.");
+
+			// Unlink current from next, making current the new tail of the chain.
+			uint32_t nextId = current->nextId;
+			current->nextId = StreamSeqPart::INVALID_PART_ID;
+
+			if (next != nullptr)
+			{
+				// We have another node left in the list.
+				next->prevId = StreamSeqPart::INVALID_PART_ID;
+			}
+
+			// Store the head id if the caller wants it.
+			if (headId != nullptr)
+			{
+				*headId = list.head;
+			}
+
+			list.head = nextId;  // If nextId is invalid, this correctly sets the head to invalid as well.
+			return head;
 		}
 
 		StreamSeqPart* getPartSafe(uint32_t partId)
