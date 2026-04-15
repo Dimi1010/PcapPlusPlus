@@ -1,5 +1,8 @@
 #include "TcpReassemblyNext.h"
 
+#include "IPLayer.h"
+#include "TcpLayer.h"
+
 namespace
 {
 
@@ -43,7 +46,7 @@ namespace pcpp
 			// The reorder buffer is empty.
 			// Create a new part and fill it.
 
-			StreamSeqPart* newPart = getFreePart();
+			TcpStreamSeqPart* newPart = getFreePart();
 			PCPP_ASSERT(newPart != nullptr, "Failed to get free part from the pool");
 			uint32_t index = getPartIdSafe(newPart);
 
@@ -61,8 +64,8 @@ namespace pcpp
 		// Insert the new part into the reorder buffer and link it to its closest neighbors in the stream.
 		PCPP_ASSERT(firstPart != nullptr, "Reorder buffer should not be empty");
 
-		StreamSeqPart* nextPart = firstPart;
-		StreamSeqPart* prevPart = nullptr;
+		TcpStreamSeqPart* nextPart = firstPart;
+		TcpStreamSeqPart* prevPart = nullptr;
 
 		// Find the first part that starts after or at the sequence number of the new part, if any.
 		while (nextPart != nullptr && internal::compareSeqNum(nextPart->seqNum, seqNum) < 0)
@@ -177,7 +180,7 @@ namespace pcpp
 						uint32_t nextId = getPartIdSafe(nextPart);
 
 						// Add the new part to the OOS buffer and link it to its neighbors.
-						StreamSeqPart* newPart = getFreePart();
+						TcpStreamSeqPart* newPart = getFreePart();
 						uint32_t newId = getPartIdSafe(newPart);
 
 						// Restore the pointers after possible reallocation.
@@ -230,7 +233,7 @@ namespace pcpp
 		uint32_t nextId = getPartIdSafe(nextPart);
 
 		// Add the new part to the OOS buffer and link it to its neighbors.
-		StreamSeqPart* newPart = getFreePart();
+		TcpStreamSeqPart* newPart = getFreePart();
 		uint32_t newId = getPartIdSafe(newPart);
 
 		// Restore the pointers after possible reallocation.
@@ -248,5 +251,55 @@ namespace pcpp
 		PCPP_ASSERT(newPart->dataLen > 0, "Adding 0 data sequence is pointless.");
 
 		linkNode(m_ReorderList, newPart, prevPart, nextPart);
+	}
+
+	TcpReassemblyV2::ReassemblyStatus TcpReassemblyV2::reassemblePacket(Packet& packet)
+	{
+		// TODO: Run Garbage collection on Connections.
+
+		// calculate packet's source and dest IP address
+		if (!packet.isPacketOfType(IP))
+		{
+			return ReassemblyStatus::NonIpPacket;
+		}
+
+		const IPLayer* ipLayer = packet.getLayerOfType<IPLayer>();
+		IPAddress srcIP = ipLayer->getSrcIPAddress();
+		IPAddress dstIP = ipLayer->getDstIPAddress();
+
+		// Ignore non-TCP packets
+		TcpLayer* tcpLayer = packet.getLayerOfType<TcpLayer>(true);  // lookup in reverse order
+		if (tcpLayer == nullptr)
+		{
+			return ReassemblyStatus::NonTcpPacket;
+		}
+
+		// Ignore the packet if it's an ICMP packet that has a TCP layer
+		// Several ICMP messages (like "destination unreachable") have TCP data as part of the ICMP message.
+		// This is not real TCP data and packet can be ignored
+		if (packet.isPacketOfType(ICMP))
+		{
+			PCPP_LOG_DEBUG(
+			    "Packet is of type ICMP so TCP data is probably part of the ICMP message. Ignoring this packet");
+			return ReassemblyStatus::NonTcpPacket;
+		}
+
+		// set the TCP payload size
+		size_t tcpPayloadSize = tcpLayer->getLayerPayloadSize();
+
+		// calculate if this packet has FIN or RST flags
+		bool isFin = (tcpLayer->getTcpHeader()->finFlag == 1);
+		bool isRst = (tcpLayer->getTcpHeader()->rstFlag == 1);
+		bool isFinOrRst = isFin || isRst;
+
+		// TODO: Do not ignore ACK packets. Use them to sync the stream position.
+
+		// ignore ACK packets or TCP packets with no payload (except for SYN, FIN or RST packets which we'll later need)
+		if (tcpPayloadSize == 0 && tcpLayer->getTcpHeader()->synFlag == 0 && !isFinOrRst)
+		{
+			return ReassemblyStatus::Ignore_PacketWithNoData;
+		}
+
+		return ReassemblyStatus();
 	}
 }  // namespace pcpp

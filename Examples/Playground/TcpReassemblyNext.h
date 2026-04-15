@@ -60,7 +60,7 @@ namespace pcpp
 	*/
 
 	/// @brief Part of a sequential data stream. Used for Out-of-order resolution.
-	struct StreamSeqPart
+	struct TcpStreamSeqPart
 	{
 		static constexpr uint32_t INVALID_PART_ID = -1;
 
@@ -103,15 +103,6 @@ namespace pcpp
 
 	class TcpOnDataReadyCallbackData
 	{
-	};
-
-	class TcpReassemblyV2
-	{
-	public:
-		bool reassemblePacket(Packet& packet);
-		bool reassemblePacket(RawPacket& rawPacket);
-
-	private:
 	};
 
 	/// @brief Represents a chain of sequential data parts from a TCP byte stream.
@@ -195,7 +186,7 @@ namespace pcpp
 				uint32_t headId;
 				auto* parts = tryUnlinkOrderedChainFromHead(m_ReorderList, nextSeqNum, &headId);
 
-				StreamSeqPart tempPart;
+				TcpStreamSeqPart tempPart;
 
 				// If there are any buffered out-of-order parts that are now in-order, link them after the new part.
 				// The linking is only forward link, due to inability to generate a valid PartID for the temporary
@@ -261,7 +252,7 @@ namespace pcpp
 
 		struct NodeIndexList
 		{
-			uint32_t head = StreamSeqPart::INVALID_PART_ID;
+			uint32_t head = TcpStreamSeqPart::INVALID_PART_ID;
 		};
 
 		/// @brief Links a new node into the stream between the given previous and next nodes.
@@ -271,34 +262,34 @@ namespace pcpp
 		/// stream.
 		/// @param next A node following the new node in the stream, or null if the new node is the new tail of the
 		/// stream.
-		void linkNode(NodeIndexList& list, StreamSeqPart* node, StreamSeqPart* prev, StreamSeqPart* next)
+		void linkNode(NodeIndexList& list, TcpStreamSeqPart* node, TcpStreamSeqPart* prev, TcpStreamSeqPart* next)
 		{
 			PCPP_ASSERT(node != nullptr, "Node to link cannot be null");
 			PCPP_ASSERT(prev == nullptr || node != prev, "Node cannot be linked to itself as previous");
 			PCPP_ASSERT(next == nullptr || node != next, "Node cannot be linked to itself as next");
 			PCPP_ASSERT(prev == nullptr || next == nullptr || prev != next, "Prev and next cannot be the same node");
 
-			PCPP_ASSERT(node->nextId == StreamSeqPart::INVALID_PART_ID &&
-			                node->prevId == StreamSeqPart::INVALID_PART_ID,
+			PCPP_ASSERT(node->nextId == TcpStreamSeqPart::INVALID_PART_ID &&
+			                node->prevId == TcpStreamSeqPart::INVALID_PART_ID,
 			            "New node must be unlinked.");
 
 			uint32_t nodeId = getPartIdSafe(node);
 			uint32_t prevId = getPartIdSafe(prev);
 			uint32_t nextId = getPartIdSafe(next);
 
-			PCPP_ASSERT(nodeId != StreamSeqPart::INVALID_PART_ID, "Node must have a valid id");
-			PCPP_ASSERT(prev == nullptr || prevId != StreamSeqPart::INVALID_PART_ID, "Prev must have a valid id");
-			PCPP_ASSERT(next == nullptr || nextId != StreamSeqPart::INVALID_PART_ID, "Next must have a valid id");
+			PCPP_ASSERT(nodeId != TcpStreamSeqPart::INVALID_PART_ID, "Node must have a valid id");
+			PCPP_ASSERT(prev == nullptr || prevId != TcpStreamSeqPart::INVALID_PART_ID, "Prev must have a valid id");
+			PCPP_ASSERT(next == nullptr || nextId != TcpStreamSeqPart::INVALID_PART_ID, "Next must have a valid id");
 
 			PCPP_ASSERT(prev != nullptr ||
-			                ((next == nullptr && list.head == StreamSeqPart::INVALID_PART_ID) || nextId == list.head),
+			                ((next == nullptr && list.head == TcpStreamSeqPart::INVALID_PART_ID) || nextId == list.head),
 			            "A new head can only be assigned if the chain is empty or the next node is the current head");
 
 			// Link the new part to its neighbors in the stream.
 			if (prev != nullptr)
 			{
 				PCPP_ASSERT(next == nullptr || prev->nextId == nextId, "prev->next must be next's id");
-				PCPP_ASSERT(next != nullptr || prev->nextId == StreamSeqPart::INVALID_PART_ID,
+				PCPP_ASSERT(next != nullptr || prev->nextId == TcpStreamSeqPart::INVALID_PART_ID,
 				            "prev->next must be invalid id");
 
 				prev->nextId = nodeId;
@@ -308,13 +299,13 @@ namespace pcpp
 			{
 				// This means the new part is the new head of the stream.
 				list.head = nodeId;
-				node->prevId = StreamSeqPart::INVALID_PART_ID;
+				node->prevId = TcpStreamSeqPart::INVALID_PART_ID;
 			}
 
 			if (next != nullptr)
 			{
 				PCPP_ASSERT(prev == nullptr || next->prevId == prevId, "next->prevId must be prev's id");
-				PCPP_ASSERT(prev != nullptr || next->prevId == StreamSeqPart::INVALID_PART_ID,
+				PCPP_ASSERT(prev != nullptr || next->prevId == TcpStreamSeqPart::INVALID_PART_ID,
 				            "next->prevId must be invalid id");
 
 				next->prevId = nodeId;
@@ -322,7 +313,7 @@ namespace pcpp
 			}
 			else
 			{
-				node->nextId = StreamSeqPart::INVALID_PART_ID;
+				node->nextId = TcpStreamSeqPart::INVALID_PART_ID;
 			}
 		}
 
@@ -330,35 +321,35 @@ namespace pcpp
 		/// @param[in] list The list to insert the chain into. The head of the list will be updated to point to the head
 		/// of the new chain.
 		/// @param[in] chainHead The head node of the chain to insert.
-		void insertChainAtHead(NodeIndexList& list, StreamSeqPart* chainHead)
+		void insertChainAtHead(NodeIndexList& list, TcpStreamSeqPart* chainHead)
 		{
 			PCPP_ASSERT(chainHead != nullptr, "Chain head cannot be null");
-			PCPP_ASSERT(chainHead->prevId == StreamSeqPart::INVALID_PART_ID,
+			PCPP_ASSERT(chainHead->prevId == TcpStreamSeqPart::INVALID_PART_ID,
 			            "Chain head must be unlinked from any previous nodes");
 
 			uint32_t chainHeadId = getPartIdSafe(chainHead);
-			PCPP_ASSERT(chainHeadId != StreamSeqPart::INVALID_PART_ID, "Chain head must have a valid id");
+			PCPP_ASSERT(chainHeadId != TcpStreamSeqPart::INVALID_PART_ID, "Chain head must have a valid id");
 
-			StreamSeqPart* chainTail = chainHead;
-			while (chainTail->nextId != StreamSeqPart::INVALID_PART_ID)
+			TcpStreamSeqPart* chainTail = chainHead;
+			while (chainTail->nextId != TcpStreamSeqPart::INVALID_PART_ID)
 			{
 				chainTail = getPartSafe(chainTail->nextId);
 			}
 
 			uint32_t oldHeadId = list.head;
-			StreamSeqPart* oldHead = getPartSafe(list.head);
+			TcpStreamSeqPart* oldHead = getPartSafe(list.head);
 
 			chainTail->nextId = oldHeadId;
 			oldHead->prevId = chainTail->prevId;
 
 			list.head = chainHeadId;
-			chainHead->prevId = StreamSeqPart::INVALID_PART_ID;
+			chainHead->prevId = TcpStreamSeqPart::INVALID_PART_ID;
 		}
 
 		/// @brief Unlinks a node from a linked list, connecting its previous and next nodes together.
 		/// @param[in] list The list the node belongs to.
 		/// @param[in] node The node to unlink from the list. The node must be currently linked in the list.
-		void unlinkNode(NodeIndexList& list, StreamSeqPart* node)
+		void unlinkNode(NodeIndexList& list, TcpStreamSeqPart* node)
 		{
 			PCPP_ASSERT(node != nullptr, "Node to unlink cannot be null");
 
@@ -390,8 +381,8 @@ namespace pcpp
 				next->prevId = prevId;
 			}
 
-			node->nextId = StreamSeqPart::INVALID_PART_ID;
-			node->prevId = StreamSeqPart::INVALID_PART_ID;
+			node->nextId = TcpStreamSeqPart::INVALID_PART_ID;
+			node->prevId = TcpStreamSeqPart::INVALID_PART_ID;
 		}
 
 		/// @brief Attempt to unlink a chain of contiguous parts starting from the given sequence number.
@@ -410,10 +401,10 @@ namespace pcpp
 		/// @param[out] headId An optional pointer to store the id of the head part of the unlinked chain.
 		/// @return A pointer to the head of the unlinked chain, or null if the head part does not have the expected
 		/// sequence number.
-		StreamSeqPart* tryUnlinkOrderedChainFromHead(NodeIndexList& list, uint32_t expectedSeqNum,
+		TcpStreamSeqPart* tryUnlinkOrderedChainFromHead(NodeIndexList& list, uint32_t expectedSeqNum,
 		                                             uint32_t* headId = nullptr)
 		{
-			StreamSeqPart* head = getPartSafe(list.head);
+			TcpStreamSeqPart* head = getPartSafe(list.head);
 
 			PCPP_ASSERT(head == nullptr, "The head part must be valid.");
 			if (head == nullptr || internal::compareSeqNum(head->seqNum, expectedSeqNum) != 0)
@@ -422,8 +413,8 @@ namespace pcpp
 				return nullptr;
 			}
 
-			StreamSeqPart* current = head;
-			StreamSeqPart* next = getPartSafe(current->nextId);
+			TcpStreamSeqPart* current = head;
+			TcpStreamSeqPart* next = getPartSafe(current->nextId);
 
 			while (next != nullptr && internal::compareSeqNum(current->nextSeqNum(), next->seqNum) == 0)
 			{
@@ -437,12 +428,12 @@ namespace pcpp
 
 			// Unlink current from next, making current the new tail of the chain.
 			uint32_t nextId = current->nextId;
-			current->nextId = StreamSeqPart::INVALID_PART_ID;
+			current->nextId = TcpStreamSeqPart::INVALID_PART_ID;
 
 			if (next != nullptr)
 			{
 				// We have another node left in the list.
-				next->prevId = StreamSeqPart::INVALID_PART_ID;
+				next->prevId = TcpStreamSeqPart::INVALID_PART_ID;
 			}
 
 			// Store the head id if the caller wants it.
@@ -455,9 +446,9 @@ namespace pcpp
 			return head;
 		}
 
-		StreamSeqPart* getPartSafe(uint32_t partId)
+		TcpStreamSeqPart* getPartSafe(uint32_t partId)
 		{
-			if (partId == StreamSeqPart::INVALID_PART_ID)
+			if (partId == TcpStreamSeqPart::INVALID_PART_ID)
 			{
 				return nullptr;
 			}
@@ -466,11 +457,11 @@ namespace pcpp
 			return &m_Parts[partId];
 		}
 
-		uint32_t getPartIdSafe(StreamSeqPart const* part) const
+		uint32_t getPartIdSafe(TcpStreamSeqPart const* part) const
 		{
 			if (part == nullptr)
 			{
-				return StreamSeqPart::INVALID_PART_ID;
+				return TcpStreamSeqPart::INVALID_PART_ID;
 			}
 
 			auto partId = part - &m_Parts[0];
@@ -478,9 +469,9 @@ namespace pcpp
 			return partId;
 		}
 
-		StreamSeqPart* getFreePart()
+		TcpStreamSeqPart* getFreePart()
 		{
-			if (m_FreeSlotsList.head == StreamSeqPart::INVALID_PART_ID)
+			if (m_FreeSlotsList.head == TcpStreamSeqPart::INVALID_PART_ID)
 			{
 				// Using emplace back to utilize the automatic growth of the vector.
 				if (m_Parts.size() == std::numeric_limits<uint32_t>::max())
@@ -493,19 +484,19 @@ namespace pcpp
 			}
 
 			PCPP_ASSERT(m_FreeSlotsList.head < m_Parts.size(), "Free part id is out of range of the parts vector");
-			StreamSeqPart* newPart = nullptr;
+			TcpStreamSeqPart* newPart = nullptr;
 			newPart = &m_Parts[m_FreeSlotsList.head];
 
 			// When parts are not in use, they are linked together with other free parts using the nextId
 			// attribute. This makes the logical free list of parts, and allows us to reuse parts without
 			// having to search for them or maintain a separate free list.
 			m_FreeSlotsList.head = newPart->nextId;
-			newPart->nextId = StreamSeqPart::INVALID_PART_ID;
-			newPart->prevId = StreamSeqPart::INVALID_PART_ID;
+			newPart->nextId = TcpStreamSeqPart::INVALID_PART_ID;
+			newPart->prevId = TcpStreamSeqPart::INVALID_PART_ID;
 			return newPart;
 		}
 
-		StreamSeqPart* returnFreePart(StreamSeqPart* part)
+		TcpStreamSeqPart* returnFreePart(TcpStreamSeqPart* part)
 		{
 			PCPP_ASSERT(part != nullptr, "Returned part cannot be null");
 
@@ -521,7 +512,7 @@ namespace pcpp
 		}
 
 	private:
-		std::vector<StreamSeqPart> m_Parts;
+		std::vector<TcpStreamSeqPart> m_Parts;
 
 		/// @brief The index of the first part in the out-of-order stream.
 		///
@@ -531,5 +522,33 @@ namespace pcpp
 		NodeIndexList m_FreeSlotsList;
 
 		uint32_t m_ExpectedSeqNum = 0;
+	};
+
+	class TcpReassemblyV2
+	{
+	public:
+		/// @brief A unique identifier for a TCP flow, used for tracking and reassembly.
+		using FlowKey = uint32_t;
+
+		using ReassemblyStatus = TcpReassembly::ReassemblyStatus;
+
+		enum class ConnectionState
+		{
+			NotFound,
+			Established,
+			Closed,
+		};
+
+		ReassemblyStatus reassemblePacket(Packet& packet);
+		ReassemblyStatus reassemblePacket(RawPacket& rawPacket);
+
+		ConnectionState getConnectionState(FlowKey flowKey) const;
+
+		void closeConnection(FlowKey flowKey);
+		void closeAllConnections();
+
+		uint32_t purgeClosedConnections(uint32_t maxCount = 0);
+
+	private:
 	};
 }  // namespace pcpp
