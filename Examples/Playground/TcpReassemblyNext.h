@@ -184,7 +184,7 @@ namespace pcpp
 
 				// Attempt to unlink any buffered out-of-order parts that would be in-order after the new part.
 				uint32_t headId;
-				auto* parts = tryUnlinkOrderedChainFromHead(m_ReorderList, nextSeqNum, &headId);
+				auto* parts = tryPopContinuousChain(m_ReorderList, nextSeqNum, &headId);
 
 				TcpStreamSeqPart tempPart;
 
@@ -397,54 +397,11 @@ namespace pcpp
 		/// number. No overlapping sequence numbers can be present in the list.
 		///
 		/// @param[in] list The list to unlink the chain from. This is typically the reorder buffer list.
-		/// @param[in] expectedSeqNum The expected sequence number of the head part.
+		/// @param[in] expSeqNum The expected sequence number of the head part.
 		/// @param[out] headId An optional pointer to store the id of the head part of the unlinked chain.
 		/// @return A pointer to the head of the unlinked chain, or null if the head part does not have the expected
 		/// sequence number.
-		TcpStreamSeqPart* tryUnlinkOrderedChainFromHead(NodeIndexList& list, uint32_t expectedSeqNum,
-		                                             uint32_t* headId = nullptr)
-		{
-			TcpStreamSeqPart* head = getPartSafe(list.head);
-
-			PCPP_ASSERT(head == nullptr, "The head part must be valid.");
-			if (head == nullptr || internal::compareSeqNum(head->seqNum, expectedSeqNum) != 0)
-			{
-				// The head part does not have the expected sequence number, so we cannot unlink an ordered chain.
-				return nullptr;
-			}
-
-			TcpStreamSeqPart* current = head;
-			TcpStreamSeqPart* next = getPartSafe(current->nextId);
-
-			while (next != nullptr && internal::compareSeqNum(current->nextSeqNum(), next->seqNum) == 0)
-			{
-				current = next;
-				next = getPartSafe(current->nextId);
-			}
-
-			// Checks if the list is correctly ordered, with no overlaps and the head being the lowest sequence number.
-			PCPP_ASSERT(next == nullptr || internal::compareSeqNum(current->nextSeqNum(), next->seqNum) < 0,
-			            "If next part exists, it must be of higher sequence number.");
-
-			// Unlink current from next, making current the new tail of the chain.
-			uint32_t nextId = current->nextId;
-			current->nextId = TcpStreamSeqPart::INVALID_PART_ID;
-
-			if (next != nullptr)
-			{
-				// We have another node left in the list.
-				next->prevId = TcpStreamSeqPart::INVALID_PART_ID;
-			}
-
-			// Store the head id if the caller wants it.
-			if (headId != nullptr)
-			{
-				*headId = list.head;
-			}
-
-			list.head = nextId;  // If nextId is invalid, this correctly sets the head to invalid as well.
-			return head;
-		}
+		TcpStreamSeqPart* tryPopContinuousChain(NodeIndexList& list, uint32_t expSeqNum, uint32_t* headId = nullptr);
 
 		TcpStreamSeqPart* getPartSafe(uint32_t partId)
 		{

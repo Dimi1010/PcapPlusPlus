@@ -253,6 +253,50 @@ namespace pcpp
 		linkNode(m_ReorderList, newPart, prevPart, nextPart);
 	}
 
+	TcpStreamSeqPart* TcpByteStream::tryPopContinuousChain(NodeIndexList& list, uint32_t expSeqNum, uint32_t* headId)
+	{
+		TcpStreamSeqPart* head = getPartSafe(list.head);
+
+		PCPP_ASSERT(head == nullptr, "The head part must be valid.");
+		if (head == nullptr || internal::compareSeqNum(head->seqNum, expSeqNum) != 0)
+		{
+			// The head part does not have the expected sequence number, so we cannot unlink an ordered chain.
+			return nullptr;
+		}
+
+		TcpStreamSeqPart* current = head;
+		TcpStreamSeqPart* next = getPartSafe(current->nextId);
+
+		while (next != nullptr && internal::compareSeqNum(current->nextSeqNum(), next->seqNum) == 0)
+		{
+			current = next;
+			next = getPartSafe(current->nextId);
+		}
+
+		// Checks if the list is correctly ordered, with no overlaps and the head being the lowest sequence number.
+		PCPP_ASSERT(next == nullptr || internal::compareSeqNum(current->nextSeqNum(), next->seqNum) < 0,
+		            "If next part exists, it must be of higher sequence number.");
+
+		// Unlink current from next, making current the new tail of the chain.
+		uint32_t nextId = current->nextId;
+		current->nextId = TcpStreamSeqPart::INVALID_PART_ID;
+
+		if (next != nullptr)
+		{
+			// We have another node left in the list.
+			next->prevId = TcpStreamSeqPart::INVALID_PART_ID;
+		}
+
+		// Store the head id if the caller wants it.
+		if (headId != nullptr)
+		{
+			*headId = list.head;
+		}
+
+		list.head = nextId;  // If nextId is invalid, this correctly sets the head to invalid as well.
+		return head;
+	}
+
 	TcpReassemblyV2::ReassemblyStatus TcpReassemblyV2::reassemblePacket(Packet& packet)
 	{
 		// TODO: Run Garbage collection on Connections.
