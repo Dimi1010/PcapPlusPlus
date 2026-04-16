@@ -101,39 +101,33 @@ namespace pcpp
 
 	class TcpByteStream;
 
-	class TcpOnDataReadyCallbackData
+	namespace internal
 	{
-	};
 
-	/// @brief Represents a chain of sequential data parts from a TCP byte stream.
-	///
-	/// This class is used as an API to a user to access the reordered byte stream data.
-	class TcpByteStreamDataChain
-	{
-	public:
-	private:
-	};
+	}
 
-	/// @brief A class that handles a singular TCP byte stream reassembly.
+	/// @brief A class that handles a singular unidirectional TCP byte stream reassembly.
 	///
 	/// The class provides an API for inserting newly received parts of the stream and a callback mechanism to notify
 	/// the user when new in-order data is ready.
 	class TcpByteStream
 	{
 	public:
-		std::function<void(TcpByteStreamDataChain const& dataChain)> m_OnDataReadyCallback;
-
 		/// @brief Inserts a new part into the stream. The part is defined by its sequence number and data length.
 		///
 		/// @param[in] seqNum The sequence number of the segment.
 		/// Note that this includes the pre-sequence padding, meaning the true payload starts seqNum is "seqNum +
 		/// seqNumExtra.preSeqNum".
 		///
+		/// @tparam OnDataReadyCallback
+		/// @param[in] onDataReady A callback function that is invoked when new in-order data is ready.
 		/// @param[in] data A pointer to the data buffer containing the bytes of this part.
 		/// @param[in] dataLen The length of the sequence part.
 		/// @param[in] seqNumExtraLen An optional parameter that can be used to specify extra length used to
 		/// calculate the logical end sequence number.
-		void insertSeq(uint32_t seqNum, uint8_t const* data, size_t dataLen, SeqFlags flags = {})
+		template <typename OnDataReadyCallback>
+		void insertSeq(OnDataReadyCallback onDataReady, uint32_t seqNum, uint8_t const* data, size_t dataLen,
+		               SeqFlags flags = {})
 		{
 			PCPP_ASSERT(dataLen <= std::numeric_limits<uint32_t>::max(), "Fragment dataLen field is only 32bit wide.");
 
@@ -154,7 +148,7 @@ namespace pcpp
 			if (c < 0)
 			{
 				PCPP_LOG_DEBUG("[BEHIND HEAD OF LINE]");
-				
+
 				// The difference between the next expected sequence and the end of this part.
 				if (internal::compareSeqNum(nextSeqNum, m_ExpectedSeqNum) <= 0)
 				{
@@ -174,13 +168,16 @@ namespace pcpp
 				flags.synFlag = false;  // Clear the SYN flag since we are trimming from the
 			}
 
+			// In-Order packet or post-trimmed Past OOS.B.
 			// Good case: The new part is exactly the next expected sequence number.
 			//  - Update the expected sequence number and send the data to the user.
 			if (c <= 0)
 			{
-				// TODO: Send the data to the user.
 				PCPP_LOG_DEBUG("[IN-ORDER] Received SEQ=" << seqNum << " with LEN=" << dataLen << " bytes. SYN="
 				                                          << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
+
+				// TODO: Handle the case where the new part overlaps with the buffered out-of-order parts.
+				// Both the pre-first part overlap, and post-last part overlap.
 
 				// Attempt to unlink any buffered out-of-order parts that would be in-order after the new part.
 				uint32_t headId;
@@ -216,14 +213,35 @@ namespace pcpp
 			}
 		}
 
-		/// @brief Advances the expected sequence number by a given amount.
+		/// @brief Flushes all buffered out-of-order parts, until the head of line blocks again, using the given
+		/// sequence number as the new reference to unblock on.
 		///
-		/// This is typically called if special rules need to be applied such as TCP SYN packets.
+		/// This is typically called if ACK packet was received on the oposite line, which means the peer has received
+		/// all the data up to the ACK sequence number. In that case we can advance the head of line to the ACK sequence
+		/// number since there won't be any retransmissions of packet before the ACK sequence number.
 		///
-		/// @param[in] seqNum The number of bytes to advance the expected sequence number by.
-		void advanceSeq(uint32_t seqNum)
+		/// @tparam OnDataReadyCallback A callback that takes a reference to a TcpByteStreamDataChain representing the
+		/// newly unblocked in-order data, and is called for any data parts that are unblocked as a result of this
+		/// operation.
+		///
+		/// @param[in] seqNum The sequence number to reset to.
+		/// @param[in] callback A callback to call for any data parts that are unblocked as a result of this operation.
+		template <typename OnDataReadyCallback> void flushAllUntilSeq(uint32_t seqNum, OnDataReadyCallback callback)
 		{
-			m_ExpectedSeqNum += seqNum;
+			// Flush all the buffered out-of-order parts, until the head of line blocks again.
+			// Use the new seqNum as the reference to unblock on.
+
+			// Pops all parts that are prior to the new seqNum.
+			uint32_t headId;
+			auto* parts = tryPopChainFrom(m_ReorderList, seqNum, &headId);
+			if (parts == nullptr)
+			{
+				m_ExpectedSeqNum = seqNum;
+				return;
+			}
+
+			// TODO: Unlink any buffered out-of-order parts that would be left behind the new head of line.
+			// Call callback with missing data indication for the unlinked parts, if needed.
 		}
 
 		uint32_t expectedSeq() const
@@ -281,8 +299,8 @@ namespace pcpp
 			PCPP_ASSERT(prev == nullptr || prevId != TcpStreamSeqPart::INVALID_PART_ID, "Prev must have a valid id");
 			PCPP_ASSERT(next == nullptr || nextId != TcpStreamSeqPart::INVALID_PART_ID, "Next must have a valid id");
 
-			PCPP_ASSERT(prev != nullptr ||
-			                ((next == nullptr && list.head == TcpStreamSeqPart::INVALID_PART_ID) || nextId == list.head),
+			PCPP_ASSERT(prev != nullptr || ((next == nullptr && list.head == TcpStreamSeqPart::INVALID_PART_ID) ||
+			                                nextId == list.head),
 			            "A new head can only be assigned if the chain is empty or the next node is the current head");
 
 			// Link the new part to its neighbors in the stream.
@@ -403,6 +421,24 @@ namespace pcpp
 		/// sequence number.
 		TcpStreamSeqPart* tryPopContinuousChain(NodeIndexList& list, uint32_t expSeqNum, uint32_t* headId = nullptr);
 
+		/// @brief Attempt to unblock a chain to a given sequence number.
+		///
+		/// All parts starting from the head of reorder buffer until the first part that is not contiguous after the
+		/// reference sequence number will be returned as a chain.
+		///
+		/// This function is useful for flushing the reorder buffer until a given sequence number combined with
+		/// consuming as much of the reorder buffer afterwards as possible.
+		///
+		/// This is commonly used when an ACK is received on the opposite line. The sequence up to ACK is flushed
+		/// as is, along with missing data markers. All contiguous parts after the ACK sequence number are also flushed
+		/// as they are now unblocked.
+		///
+		/// @param list The list to unlink the chain from. This is typically the reorder buffer list.
+		/// @param refSeqNum A reference sequence number to unblock to. This is typically the ACK number.
+		/// @param headId An optional pointer to store the id of the head part of the unlinked chain.
+		/// @return A pointer to the head of the unlinked chain, or null if the operation did not unblock any parts.
+		TcpStreamSeqPart* tryPopChainFrom(NodeIndexList& list, uint32_t refSeqNum, uint32_t* headId = nullptr);
+
 		TcpStreamSeqPart* getPartSafe(uint32_t partId)
 		{
 			if (partId == TcpStreamSeqPart::INVALID_PART_ID)
@@ -481,9 +517,72 @@ namespace pcpp
 		uint32_t m_ExpectedSeqNum = 0;
 	};
 
+	/// @brief Represents a chain of sequential data parts from a TCP byte stream.
+	///
+	/// This class is used as an API to a user to access the reordered byte stream data.
+	class TcpByteStreamDataChain
+	{
+	public:
+	private:
+	};
+
 	class TcpReassemblyV2
 	{
 	public:
+		enum class ConnectionEndReason
+		{
+			FinPacket,
+			RstPacket,
+			UserClosed,
+		};
+
+		class TcpMessageReadyCtx
+		{
+		};
+
+		class TcpConnectionStartCtx
+		{
+		};
+
+		class TcpConnectionEndCtx
+		{
+		};
+
+		/// @typedef OnTcpMessageReady
+		/// A callback invoked when new data arrives on a connection
+		/// @param[in] side The side this data belongs to (MachineA->MachineB or vice versa). The value is 0 or 1 where
+		/// 0 is the first side seen in the connection and 1 is the second side seen
+		/// @param[in] tcpData The TCP data itself + connection information
+		/// @param[in] ctx A context object.
+		using OnTcpMessageReady =
+		    std::function<void(int8_t side, const TcpByteStreamDataChain& tcpData, TcpMessageReadyCtx& ctx)>;
+
+		/// @typedef OnTcpConnectionStart
+		/// A callback invoked when a new TCP connection is identified (whether it begins with a SYN packet or not)
+		/// @param[in] connectionData Connection information
+		/// @param[in] userCookie A pointer to the cookie provided by the user in TcpReassembly c'tor (or nullptr if no
+		/// cookie provided)
+
+		/// @brief A callback invoked when a new TCP connection is identified.
+		///
+		/// The new connection may or may not begin with a SYN packet, depending on when the reassembly engine
+		/// identifies the connection.
+		/// 
+		/// @param[in] connectionData
+		/// @param[in] ctx
+		using OnTcpConnectionStart =
+		    std::function<void(const ConnectionData& connectionData, TcpConnectionStartCtx& ctx)>;
+
+		/// @brief A callback invoked when a TCP connection is terminated.
+		///
+		/// The connection may be terminated either by a FIN or RST packet, or manually by the user.
+		///
+		/// @param[in] connectionData The connection info for the connection that is being terminated.
+		/// @param[in] reason The reason for connection termination: FIN/RST packet or manually by the user.
+		/// @param[in] ctx
+		using OnTcpConnectionEnd = std::function<void(const ConnectionData& connectionData, ConnectionEndReason reason,
+		                                              TcpConnectionEndCtx& ctx)>;
+
 		/// @brief A unique identifier for a TCP flow, used for tracking and reassembly.
 		using FlowKey = uint32_t;
 
@@ -507,5 +606,28 @@ namespace pcpp
 		uint32_t purgeClosedConnections(uint32_t maxCount = 0);
 
 	private:
+		struct Config
+		{
+		};
+
+		struct TcpConnectionSide
+		{
+			TcpByteStream stream;
+			uint16_t srcPort = 0;
+			IPAddress srcIP;
+		};
+
+		struct TcpConnection
+		{
+			ConnectionData connectionData;
+			std::array<TcpConnectionSide, 2> side;
+			int8_t openStreamSides = 0;
+		};
+
+		using ConnectionMap = std::unordered_map<FlowKey, TcpConnection>;
+		// using ConnectionInfoMap = std::unordered_map<FlowKey, ConnectionData>;
+
+		Config m_Config;
+		ConnectionMap m_Connections;
 	};
 }  // namespace pcpp

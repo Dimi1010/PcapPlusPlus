@@ -297,6 +297,11 @@ namespace pcpp
 		return head;
 	}
 
+	TcpStreamSeqPart* TcpByteStream::tryPopChainFrom(NodeIndexList& list, uint32_t refSeqNum, uint32_t* headId)
+	{
+		return nullptr;
+	}
+
 	TcpReassemblyV2::ReassemblyStatus TcpReassemblyV2::reassemblePacket(Packet& packet)
 	{
 		// TODO: Run Garbage collection on Connections.
@@ -343,6 +348,15 @@ namespace pcpp
 		{
 			return ReassemblyStatus::Ignore_PacketWithNoData;
 		}
+
+		FlowKey flowKey = 0;  // TODO: Calculate flow key based on srcIP, dstIP, srcPort, dstPort.
+		auto it = m_Connections.find(flowKey);
+		if (it == m_Connections.end())
+		{
+			// Open new connection.
+		}
+
+
 
 		return ReassemblyStatus();
 	}
