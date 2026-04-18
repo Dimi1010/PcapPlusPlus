@@ -505,9 +505,9 @@ namespace pcpp
 			insertNodeAfter(m_ReorderList, prevPart, newPart);
 		}
 
-		TcpByteStream::HOLUnblockResult TcpByteStream::tryUnblockHeadOfLine(NodeIndexList& list, uint32_t expSeqNum)
+		TcpByteStream::HOLUnblockResult TcpByteStream::tryUnblockHeadOfLine(uint32_t expSeqNum)
 		{
-			TcpStreamSeqPart* head = getPart(list.head);
+			TcpStreamSeqPart* head = getPart(m_ReorderList.head);
 
 			PCPP_ASSERT(head != nullptr, "The head part must be valid.");
 			if (head == nullptr || internal::compareSeqNum(head->seqNum, expSeqNum) != 0)
@@ -529,7 +529,7 @@ namespace pcpp
 			PCPP_ASSERT(next == nullptr || internal::compareSeqNum(current->nextSeqNum(), next->seqNum) < 0,
 			            "If next part exists, it must be of higher sequence number.");
 
-			uint32_t headId = list.head;  // Save the head id.
+			uint32_t headId = m_ReorderList.head;  // Save the head id.
 
 			// Unlink current from next, making current the new tail of the chain.
 			extractNodeRange(m_ReorderList, head, current);
@@ -541,7 +541,7 @@ namespace pcpp
 			return result;
 		}
 
-		TcpByteStream::HOLUnblockResult TcpByteStream::forceUnblockHeadOfLineTo(NodeIndexList& list, uint32_t expSeqNum)
+		TcpByteStream::HOLUnblockResult TcpByteStream::forceUnblockHeadOfLineTo(uint32_t expSeqNum)
 		{
 			return HOLUnblockResult();
 		}

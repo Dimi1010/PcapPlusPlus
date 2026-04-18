@@ -275,7 +275,7 @@ namespace pcpp
 					// Both the pre-first part overlap, and post-last part overlap.
 
 					// Attempt to unlink any buffered out-of-order parts that would be in-order after the new part.
-					auto result = tryUnblockHeadOfLine(m_ReorderList, nextSeqNum);
+					auto result = tryUnblockHeadOfLine(nextSeqNum);
 
 					TcpStreamSeqPart tempPart;
 					tempPart.data = data;
@@ -300,9 +300,10 @@ namespace pcpp
 
 					// Construct a view over the ordered parts and send it to the callback.
 					TcpByteStreamView view(tempPart, m_Parts);
-					onDataReady(view);
+					onDataReady(view);  // TODO: Strengthen exception safety.
 
-					// TODO: Release the unlinked parts back to the free list.
+					// Release the unlinked parts back to the free list.
+					returnFreePartRange(result.head, result.tail);
 
 					// Update the head of line to the next expected sequence number.
 					// That being the end of the unblocked chain of in-order parts.
@@ -348,7 +349,7 @@ namespace pcpp
 				// Pops all parts that are prior to the new seqNum.
 				uint32_t headId;
 				uint32_t nextSeqNum;
-				auto result = forceUnblockHeadOfLineTo(m_ReorderList, seqNum);
+				auto result = forceUnblockHeadOfLineTo(seqNum);
 				if (result.head == nullptr)
 				{
 					m_ExpectedSeqNum = seqNum;
@@ -523,14 +524,10 @@ namespace pcpp
 			/// The next expected sequence number after the unblocked chain can be calculated using the returned tail
 			/// part's nextSeqNum() function.
 			///
-			/// NOTE: The list is required to be ordered by sequence number, with the head being the part with the
-			/// lowest sequence number.
-			///
-			/// @param[in] list The list to unblock the head of line from. This is typically the reorder buffer list.
 			/// @param[in] expSeqNum The expected sequence number of the head part. If the head part does not have this
 			/// sequence number, the unblock operation will fail.
 			/// @return A HOLUnblockResult struct containing the result of the operation.
-			HOLUnblockResult tryUnblockHeadOfLine(NodeIndexList& list, uint32_t expSeqNum);
+			HOLUnblockResult tryUnblockHeadOfLine(uint32_t expSeqNum);
 
 			/// @brief Forces the unblock of the head of line of the given list to the given sequence number.
 			///
@@ -547,13 +544,9 @@ namespace pcpp
 			/// as missing data by the caller. The next expected sequence number after the unblocked chain can be
 			/// calculated using the returned tail part's nextSeqNum() function.
 			///
-			/// NOTE: The list is required to be ordered by sequence number, with the head being the part with the
-			/// lowest sequence number.
-			///
-			/// @param[in] list The list to unblock the head of line from. This is typically the reorder buffer list.
 			/// @param[in] expSeqNum The expected sequence number to unblock to.
 			/// @return A HOLUnblockResult struct containing the result of the operation.
-			HOLUnblockResult forceUnblockHeadOfLineTo(NodeIndexList& list, uint32_t expSeqNum);
+			HOLUnblockResult forceUnblockHeadOfLineTo(uint32_t expSeqNum);
 
 #pragma endregion Reorder Buffer API
 
