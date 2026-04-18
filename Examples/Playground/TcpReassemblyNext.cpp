@@ -622,7 +622,7 @@ namespace pcpp
 
 		// Establish tcpConn side.
 
-		auto onDataReady = [this, &tcpConn](internal::TcpByteStreamView const& rawView) {
+		auto onDataReady = [this, &tcpConn](internal::TcpStreamPartsRange const& rawView) {
 			// m_OnMessageReady();
 		};
 

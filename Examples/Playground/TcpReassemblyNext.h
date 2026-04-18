@@ -93,11 +93,11 @@ namespace pcpp
 			}
 		};
 
-		/// @brief A non-owning view over parts of a TCP byte stream.
+		/// @brief A non-owning range view over a list of TcpStreamSeqPart instances.
 		///
 		/// This class provides API for iterating over partial buffers of a TCP byte stream, which may be non-contiguous
 		/// in memory due to out-of-order segment arrival.
-		class TcpByteStreamView
+		class TcpStreamPartsRange
 		{
 		public:
 #pragma region Iterators
@@ -113,7 +113,7 @@ namespace pcpp
 				Iterator() : m_View(nullptr), m_Current(nullptr)
 				{}
 
-				Iterator(TcpByteStreamView const* view, TcpStreamSeqPart const* current)
+				Iterator(TcpStreamPartsRange const* view, TcpStreamSeqPart const* current)
 				    : m_View(view), m_Current(current)
 				{}
 
@@ -149,17 +149,17 @@ namespace pcpp
 				}
 
 			private:
-				TcpByteStreamView const* m_View;
+				TcpStreamPartsRange const* m_View;
 				TcpStreamSeqPart const* m_Current;
 			};
 #pragma endregion Iterators
 
-			TcpByteStreamView(TcpStreamSeqPart head, std::vector<TcpStreamSeqPart> const& buffer)
-			    : TcpByteStreamView(std::move(head), ScalarBuffer<TcpStreamSeqPart const>{
+			TcpStreamPartsRange(TcpStreamSeqPart head, std::vector<TcpStreamSeqPart> const& buffer)
+			    : TcpStreamPartsRange(std::move(head), ScalarBuffer<TcpStreamSeqPart const>{
 			                                             buffer.size() > 0 ? buffer.data() : nullptr, buffer.size() })
 			{}
 
-			TcpByteStreamView(TcpStreamSeqPart head, ScalarBuffer<TcpStreamSeqPart const> partsBuffer)
+			TcpStreamPartsRange(TcpStreamSeqPart head, ScalarBuffer<TcpStreamSeqPart const> partsBuffer)
 			    : m_FirstPart(std::move(head)), m_PartsBuffer(std::move(partsBuffer))
 			{}
 
@@ -328,7 +328,7 @@ namespace pcpp
 					}
 
 					// Construct a view over the ordered parts and send it to the callback.
-					TcpByteStreamView view(tempPart, m_Parts);
+					TcpStreamPartsRange view(tempPart, m_Parts);
 					onDataReady(view);  // TODO: Strengthen exception safety.
 
 					// Release the unlinked parts back to the free list.
@@ -385,7 +385,7 @@ namespace pcpp
 					return;
 				}
 
-				TcpByteStreamView view(*result.head, m_Parts);
+				TcpStreamPartsRange view(*result.head, m_Parts);
 				onDataReady(view);
 
 				returnFreePartRange(result.head, result.tail);
@@ -622,7 +622,7 @@ namespace pcpp
 
 	private:
 		ConnectionData m_Connection;
-		internal::TcpByteStreamView m_StreamPartsView;
+		internal::TcpStreamPartsRange m_StreamPartsView;
 	};
 
 	class TcpReassemblyV2
