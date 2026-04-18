@@ -303,6 +303,15 @@ namespace pcpp
 
 					// TODO: Handle the case where the new part overlaps with the buffered out-of-order parts.
 					// Both the pre-first part overlap, and post-last part overlap.
+					//
+					// Example:
+					// 
+					// HeadOfLine ->!
+					// Buffered:    !    [ 100 : 150 ),          [ 170 : 200 )
+					// Incoming:    !----[ 80 : 190 )------------------
+					// 
+					// In this case the incomming overlapping part must be delivered only once.
+					// A possible solution is to drop all nodes that are fully behind the nextSeqNum.
 
 					// Attempt to unlink any buffered out-of-order parts that would be in-order after the new part.
 					auto result = tryUnblockHeadOfLine(nextSeqNum);
