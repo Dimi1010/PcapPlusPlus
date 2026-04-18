@@ -58,45 +58,527 @@ namespace pcpp
 		{
 			return seqNum + dataLen + (flags.synFlag ? 1 : 0) + (flags.finFlag ? 1 : 0);
 		};
+
+		/// @brief Part of a sequential data stream. Used for Out-of-order resolution.
+		struct TcpStreamSeqPart
+		{
+			using PartId = uint32_t;
+
+			static constexpr PartId INVALID_PART_ID = -1;
+
+			uint8_t const* data = nullptr;
+			uint32_t dataLen = 0;
+			uint32_t seqNum = 0;
+
+			/// @brief The index of the next part in the chain. INVALID_PART_ID for no next part.
+			/// @remarks Also used to indicate the next free part when the part is not in use.
+			PartId nextId = INVALID_PART_ID;
+
+			/// @brief The index of the prev part in the chain. INVALID_PART_ID for no prev part.
+			PartId prevId = INVALID_PART_ID;
+
+			/// @brief Additional flags related to the sequence part, such as SYN and FIN flags.
+			SeqFlags seqFlags;
+
+			/// @brief Calculates the true sequence number of the payload.
+			uint32_t trueSeqNum() const
+			{
+				return seqNum + (seqFlags.synFlag ? 1 : 0);
+			}
+
+			/// @brief The expected next sequence number after the current part.
+			uint32_t nextSeqNum() const
+			{
+				return trueSeqNum() + dataLen + (seqFlags.finFlag ? 1 : 0);
+			}
+		};
+
+		/// @brief A non-owning view over parts of a TCP byte stream.
+		///
+		/// This class provides API for iterating over partial buffers of a TCP byte stream, which may be non-contiguous
+		/// in memory due to out-of-order segment arrival.
+		class TcpByteStreamView
+		{
+		public:
+#pragma region Iterators
+			class Iterator
+			{
+			public:
+				using iterator_category = std::forward_iterator_tag;
+				using value_type = TcpStreamSeqPart const;
+				using difference_type = std::ptrdiff_t;
+				using pointer = TcpStreamSeqPart const*;
+				using reference = TcpStreamSeqPart const&;
+
+				Iterator() : m_View(nullptr), m_Current(nullptr)
+				{}
+
+				Iterator(TcpByteStreamView const* view, TcpStreamSeqPart const* current)
+				    : m_View(view), m_Current(current)
+				{}
+
+				reference operator*() const
+				{
+					return *m_Current;
+				}
+				pointer operator->() const
+				{
+					return m_Current;
+				}
+
+				Iterator& operator++()
+				{
+					m_Current = m_View->getNextPart(m_Current);
+					return *this;
+				}
+
+				Iterator operator++(int)
+				{
+					Iterator tmp = *this;
+					++(*this);
+					return tmp;
+				}
+
+				bool operator==(Iterator const& other) const
+				{
+					return m_Current == other.m_Current;
+				}
+				bool operator!=(Iterator const& other) const
+				{
+					return !(*this == other);
+				}
+
+			private:
+				TcpByteStreamView const* m_View;
+				TcpStreamSeqPart const* m_Current;
+			};
+#pragma endregion Iterators
+
+			TcpByteStreamView(TcpStreamSeqPart head, std::vector<TcpStreamSeqPart> const& buffer)
+			    : TcpByteStreamView(std::move(head), ScalarBuffer<TcpStreamSeqPart const>{
+			                                             buffer.size() > 0 ? buffer.data() : nullptr, buffer.size() })
+			{}
+
+			TcpByteStreamView(TcpStreamSeqPart head, ScalarBuffer<TcpStreamSeqPart const> partsBuffer)
+			    : m_FirstPart(std::move(head)), m_PartsBuffer(std::move(partsBuffer))
+			{}
+
+			TcpStreamSeqPart const* getFirstPart() const
+			{
+				return &m_FirstPart;
+			}
+
+			TcpStreamSeqPart const* getNextPart(TcpStreamSeqPart const* part) const
+			{
+				if (part->nextId == TcpStreamSeqPart::INVALID_PART_ID)
+				{
+					return nullptr;
+				}
+
+				PCPP_ASSERT(part->nextId < m_PartsBuffer.len, "Part out of bounds");
+				if (part->nextId >= m_PartsBuffer.len)
+				{
+					return nullptr;
+				}
+
+				auto* ptr = m_PartsBuffer.buffer + part->nextId;
+				return ptr;
+			}
+
+			Iterator begin() const
+			{
+				return Iterator(this, getFirstPart());
+			}
+
+			Iterator end() const
+			{
+				return Iterator(this, nullptr);
+			}
+
+		private:
+			TcpStreamSeqPart m_FirstPart;
+			ScalarBuffer<TcpStreamSeqPart const> m_PartsBuffer;
+		};
+
+		/// @brief A class that handles a singular unidirectional TCP byte stream reassembly.
+		///
+		/// The class provides an API for inserting newly received parts of the stream and a callback mechanism to
+		/// notify the user when new in-order data is ready.
+		class TcpByteStream
+		{
+		public:
+			/// @brief Inserts a new part into the stream. The part is defined by its sequence number and data length.
+			///
+			/// @param[in] seqNum The sequence number of the segment.
+			/// Note that this includes the pre-sequence padding, meaning the true payload starts seqNum is "seqNum +
+			/// seqNumExtra.preSeqNum".
+			///
+			/// @tparam OnDataReadyCallback
+			/// @param[in] onDataReady A callback function that is invoked when new in-order data is ready.
+			/// @param[in] data A pointer to the data buffer containing the bytes of this part.
+			/// @param[in] dataLen The length of the sequence part.
+			/// @param[in] seqNumExtraLen An optional parameter that can be used to specify extra length used to
+			/// calculate the logical end sequence number.
+			template <typename OnDataReadyCallback>
+			void insertSeq(OnDataReadyCallback onDataReady, uint32_t seqNum, uint8_t const* data, size_t dataLen,
+			               SeqFlags flags = {})
+			{
+				PCPP_ASSERT(dataLen <= std::numeric_limits<uint32_t>::max(),
+				            "Fragment dataLen field is only 32bit wide.");
+
+				int c = internal::compareSeqNum(seqNum, m_ExpectedSeqNum);
+				uint32_t nextSeqNum = internal::calcNextSeqNum(seqNum, dataLen, flags);
+
+				// Past OOS: The new part is before the next expected sequence number.
+				//  - We haven't received it and it is filling missing data.
+				//  - We have received it and this is a retransmission.
+				//  - We have received it, but the part extends past the expected sequence number and contains new data.
+
+				// Past OOS.B: The new part is before the next expected sequence number,
+				// but it has data that fills after the expected sequence number.
+				//
+				// This can happen when we have received part of the data, and then we receive a retransmission of an
+				// earlier part that overlaps with the data we have already received. In this case, we should trim the
+				// overlapping part and only keep the new data that fills after the expected sequence number.
+				if (c < 0)
+				{
+					PCPP_LOG_DEBUG("[BEHIND HEAD OF LINE]");
+
+					// The difference between the next expected sequence and the end of this part.
+					if (internal::compareSeqNum(nextSeqNum, m_ExpectedSeqNum) <= 0)
+					{
+						// FULL RETRANSMISSON:
+						// The head of line is past the end of this segment. Ignore it.
+						return;
+					}
+
+					// PARTIAL RETRANSMISSION:
+					// The head of line is past the start of this segment, but before its end.
+					// Trim the left of the segment to remove the stale part.
+					// Keep the new part that fills after the head of line.
+
+					data += m_ExpectedSeqNum - seqNum;
+					dataLen = nextSeqNum - m_ExpectedSeqNum;
+					seqNum = m_ExpectedSeqNum;
+					flags.synFlag = false;  // Clear the SYN flag since we are trimming from the
+				}
+
+				// In-Order packet or post-trimmed Past OOS.B.
+				// Good case: The new part is exactly the next expected sequence number.
+				//  - Update the expected sequence number and send the data to the user.
+				if (c <= 0)
+				{
+					PCPP_LOG_DEBUG("[IN-ORDER] Received SEQ=" << seqNum << " with LEN=" << dataLen << " bytes. SYN="
+					                                          << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
+
+					// TODO: Handle the case where the new part overlaps with the buffered out-of-order parts.
+					// Both the pre-first part overlap, and post-last part overlap.
+
+					// Attempt to unlink any buffered out-of-order parts that would be in-order after the new part.
+					auto result = tryUnblockHeadOfLine(m_ReorderList, nextSeqNum);
+
+					TcpStreamSeqPart tempPart;
+					tempPart.data = data;
+					tempPart.dataLen = dataLen;
+					tempPart.seqNum = seqNum;
+					tempPart.seqFlags = flags;
+
+					// If there are any buffered out-of-order parts that are now in-order, link them after the new part.
+					// The linking is only forward link, due to inability to generate a valid PartID for the temporary
+					// part representing the new in-order part.
+
+					uint32_t nextExpectedSeqNum;
+					if (result.head != nullptr)
+					{
+						tempPart.nextId = result.headId;
+						nextExpectedSeqNum = result.tail->nextSeqNum();
+					}
+					else
+					{
+						nextExpectedSeqNum = nextSeqNum;
+					}
+
+					// Construct a view over the ordered parts and send it to the callback.
+					TcpByteStreamView view(tempPart, m_Parts);
+					onDataReady(view);
+
+					// TODO: Release the unlinked parts back to the free list.
+
+					// Update the head of line to the next expected sequence number.
+					// That being the end of the unblocked chain of in-order parts.
+					m_ExpectedSeqNum = nextExpectedSeqNum;
+					return;
+				}
+
+				// Future OOS: The new part is after the next expected sequence number.
+				//  - We need to buffer it until the missing part(s) arrive.
+				//  - We also need to try to merge with other Future OOS parts if they are contiguous.
+				if (c > 0)
+				{
+					PCPP_LOG_DEBUG("[OOS] Received SEQ=" << seqNum << " with LEN=" << dataLen
+					                                     << " bytes, but expected SEQ=" << m_ExpectedSeqNum << ". SYN="
+					                                     << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
+					insertSeqToReorderBuffer(seqNum, data, dataLen, flags);
+				}
+			}
+
+			/// @brief Sets the head of line to the given sequence number and flushes any buffered out-of-order parts
+			/// that are now after head of line or in-order as a result.
+			///
+			/// This is typically called if ACK packet was received on the oposite line, which means the peer has
+			/// received all the data up to the ACK sequence number. In that case we can advance the head of line to the
+			/// ACK sequence number since there won't be any retransmissions of packet before the ACK sequence number.
+			///
+			/// The operation may advance the head of line further than the given sequence number if there are buffered
+			/// out-of-order parts that are now in-order as a result.
+			///
+			/// @tparam OnDataReadyCallback A callback that takes a reference to a TcpByteStreamDataChain representing
+			/// the newly unblocked in-order data, and is called for any data parts that are unblocked as a result of
+			/// this operation.
+			///
+			/// @param[in] seqNum The sequence number to use as new head of line.
+			/// @param[in] onDataReady A callback to call for any data parts that are unblocked as a result of this
+			/// operation.
+			template <typename OnDataReadyCallback>
+			void setSeqHeadAndFlush(uint32_t seqNum, OnDataReadyCallback onDataReady)
+			{
+				// Flush all the buffered out-of-order parts, until the head of line blocks again.
+				// Use the new seqNum as the reference to unblock on.
+
+				// Pops all parts that are prior to the new seqNum.
+				uint32_t headId;
+				uint32_t nextSeqNum;
+				auto result = forceUnblockHeadOfLineTo(m_ReorderList, seqNum);
+				if (result.head == nullptr)
+				{
+					m_ExpectedSeqNum = seqNum;
+					return;
+				}
+
+				TcpByteStreamView view(*result.head, m_Parts);
+				onDataReady(view);
+
+				// TODO: Return the unlinked parts back to the free list.
+				returnPartSeqToFreeList(result.head, result.tail);
+
+				m_ExpectedSeqNum = nextSeqNum;
+			}
+
+			uint32_t expectedSeq() const
+			{
+				return m_ExpectedSeqNum;
+			}
+
+			void reserveReorderBuffer(size_t numParts)
+			{
+				// Clamps the maximum buffer, as we can't store over UINT32_MAX parts due to the 32-bit part id fields.
+				numParts = std::min(numParts, static_cast<size_t>(std::numeric_limits<uint32_t>::max()));
+				m_Parts.reserve(numParts);
+			}
+
+		private:
+			/// @brief Inserts a new part into the reorder buffer.
+			///
+			/// This is used for buffering out-of-order packets until the head of the stream reaches them.
+			/// This method is meant to be used internally from insertSeq for out-of-order packets.
+			///
+			/// @param[in] seqNum The sequence number of the new part.
+			/// @param[in] data A pointer to the data buffer containing the bytes of this part.
+			/// @param[in] dataLen The length of the data buffer.
+			/// @param[in] flags Flags related to the sequence part, such as SYN and FIN flags.
+			void insertSeqToReorderBuffer(uint32_t seqNum, uint8_t const* data, size_t dataLen, SeqFlags flags);
+
+			using PartId = TcpStreamSeqPart::PartId;
+#pragma region Buffered Parts Indexing
+			/// @brief Get a pointer to a part by its id. Returns nullptr if the partId is invalid.
+			/// @param[in] partId The id of the part to get.
+			/// @return A pointer to the part with the given id, or nullptr if the partId is invalid.
+			TcpStreamSeqPart* getPart(PartId partId);
+
+			/// @brief Get the id of a part from its pointer. Returns INVALID_PART_ID if the part pointer is null.
+			///
+			/// The pointer MUST BE a pointer to an element of the m_Parts vector or nullptr.
+			///
+			/// @param[in] part A pointer to the part.
+			/// @return The id of the part, or INVALID_PART_ID if the part pointer is null.
+			PartId getPartId(TcpStreamSeqPart const* part) const;
+#pragma endregion
+
+#pragma region Intrusive Index List
+			struct NodeIndexList
+			{
+				PartId head = TcpStreamSeqPart::INVALID_PART_ID;
+			};
+
+			/// @brief Insert a new node into the list after a given previous node.
+			///
+			/// See the overload that takes a previous node pointer for details.
+			void insertNodeAfter(NodeIndexList& list, TcpStreamSeqPart::PartId prevId, TcpStreamSeqPart* newNode);
+
+			/// @brief Insert a new node into the list after a given previous node.
+			///
+			/// If the previous node is null, the new node is inserted at the head of the list.
+			/// Otherwise it is inserted after the previous node.
+			///
+			/// @param[in] list The list to insert the new node into.
+			/// @param[in] prevNode The previous node to insert after, or null to insert at the head of the list.
+			/// @param[in] newNode The new node to insert. Must not be linked in any list.
+			void insertNodeAfter(NodeIndexList& list, TcpStreamSeqPart* prevNode, TcpStreamSeqPart* newNode);
+
+			// void insertNodeBefore(NodeIndexList& list, TcpStreamSeqPart* newNode, TcpStreamSeqPart::PartId nextId);
+			// void insertNodeBefore(NodeIndexList& list, TcpStreamSeqPart* newNode, TcpStreamSeqPart* nextNode);
+
+			/// @brief Insert a range of nodes into the list after a given previous node.
+			///
+			/// See the overload that takes a previous node pointer for details.
+			void insertNodeRangeAfter(NodeIndexList& list, TcpStreamSeqPart::PartId prevId, TcpStreamSeqPart* startNode,
+			                          TcpStreamSeqPart* endNode);
+
+			/// @brief Inserts a range of nodes into the list after a given previous node.
+			///
+			/// If the previous node is null, the new nodes are inserted at the head of the list.
+			/// Otherwise they are inserted after the previous node.
+			///
+			/// The node range MUST fufill the following conditions:
+			///  - The nodes in the range MUST be allocated on the m_Parts buffer.
+			///  - The nodes in the range MUST be linked together as a chain, and not be linked to any other list.
+			///  - The endNode must be reachable from the startNode by following the nextId links
+			///  - The startNode must be reachable from the endNode by following the prevId links.
+			///
+			/// In practice this is used to insert a list of nodes into another list.
+			///
+			/// @param[in] list The list to insert the new nodes into.
+			/// @param[in] prevNode The previous node to insert after, or null to insert at the head of the list.
+			/// @param[in] startNode The first node in the range to insert.
+			/// @param[in] endNode The last node in the range to insert.
+			void insertNodeRangeAfter(NodeIndexList& list, TcpStreamSeqPart* prevNode, TcpStreamSeqPart* startNode,
+			                          TcpStreamSeqPart* endNode);
+
+			/// @brief Extracts a node from the list, unlinking it from its previous and next nodes.
+			/// @param[in] list The list to extract the node from.
+			/// @param[in] node The node to extract. Must be currently linked in the list.
+			void extractNode(NodeIndexList& list, TcpStreamSeqPart* node);
+
+			/// @brief Extracts a range of nodes from the list, unlinking them from their previous and next nodes.
+			///
+			/// The nodes are still kept linked together as a chain, but the chain is unlinked from the list and can be
+			/// re-linked elsewhere.
+			///
+			/// @param[in] list The list to extract the nodes from.
+			/// @param[in] startNode The first node in the range to extract. Must be currently linked in the list.
+			/// @param[in] endNode The last node in the range to extract. Must be currently linked in the list, and must
+			/// be after the startNode.
+			void extractNodeRange(NodeIndexList& list, TcpStreamSeqPart* startNode, TcpStreamSeqPart* endNode);
+#pragma endregion Intrusive Index List
+
+			/// @brief Represents the result of a Head-of-Line (HOL) unblock operation on a TCP stream sequence.
+			struct HOLUnblockResult
+			{
+				/// @brief A pointer to the head part of the unblocked chain of sequence parts.
+				TcpStreamSeqPart* head = nullptr;
+				/// @brief A pointer to the tail part of the unblocked chain of sequence parts.
+				TcpStreamSeqPart* tail = nullptr;
+				/// @brief The PartId of the head part of the unblocked chain, if the head part is valid.
+				uint32_t headId = TcpStreamSeqPart::INVALID_PART_ID;
+			};
+
+			/// @brief Attempts to unblock the head of line of the given list if the head part has the expected sequence
+			/// number.
+			///
+			/// If the head of line is at the expected sequence number, the operation will extract and return
+			/// a sublist of contigous parts starting from the head of line, which can now be considered in-order.
+			///
+			/// The next expected sequence number after the unblocked chain can be calculated using the returned tail
+			/// part's nextSeqNum() function.
+			///
+			/// NOTE: The list is required to be ordered by sequence number, with the head being the part with the
+			/// lowest sequence number.
+			///
+			/// @param[in] list The list to unblock the head of line from. This is typically the reorder buffer list.
+			/// @param[in] expSeqNum The expected sequence number of the head part. If the head part does not have this
+			/// sequence number, the unblock operation will fail.
+			/// @return A HOLUnblockResult struct containing the result of the operation.
+			HOLUnblockResult tryUnblockHeadOfLine(NodeIndexList& list, uint32_t expSeqNum);
+
+			/// @brief Forces the unblock of the head of line of the given list to the given sequence number.
+			///
+			/// The function is similar to tryUnblockHeadOfLine, but it will unblock non-contiguous parts if necessary
+			/// to unblock the line until the expected sequence number is reached. Afterwards, it will proceed the
+			/// unblocking operation as tryUnblockHeadOfLine would, but with the new head of line after the forced
+			/// unblock.
+			///
+			/// This function is intended to be used to consider all gaps prior to the expected sequence number as
+			/// missing data, and unblock the line until the expected sequence number as if the missing data was
+			/// received, even if it wasn't.
+			///
+			/// The resulting list of unblocked parts may contain gaps in the sequence numbers, which should be handled
+			/// as missing data by the caller. The next expected sequence number after the unblocked chain can be
+			/// calculated using the returned tail part's nextSeqNum() function.
+			///
+			/// NOTE: The list is required to be ordered by sequence number, with the head being the part with the
+			/// lowest sequence number.
+			///
+			/// @param[in] list The list to unblock the head of line from. This is typically the reorder buffer list.
+			/// @param[in] expSeqNum The expected sequence number to unblock to.
+			/// @return A HOLUnblockResult struct containing the result of the operation.
+			HOLUnblockResult forceUnblockHeadOfLineTo(NodeIndexList& list, uint32_t expSeqNum);
+
+			TcpStreamSeqPart* getFreePart()
+			{
+				if (m_FreeSlotsList.head == TcpStreamSeqPart::INVALID_PART_ID)
+				{
+					// Using emplace back to utilize the automatic growth of the vector.
+					if (m_Parts.size() == std::numeric_limits<uint32_t>::max())
+					{
+						throw std::overflow_error("Reached maximum number of parts");
+					}
+
+					m_Parts.emplace_back();
+					return &m_Parts.back();
+				}
+
+				PCPP_ASSERT(m_FreeSlotsList.head < m_Parts.size(), "Free part id is out of range of the parts vector");
+				TcpStreamSeqPart* newPart = nullptr;
+				newPart = &m_Parts[m_FreeSlotsList.head];
+
+				// When parts are not in use, they are linked together with other free parts using the nextId
+				// attribute. This makes the logical free list of parts, and allows us to reuse parts without
+				// having to search for them or maintain a separate free list.
+				m_FreeSlotsList.head = newPart->nextId;
+				newPart->nextId = TcpStreamSeqPart::INVALID_PART_ID;
+				newPart->prevId = TcpStreamSeqPart::INVALID_PART_ID;
+				return newPart;
+			}
+
+			void returnPartToFreeList(TcpStreamSeqPart* part)
+			{
+				// When parts are not in use, they are linked together with other free parts using the nextId
+				// attribute. This makes the logical free list of parts, and allows us to reuse parts without
+				// having to search for them or maintain a separate free list.
+				insertNodeAfter(m_FreeSlotsList, nullptr, part);
+			}
+
+			// Return a collection of parts to the free list.
+			void returnPartSeqToFreeList(TcpStreamSeqPart* startNode, TcpStreamSeqPart* endNode)
+			{
+				insertNodeRangeAfter(m_FreeSlotsList, nullptr, startNode, endNode);
+			}
+
+		private:
+			std::vector<TcpStreamSeqPart> m_Parts;
+
+			/// @brief The index of the first part in the out-of-order stream.
+			///
+			/// This is the part with the sequence number closest to the expected sequence number, and is the first part
+			/// that should be checked for merging when a new part is inserted.
+			NodeIndexList m_ReorderList;
+			NodeIndexList m_FreeSlotsList;
+
+			uint32_t m_ExpectedSeqNum = 0;
+			/// @brief Close the stream when a fin flag is reached.
+			bool m_StreamClosed = false;
+		};
 	}  // namespace internal
-
-	/*
-	  In cases where out of order parts are received:
-	  - If duplicated data is shared between part N and part N+1, part N will have its dataLen attribute trimmed
-	  down, so the shared data is present only in part N+1.
-	*/
-
-	/// @brief Part of a sequential data stream. Used for Out-of-order resolution.
-	struct TcpStreamSeqPart
-	{
-		static constexpr uint32_t INVALID_PART_ID = -1;
-
-		uint8_t const* data = nullptr;
-		uint32_t dataLen = 0;
-		uint32_t seqNum = 0;
-
-		/// @brief The index of the next part in the chain. INVALID_PART_ID for no next part.
-		/// @remarks Also used to indicate the next free part when the part is not in use.
-		uint32_t nextId = INVALID_PART_ID;
-
-		/// @brief The index of the prev part in the chain. INVALID_PART_ID for no prev part.
-		uint32_t prevId = INVALID_PART_ID;
-
-		/// @brief Additional flags related to the sequence part, such as SYN and FIN flags.
-		SeqFlags seqFlags;
-
-		/// @brief Calculates the true sequence number of the payload.
-		uint32_t trueSeqNum() const
-		{
-			return seqNum + (seqFlags.synFlag ? 1 : 0);
-		}
-
-		/// @brief The expected next sequence number after the current part.
-		uint32_t nextSeqNum() const
-		{
-			return trueSeqNum() + dataLen + (seqFlags.finFlag ? 1 : 0);
-		}
-	};
 
 	class TcpByteStreamData
 	{
@@ -106,435 +588,32 @@ namespace pcpp
 		size_t missingBytes = 0;
 	};
 
-	class TcpByteStream;
-
-	namespace internal
-	{
-
-	}
-
-	/// @brief A class that handles a singular unidirectional TCP byte stream reassembly.
+	/// @brief This class represents a batch of TCP stream data segments.
 	///
-	/// The class provides an API for inserting newly received parts of the stream and a callback mechanism to notify
-	/// the user when new in-order data is ready.
-	class TcpByteStream
+	/// When following a TCP connection, the reassembly engine reorders and deduplicates the received TCP segments into
+	/// an ordered byte stream to be submitted to the user application.
+	///
+	class TcpStreamDataBatch
 	{
 	public:
-		/// @brief Inserts a new part into the stream. The part is defined by its sequence number and data length.
-		///
-		/// @param[in] seqNum The sequence number of the segment.
-		/// Note that this includes the pre-sequence padding, meaning the true payload starts seqNum is "seqNum +
-		/// seqNumExtra.preSeqNum".
-		///
-		/// @tparam OnDataReadyCallback
-		/// @param[in] onDataReady A callback function that is invoked when new in-order data is ready.
-		/// @param[in] data A pointer to the data buffer containing the bytes of this part.
-		/// @param[in] dataLen The length of the sequence part.
-		/// @param[in] seqNumExtraLen An optional parameter that can be used to specify extra length used to
-		/// calculate the logical end sequence number.
-		template <typename OnDataReadyCallback>
-		void insertSeq(OnDataReadyCallback onDataReady, uint32_t seqNum, uint8_t const* data, size_t dataLen,
-		               SeqFlags flags = {})
+		class Iterator
 		{
-			PCPP_ASSERT(dataLen <= std::numeric_limits<uint32_t>::max(), "Fragment dataLen field is only 32bit wide.");
-
-			int c = internal::compareSeqNum(seqNum, m_ExpectedSeqNum);
-			uint32_t nextSeqNum = internal::calcNextSeqNum(seqNum, dataLen, flags);
-
-			// Past OOS: The new part is before the next expected sequence number.
-			//  - We haven't received it and it is filling missing data.
-			//  - We have received it and this is a retransmission.
-			//  - We have received it, but the part extends past the expected sequence number and contains new data.
-
-			// Past OOS.B: The new part is before the next expected sequence number,
-			// but it has data that fills after the expected sequence number.
-			//
-			// This can happen when we have received part of the data, and then we receive a retransmission of an
-			// earlier part that overlaps with the data we have already received. In this case, we should trim the
-			// overlapping part and only keep the new data that fills after the expected sequence number.
-			if (c < 0)
-			{
-				PCPP_LOG_DEBUG("[BEHIND HEAD OF LINE]");
-
-				// The difference between the next expected sequence and the end of this part.
-				if (internal::compareSeqNum(nextSeqNum, m_ExpectedSeqNum) <= 0)
-				{
-					// FULL RETRANSMISSON:
-					// The head of line is past the end of this segment. Ignore it.
-					return;
-				}
-
-				// PARTIAL RETRANSMISSION:
-				// The head of line is past the start of this segment, but before its end.
-				// Trim the left of the segment to remove the stale part.
-				// Keep the new part that fills after the head of line.
-
-				data += m_ExpectedSeqNum - seqNum;
-				dataLen = nextSeqNum - m_ExpectedSeqNum;
-				seqNum = m_ExpectedSeqNum;
-				flags.synFlag = false;  // Clear the SYN flag since we are trimming from the
-			}
-
-			// In-Order packet or post-trimmed Past OOS.B.
-			// Good case: The new part is exactly the next expected sequence number.
-			//  - Update the expected sequence number and send the data to the user.
-			if (c <= 0)
-			{
-				PCPP_LOG_DEBUG("[IN-ORDER] Received SEQ=" << seqNum << " with LEN=" << dataLen << " bytes. SYN="
-				                                          << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
-
-				// TODO: Handle the case where the new part overlaps with the buffered out-of-order parts.
-				// Both the pre-first part overlap, and post-last part overlap.
-
-				// Attempt to unlink any buffered out-of-order parts that would be in-order after the new part.
-				uint32_t headId;
-				auto* parts = tryPopContinuousChain(m_ReorderList, nextSeqNum, &headId);
-
-				TcpStreamSeqPart tempPart;
-
-				// If there are any buffered out-of-order parts that are now in-order, link them after the new part.
-				// The linking is only forward link, due to inability to generate a valid PartID for the temporary
-				// part representing the new in-order part.
-				if (parts != nullptr)
-				{
-					tempPart.nextId = headId;
-				}
-
-				// TODO: Release the unlinked parts back to the free list.
-
-				// TODO: Advance expected number and attempt to unblock out-of-order.
-				m_ExpectedSeqNum = nextSeqNum;
-
-				return;
-			}
-
-			// Future OOS: The new part is after the next expected sequence number.
-			//  - We need to buffer it until the missing part(s) arrive.
-			//  - We also need to try to merge with other Future OOS parts if they are contiguous.
-			if (c > 0)
-			{
-				PCPP_LOG_DEBUG("[OOS] Received SEQ=" << seqNum << " with LEN=" << dataLen
-				                                     << " bytes, but expected SEQ=" << m_ExpectedSeqNum
-				                                     << ". SYN=" << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
-				insertSeqToReorderBuffer(seqNum, data, dataLen, flags);
-			}
-		}
-
-		/// @brief Flushes all buffered out-of-order parts, until the head of line blocks again, using the given
-		/// sequence number as the new reference to unblock on.
-		///
-		/// This is typically called if ACK packet was received on the oposite line, which means the peer has received
-		/// all the data up to the ACK sequence number. In that case we can advance the head of line to the ACK sequence
-		/// number since there won't be any retransmissions of packet before the ACK sequence number.
-		///
-		/// @tparam OnDataReadyCallback A callback that takes a reference to a TcpByteStreamDataChain representing the
-		/// newly unblocked in-order data, and is called for any data parts that are unblocked as a result of this
-		/// operation.
-		///
-		/// @param[in] seqNum The sequence number to reset to.
-		/// @param[in] callback A callback to call for any data parts that are unblocked as a result of this operation.
-		template <typename OnDataReadyCallback> void flushAllUntilSeq(uint32_t seqNum, OnDataReadyCallback callback)
-		{
-			// Flush all the buffered out-of-order parts, until the head of line blocks again.
-			// Use the new seqNum as the reference to unblock on.
-
-			// Pops all parts that are prior to the new seqNum.
-			uint32_t headId;
-			auto* parts = tryPopChainFrom(m_ReorderList, seqNum, &headId);
-			if (parts == nullptr)
-			{
-				m_ExpectedSeqNum = seqNum;
-				return;
-			}
-
-			// TODO: Unlink any buffered out-of-order parts that would be left behind the new head of line.
-			// Call callback with missing data indication for the unlinked parts, if needed.
-		}
-
-		uint32_t expectedSeq() const
-		{
-			return m_ExpectedSeqNum;
-		}
-
-		void reserveReorderBuffer(size_t numParts)
-		{
-			// Clamps the maximum buffer, as we can't store over UINT32_MAX parts due to the 32-bit part id fields.
-			numParts = std::min(numParts, static_cast<size_t>(std::numeric_limits<uint32_t>::max()));
-			m_Parts.reserve(numParts);
-		}
-
-	private:
-		/// @brief Inserts a new part into the reorder buffer.
-		///
-		/// This is used for buffering out-of-order packets until the head of the stream reaches them.
-		/// This method is meant to be used internally from insertSeq for out-of-order packets.
-		///
-		/// @param[in] seqNum The sequence number of the new part.
-		/// @param[in] data A pointer to the data buffer containing the bytes of this part.
-		/// @param[in] dataLen The length of the data buffer.
-		/// @param[in] flags Flags related to the sequence part, such as SYN and FIN flags.
-		void insertSeqToReorderBuffer(uint32_t seqNum, uint8_t const* data, size_t dataLen, SeqFlags flags);
-
-		struct NodeIndexList
-		{
-			uint32_t head = TcpStreamSeqPart::INVALID_PART_ID;
 		};
 
-		/// @brief Links a new node into the stream between the given previous and next nodes.
-		///
-		/// @param node The node to link.
-		/// @param prev A node preceeding the new node in the stream, or null if the new node is the new head of the
-		/// stream.
-		/// @param next A node following the new node in the stream, or null if the new node is the new tail of the
-		/// stream.
-		void linkNode(NodeIndexList& list, TcpStreamSeqPart* node, TcpStreamSeqPart* prev, TcpStreamSeqPart* next)
-		{
-			PCPP_ASSERT(node != nullptr, "Node to link cannot be null");
-			PCPP_ASSERT(prev == nullptr || node != prev, "Node cannot be linked to itself as previous");
-			PCPP_ASSERT(next == nullptr || node != next, "Node cannot be linked to itself as next");
-			PCPP_ASSERT(prev == nullptr || next == nullptr || prev != next, "Prev and next cannot be the same node");
+		Iterator begin() const;
+		Iterator end() const;
 
-			PCPP_ASSERT(node->nextId == TcpStreamSeqPart::INVALID_PART_ID &&
-			                node->prevId == TcpStreamSeqPart::INVALID_PART_ID,
-			            "New node must be unlinked.");
-
-			uint32_t nodeId = getPartIdSafe(node);
-			uint32_t prevId = getPartIdSafe(prev);
-			uint32_t nextId = getPartIdSafe(next);
-
-			PCPP_ASSERT(nodeId != TcpStreamSeqPart::INVALID_PART_ID, "Node must have a valid id");
-			PCPP_ASSERT(prev == nullptr || prevId != TcpStreamSeqPart::INVALID_PART_ID, "Prev must have a valid id");
-			PCPP_ASSERT(next == nullptr || nextId != TcpStreamSeqPart::INVALID_PART_ID, "Next must have a valid id");
-
-			PCPP_ASSERT(prev != nullptr || ((next == nullptr && list.head == TcpStreamSeqPart::INVALID_PART_ID) ||
-			                                nextId == list.head),
-			            "A new head can only be assigned if the chain is empty or the next node is the current head");
-
-			// Link the new part to its neighbors in the stream.
-			if (prev != nullptr)
-			{
-				PCPP_ASSERT(next == nullptr || prev->nextId == nextId, "prev->next must be next's id");
-				PCPP_ASSERT(next != nullptr || prev->nextId == TcpStreamSeqPart::INVALID_PART_ID,
-				            "prev->next must be invalid id");
-
-				prev->nextId = nodeId;
-				node->prevId = prevId;
-			}
-			else
-			{
-				// This means the new part is the new head of the stream.
-				list.head = nodeId;
-				node->prevId = TcpStreamSeqPart::INVALID_PART_ID;
-			}
-
-			if (next != nullptr)
-			{
-				PCPP_ASSERT(prev == nullptr || next->prevId == prevId, "next->prevId must be prev's id");
-				PCPP_ASSERT(prev != nullptr || next->prevId == TcpStreamSeqPart::INVALID_PART_ID,
-				            "next->prevId must be invalid id");
-
-				next->prevId = nodeId;
-				node->nextId = nextId;
-			}
-			else
-			{
-				node->nextId = TcpStreamSeqPart::INVALID_PART_ID;
-			}
-		}
-
-		/// @brief Inserts a chain of nodes into the list head, with the given node as the new head of the list.
-		/// @param[in] list The list to insert the chain into. The head of the list will be updated to point to the head
-		/// of the new chain.
-		/// @param[in] chainHead The head node of the chain to insert.
-		void insertChainAtHead(NodeIndexList& list, TcpStreamSeqPart* chainHead)
-		{
-			PCPP_ASSERT(chainHead != nullptr, "Chain head cannot be null");
-			PCPP_ASSERT(chainHead->prevId == TcpStreamSeqPart::INVALID_PART_ID,
-			            "Chain head must be unlinked from any previous nodes");
-
-			uint32_t chainHeadId = getPartIdSafe(chainHead);
-			PCPP_ASSERT(chainHeadId != TcpStreamSeqPart::INVALID_PART_ID, "Chain head must have a valid id");
-
-			TcpStreamSeqPart* chainTail = chainHead;
-			while (chainTail->nextId != TcpStreamSeqPart::INVALID_PART_ID)
-			{
-				chainTail = getPartSafe(chainTail->nextId);
-			}
-
-			uint32_t oldHeadId = list.head;
-			TcpStreamSeqPart* oldHead = getPartSafe(list.head);
-
-			chainTail->nextId = oldHeadId;
-			oldHead->prevId = chainTail->prevId;
-
-			list.head = chainHeadId;
-			chainHead->prevId = TcpStreamSeqPart::INVALID_PART_ID;
-		}
-
-		/// @brief Unlinks a node from a linked list, connecting its previous and next nodes together.
-		/// @param[in] list The list the node belongs to.
-		/// @param[in] node The node to unlink from the list. The node must be currently linked in the list.
-		void unlinkNode(NodeIndexList& list, TcpStreamSeqPart* node)
-		{
-			PCPP_ASSERT(node != nullptr, "Node to unlink cannot be null");
-
-			uint32_t nodeId = getPartIdSafe(node);
-			uint32_t prevId = node->prevId;
-			uint32_t nextId = node->nextId;
-
-			auto prev = getPartSafe(prevId);
-			auto next = getPartSafe(nextId);
-
-			PCPP_ASSERT(prev == nullptr || prev->nextId == nodeId, "prev->next must be node's id");
-			PCPP_ASSERT(next == nullptr || next->prevId == nodeId, "next->prev must be node's id");
-
-			if (prev != nullptr)
-			{
-				// Unlinking from prev node.
-				prev->nextId = nextId;
-			}
-			else
-			{
-				// No prev node. Unlinking the head.
-				PCPP_ASSERT(nodeId == list.head, "Node should be the head of the list since it has no prev");
-				list.head = nextId;  // If nextId is invalid, this correctly sets the head to invalid as well.
-			}
-
-			if (next != nullptr)
-			{
-				// Unlinking from next node.
-				next->prevId = prevId;
-			}
-
-			node->nextId = TcpStreamSeqPart::INVALID_PART_ID;
-			node->prevId = TcpStreamSeqPart::INVALID_PART_ID;
-		}
-
-		/// @brief Attempt to unlink a chain of contiguous parts starting from the given sequence number.
-		///
-		/// This is the primary mechanism for unblocking the reorder buffer when new in-order data is received.
-		///
-		/// The function will check the head of the list for a part with the expected sequence number.
-		/// If it finds such a part, it will unlink it and every contiguous part following it, until it reaches a part
-		/// that is not contiguous with the previous one.
-		///
-		/// NOTE: The list must be ordered by sequence number, with the head being the part with the lowest sequence
-		/// number. No overlapping sequence numbers can be present in the list.
-		///
-		/// @param[in] list The list to unlink the chain from. This is typically the reorder buffer list.
-		/// @param[in] expSeqNum The expected sequence number of the head part.
-		/// @param[out] headId An optional pointer to store the id of the head part of the unlinked chain.
-		/// @return A pointer to the head of the unlinked chain, or null if the head part does not have the expected
-		/// sequence number.
-		TcpStreamSeqPart* tryPopContinuousChain(NodeIndexList& list, uint32_t expSeqNum, uint32_t* headId = nullptr);
-
-		/// @brief Attempt to unblock a chain to a given sequence number.
-		///
-		/// All parts starting from the head of reorder buffer until the first part that is not contiguous after the
-		/// reference sequence number will be returned as a chain.
-		///
-		/// This function is useful for flushing the reorder buffer until a given sequence number combined with
-		/// consuming as much of the reorder buffer afterwards as possible.
-		///
-		/// This is commonly used when an ACK is received on the opposite line. The sequence up to ACK is flushed
-		/// as is, along with missing data markers. All contiguous parts after the ACK sequence number are also flushed
-		/// as they are now unblocked.
-		///
-		/// @param list The list to unlink the chain from. This is typically the reorder buffer list.
-		/// @param refSeqNum A reference sequence number to unblock to. This is typically the ACK number.
-		/// @param headId An optional pointer to store the id of the head part of the unlinked chain.
-		/// @return A pointer to the head of the unlinked chain, or null if the operation did not unblock any parts.
-		TcpStreamSeqPart* tryPopChainFrom(NodeIndexList& list, uint32_t refSeqNum, uint32_t* headId = nullptr);
-
-		TcpStreamSeqPart* getPartSafe(uint32_t partId)
-		{
-			if (partId == TcpStreamSeqPart::INVALID_PART_ID)
-			{
-				return nullptr;
-			}
-
-			PCPP_ASSERT(partId < m_Parts.size(), "Accessing invalid part");
-			return &m_Parts[partId];
-		}
-
-		uint32_t getPartIdSafe(TcpStreamSeqPart const* part) const
-		{
-			if (part == nullptr)
-			{
-				return TcpStreamSeqPart::INVALID_PART_ID;
-			}
-
-			auto partId = part - &m_Parts[0];
-			PCPP_ASSERT(partId > 0 && partId < m_Parts.size(), "Part pointer is out of range of the parts vector");
-			return partId;
-		}
-
-		TcpStreamSeqPart* getFreePart()
-		{
-			if (m_FreeSlotsList.head == TcpStreamSeqPart::INVALID_PART_ID)
-			{
-				// Using emplace back to utilize the automatic growth of the vector.
-				if (m_Parts.size() == std::numeric_limits<uint32_t>::max())
-				{
-					throw std::overflow_error("Reached maximum number of parts");
-				}
-
-				m_Parts.emplace_back();
-				return &m_Parts.back();
-			}
-
-			PCPP_ASSERT(m_FreeSlotsList.head < m_Parts.size(), "Free part id is out of range of the parts vector");
-			TcpStreamSeqPart* newPart = nullptr;
-			newPart = &m_Parts[m_FreeSlotsList.head];
-
-			// When parts are not in use, they are linked together with other free parts using the nextId
-			// attribute. This makes the logical free list of parts, and allows us to reuse parts without
-			// having to search for them or maintain a separate free list.
-			m_FreeSlotsList.head = newPart->nextId;
-			newPart->nextId = TcpStreamSeqPart::INVALID_PART_ID;
-			newPart->prevId = TcpStreamSeqPart::INVALID_PART_ID;
-			return newPart;
-		}
-
-		TcpStreamSeqPart* returnFreePart(TcpStreamSeqPart* part)
-		{
-			PCPP_ASSERT(part != nullptr, "Returned part cannot be null");
-
-			uint32_t partId = getPartIdSafe(part);
-			PCPP_ASSERT(partId < m_Parts.size(), "Returned part id is out of range of the parts vector");
-
-			// When parts are not in use, they are linked together with other free parts using the nextId
-			// attribute. This makes the logical free list of parts, and allows us to reuse parts without
-			// having to search for them or maintain a separate free list.
-
-			linkNode(m_FreeSlotsList, part, nullptr, getPartSafe(m_FreeSlotsList.head));
-			return part;
-		}
+		ConnectionData const& getConnection() const;
 
 	private:
-		std::vector<TcpStreamSeqPart> m_Parts;
-
-		/// @brief The index of the first part in the out-of-order stream.
-		///
-		/// This is the part with the sequence number closest to the expected sequence number, and is the first part
-		/// that should be checked for merging when a new part is inserted.
-		NodeIndexList m_ReorderList;
-		NodeIndexList m_FreeSlotsList;
-
-		uint32_t m_ExpectedSeqNum = 0;
-	};
-
-	/// @brief Represents a chain of sequential data parts from a TCP byte stream.
-	///
-	/// This class is used as an API to a user to access the reordered byte stream data.
-	class TcpByteStreamDataChain
-	{
-	public:
-	private:
+		ConnectionData m_Connection;
+		internal::TcpByteStreamView m_StreamPartsView;
 	};
 
 	class TcpReassemblyV2
 	{
+		struct TcpConnection;
+
 	public:
 		enum class ConnectionEndReason
 		{
@@ -543,7 +622,7 @@ namespace pcpp
 			UserClosed,
 		};
 
-		class TcpMessageReadyCtx
+		class TcpDataReadyCtx
 		{
 		};
 
@@ -555,45 +634,41 @@ namespace pcpp
 		{
 		};
 
-		/// @typedef OnTcpMessageReady
-		/// A callback invoked when new data arrives on a connection
+		/// @brief A callback invoked when new data arrives on a connection
+		///
 		/// @param[in] side The side this data belongs to (MachineA->MachineB or vice versa). The value is 0 or 1 where
 		/// 0 is the first side seen in the connection and 1 is the second side seen
 		/// @param[in] tcpData The TCP data itself + connection information
 		/// @param[in] ctx A context object.
-		using OnTcpMessageReady =
-		    std::function<void(int8_t side, const TcpByteStreamDataChain& tcpData, TcpMessageReadyCtx& ctx)>;
-
-		/// @typedef OnTcpConnectionStart
-		/// A callback invoked when a new TCP connection is identified (whether it begins with a SYN packet or not)
-		/// @param[in] connectionData Connection information
-		/// @param[in] userCookie A pointer to the cookie provided by the user in TcpReassembly c'tor (or nullptr if no
-		/// cookie provided)
+		using OnTcpDataReady =
+		    std::function<void(int8_t side, const TcpStreamDataBatch& tcpData, TcpDataReadyCtx& ctx)>;
 
 		/// @brief A callback invoked when a new TCP connection is identified.
 		///
 		/// The new connection may or may not begin with a SYN packet, depending on when the reassembly engine
 		/// identifies the connection.
-		/// 
-		/// @param[in] connectionData
+		///
+		/// @param[in] metadata
 		/// @param[in] ctx
-		using OnTcpConnectionStart =
-		    std::function<void(const ConnectionData& connectionData, TcpConnectionStartCtx& ctx)>;
+		using OnTcpConnectionStart = std::function<void(const ConnectionData& metadata, TcpConnectionStartCtx& ctx)>;
 
 		/// @brief A callback invoked when a TCP connection is terminated.
 		///
 		/// The connection may be terminated either by a FIN or RST packet, or manually by the user.
 		///
-		/// @param[in] connectionData The connection info for the connection that is being terminated.
+		/// @param[in] metadata The connection info for the connection that is being terminated.
 		/// @param[in] reason The reason for connection termination: FIN/RST packet or manually by the user.
 		/// @param[in] ctx
-		using OnTcpConnectionEnd = std::function<void(const ConnectionData& connectionData, ConnectionEndReason reason,
-		                                              TcpConnectionEndCtx& ctx)>;
+		using OnTcpConnectionEnd =
+		    std::function<void(const ConnectionData& metadata, ConnectionEndReason reason, TcpConnectionEndCtx& ctx)>;
 
 		/// @brief A unique identifier for a TCP flow, used for tracking and reassembly.
 		using FlowKey = uint32_t;
 
 		using ReassemblyStatus = TcpReassembly::ReassemblyStatus;
+
+		/// @brief A connections proxy that provides an interface for accessing connection data information.
+		class ConnectionsProxy;
 
 		enum class ConnectionState
 		{
@@ -619,16 +694,18 @@ namespace pcpp
 
 		struct TcpConnectionSide
 		{
-			TcpByteStream stream;
+			internal::TcpByteStream stream;
 			uint16_t srcPort = 0;
 			IPAddress srcIP;
 		};
 
 		struct TcpConnection
 		{
-			ConnectionData connectionData;
+			ConnectionData metadata;
 			std::array<TcpConnectionSide, 2> side;
 			int8_t openStreamSides = 0;
+			int8_t lastReceivedSide = -1;
+			bool closed = false;
 		};
 
 		using ConnectionMap = std::unordered_map<FlowKey, TcpConnection>;
@@ -636,5 +713,23 @@ namespace pcpp
 
 		Config m_Config;
 		ConnectionMap m_Connections;
+
+		OnTcpDataReady m_OnMessageReady;
+		OnTcpConnectionStart m_OnConnectionStart;
+		OnTcpConnectionEnd m_OnConnectionEnd;
 	};
+
+	/*
+	class TcpReassemblyV2::ConnectionsProxy
+	{
+	    friend class TcpReassemblyV2;
+
+	public:
+	private:
+	    ConnectionsProxy(TcpReassemblyV2::ConnectionMap const& data) noexcept : m_Data(&data)
+	    {}
+
+	    TcpReassemblyV2::ConnectionMap const* m_Data;
+	};
+	*/
 }  // namespace pcpp
