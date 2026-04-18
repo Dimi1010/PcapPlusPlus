@@ -342,7 +342,10 @@ namespace pcpp
 					onDataReady(view);  // TODO: Strengthen exception safety.
 
 					// Release the unlinked parts back to the free list.
-					returnFreePartRange(result.head, result.tail);
+					if(result.head != nullptr)
+					{
+						returnFreePartRange(result.head, result.tail);
+					}
 
 					// Update the head of line to the next expected sequence number.
 					// That being the end of the unblocked chain of in-order parts.
