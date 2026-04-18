@@ -157,7 +157,7 @@ namespace pcpp
 
 			TcpStreamPartsRange(TcpStreamSeqPart head, std::vector<TcpStreamSeqPart> const& buffer)
 			    : TcpStreamPartsRange(std::move(head), ScalarBuffer<TcpStreamSeqPart const>{
-			                                             buffer.size() > 0 ? buffer.data() : nullptr, buffer.size() })
+			                                               buffer.size() > 0 ? buffer.data() : nullptr, buffer.size() })
 			{}
 
 			TcpStreamPartsRange(TcpStreamSeqPart head, ScalarBuffer<TcpStreamSeqPart const> partsBuffer)
@@ -387,7 +387,7 @@ namespace pcpp
 				}
 
 				TcpStreamPartsRange view(*result.head, m_Parts);
-				onDataReady(view);
+				onDataReady(view);  // TODO: Strengthen exception safety.
 
 				returnFreePartRange(result.head, result.tail);
 
@@ -401,8 +401,8 @@ namespace pcpp
 
 			void reserveReorderBuffer(size_t numParts)
 			{
-				// Clamps the maximum buffer, as we can't store over UINT32_MAX parts due to the 32-bit part id fields.
-				numParts = std::min(numParts, static_cast<size_t>(std::numeric_limits<uint32_t>::max()));
+				// Clamps the maximum buffer to the maximum number of parts that can be indexed by the PartId type.
+				numParts = std::min(numParts, static_cast<size_t>(std::numeric_limits<PartId>::max()));
 				m_Parts.reserve(numParts);
 			}
 
