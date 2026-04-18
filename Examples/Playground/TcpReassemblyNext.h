@@ -376,17 +376,6 @@ namespace pcpp
 			}
 
 		private:
-			/// @brief Inserts a new part into the reorder buffer.
-			///
-			/// This is used for buffering out-of-order packets until the head of the stream reaches them.
-			/// This method is meant to be used internally from insertSeq for out-of-order packets.
-			///
-			/// @param[in] seqNum The sequence number of the new part.
-			/// @param[in] data A pointer to the data buffer containing the bytes of this part.
-			/// @param[in] dataLen The length of the data buffer.
-			/// @param[in] flags Flags related to the sequence part, such as SYN and FIN flags.
-			void insertSeqToReorderBuffer(uint32_t seqNum, uint8_t const* data, size_t dataLen, SeqFlags flags);
-
 			using PartId = TcpStreamSeqPart::PartId;
 #pragma region Buffered Parts Indexing
 			/// @brief Get a pointer to a part by its id. Returns nullptr if the partId is invalid.
@@ -491,9 +480,9 @@ namespace pcpp
 			}
 
 			/// @brief Return a range of parts to the unused parts pool.
-			/// 
+			///
 			/// The entire range MUST fuil the requirements of insertNodeRange.
-			/// 
+			///
 			/// @param startNode The first node in the range.
 			/// @param endNode The last node in the range.
 			void returnFreePartRange(TcpStreamSeqPart* startNode, TcpStreamSeqPart* endNode)
@@ -502,6 +491,7 @@ namespace pcpp
 			}
 #pragma endregion
 
+#pragma region Reorder Buffer API
 			/// @brief Represents the result of a Head-of-Line (HOL) unblock operation on a TCP stream sequence.
 			struct HOLUnblockResult
 			{
@@ -512,6 +502,17 @@ namespace pcpp
 				/// @brief The PartId of the head part of the unblocked chain, if the head part is valid.
 				uint32_t headId = TcpStreamSeqPart::INVALID_PART_ID;
 			};
+
+			/// @brief Inserts a new part into the reorder buffer.
+			///
+			/// This is used for buffering out-of-order packets until the head of the stream reaches them.
+			/// This method is meant to be used internally from insertSeq for out-of-order packets.
+			///
+			/// @param[in] seqNum The sequence number of the new part.
+			/// @param[in] data A pointer to the data buffer containing the bytes of this part.
+			/// @param[in] dataLen The length of the data buffer.
+			/// @param[in] flags Flags related to the sequence part, such as SYN and FIN flags.
+			void insertSeqToReorderBuffer(uint32_t seqNum, uint8_t const* data, size_t dataLen, SeqFlags flags);
 
 			/// @brief Attempts to unblock the head of line of the given list if the head part has the expected sequence
 			/// number.
@@ -553,6 +554,8 @@ namespace pcpp
 			/// @param[in] expSeqNum The expected sequence number to unblock to.
 			/// @return A HOLUnblockResult struct containing the result of the operation.
 			HOLUnblockResult forceUnblockHeadOfLineTo(NodeIndexList& list, uint32_t expSeqNum);
+
+#pragma endregion Reorder Buffer API
 
 		private:
 			std::vector<TcpStreamSeqPart> m_Parts;
