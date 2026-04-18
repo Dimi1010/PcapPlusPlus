@@ -209,11 +209,40 @@ namespace pcpp
 		public:
 			/// @brief Inserts a new part into the stream. The part is defined by its sequence number and data length.
 			///
+			/// The main method of the byte stream.
+			///
+			/// Used to insert TCP data segments into the stream and process them according to their sequence numbers.
+			/// The method handles in-order segments, out-of-order segments, and retransmissions, ensuring that the user
+			/// only receives a given data segment once and in the correct order.
+			///
+			/// @par In-order handling
+			/// If an in-order segment is received, the stream will advance to the next expected seqNum and attempt
+			/// to unblock any buffered out-of-order segments that can now be processed in order.
+			///
+			/// The provided callback 'onDataReady' will be invoked with all newly available in-order data segments,
+			/// including the current segment and any previously buffered out-of-order segments that are now in order.
+			///
+			/// @par Out-of-order handling
+			/// If a segment is received in out-of-order manner, it will be buffered internally until the missing
+			/// data sequence is received.
+			///
+			/// @par Retransmission handling
+			/// During retransmission a segment might be received that has a sequence number behind the head of line.
+			/// Such segments will be ignored if they are fully behind the head of line. If they contain new data
+			/// that extends after the head of line, the overlapping part is ignored and the new part is treated
+			/// as in-order data segment.
+			///
+			/// @tparam OnDataReadyCallback A callback functor type that is invoked when new in-order data is ready.
+			///
+			/// The callback should have the signature `void(TcpStreamPartsRange)`, where the parameter is a view over
+			/// the newly available in-order data parts. The range is only valid for the duration of the callback
+			/// and should not be stored or used after the callback returns.
+			///
 			/// @param[in] seqNum The sequence number of the segment.
+			///
 			/// Note that this includes the pre-sequence padding, meaning the true payload starts seqNum is "seqNum +
 			/// seqNumExtra.preSeqNum".
 			///
-			/// @tparam OnDataReadyCallback
 			/// @param[in] onDataReady A callback function that is invoked when new in-order data is ready.
 			/// @param[in] data A pointer to the data buffer containing the bytes of this part.
 			/// @param[in] dataLen The length of the sequence part.
