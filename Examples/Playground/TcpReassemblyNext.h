@@ -3,6 +3,7 @@
 #define NOMINMAX
 
 #include <iostream>
+#include <limits>
 #include "TcpReassembly.h"
 #include "AssertionUtils.h"
 #include "PacketUtils.h"
@@ -64,7 +65,7 @@ namespace pcpp
 		{
 			using PartId = uint32_t;
 
-			static constexpr PartId INVALID_PART_ID = -1;
+			static constexpr PartId INVALID_PART_ID = std::numeric_limits<PartId>::max();
 
 			uint8_t const* data = nullptr;
 			uint32_t dataLen = 0;
