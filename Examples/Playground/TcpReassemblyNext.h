@@ -358,8 +358,7 @@ namespace pcpp
 				TcpByteStreamView view(*result.head, m_Parts);
 				onDataReady(view);
 
-				// TODO: Return the unlinked parts back to the free list.
-				returnPartSeqToFreeList(result.head, result.tail);
+				returnFreePartRange(result.head, result.tail);
 
 				m_ExpectedSeqNum = nextSeqNum;
 			}
@@ -404,7 +403,7 @@ namespace pcpp
 			PartId getPartId(TcpStreamSeqPart const* part) const;
 #pragma endregion
 
-#pragma region Intrusive Index List
+#pragma region Intrusive Index List API
 			struct NodeIndexList
 			{
 				PartId head = TcpStreamSeqPart::INVALID_PART_ID;
@@ -469,7 +468,39 @@ namespace pcpp
 			/// @param[in] endNode The last node in the range to extract. Must be currently linked in the list, and must
 			/// be after the startNode.
 			void extractNodeRange(NodeIndexList& list, TcpStreamSeqPart* startNode, TcpStreamSeqPart* endNode);
-#pragma endregion Intrusive Index List
+#pragma endregion Intrusive Index List API
+
+#pragma region Free List API
+			/// @brief Take a part from the unused parts pool and bring it in-use.
+			/// @return A pointer to the part.
+			TcpStreamSeqPart* takeFreePart();
+
+			/// @brief Take a range of parts from the unused parts pool and bring them in-use.
+			/// @param[in] count The number of parts to get.
+			/// @return A pair of startNode and endNode of the range.
+			std::pair<TcpStreamSeqPart*, TcpStreamSeqPart*> takeFreePartRange(size_t count);
+
+			/// @brief Return a part to the unused parts pool.
+			/// @param part A pointer to the part.
+			void returnFreePart(TcpStreamSeqPart* part)
+			{
+				// When parts are not in use, they are linked together with other free parts using the nextId
+				// attribute. This makes the logical free list of parts, and allows us to reuse parts without
+				// having to search for them or maintain a separate free list.
+				insertNodeAfter(m_FreeSlotsList, nullptr, part);
+			}
+
+			/// @brief Return a range of parts to the unused parts pool.
+			/// 
+			/// The entire range MUST fuil the requirements of insertNodeRange.
+			/// 
+			/// @param startNode The first node in the range.
+			/// @param endNode The last node in the range.
+			void returnFreePartRange(TcpStreamSeqPart* startNode, TcpStreamSeqPart* endNode)
+			{
+				insertNodeRangeAfter(m_FreeSlotsList, nullptr, startNode, endNode);
+			}
+#pragma endregion
 
 			/// @brief Represents the result of a Head-of-Line (HOL) unblock operation on a TCP stream sequence.
 			struct HOLUnblockResult
@@ -522,47 +553,6 @@ namespace pcpp
 			/// @param[in] expSeqNum The expected sequence number to unblock to.
 			/// @return A HOLUnblockResult struct containing the result of the operation.
 			HOLUnblockResult forceUnblockHeadOfLineTo(NodeIndexList& list, uint32_t expSeqNum);
-
-			TcpStreamSeqPart* getFreePart()
-			{
-				if (m_FreeSlotsList.head == TcpStreamSeqPart::INVALID_PART_ID)
-				{
-					// Using emplace back to utilize the automatic growth of the vector.
-					if (m_Parts.size() == std::numeric_limits<uint32_t>::max())
-					{
-						throw std::overflow_error("Reached maximum number of parts");
-					}
-
-					m_Parts.emplace_back();
-					return &m_Parts.back();
-				}
-
-				PCPP_ASSERT(m_FreeSlotsList.head < m_Parts.size(), "Free part id is out of range of the parts vector");
-				TcpStreamSeqPart* newPart = nullptr;
-				newPart = &m_Parts[m_FreeSlotsList.head];
-
-				// When parts are not in use, they are linked together with other free parts using the nextId
-				// attribute. This makes the logical free list of parts, and allows us to reuse parts without
-				// having to search for them or maintain a separate free list.
-				m_FreeSlotsList.head = newPart->nextId;
-				newPart->nextId = TcpStreamSeqPart::INVALID_PART_ID;
-				newPart->prevId = TcpStreamSeqPart::INVALID_PART_ID;
-				return newPart;
-			}
-
-			void returnPartToFreeList(TcpStreamSeqPart* part)
-			{
-				// When parts are not in use, they are linked together with other free parts using the nextId
-				// attribute. This makes the logical free list of parts, and allows us to reuse parts without
-				// having to search for them or maintain a separate free list.
-				insertNodeAfter(m_FreeSlotsList, nullptr, part);
-			}
-
-			// Return a collection of parts to the free list.
-			void returnPartSeqToFreeList(TcpStreamSeqPart* startNode, TcpStreamSeqPart* endNode)
-			{
-				insertNodeRangeAfter(m_FreeSlotsList, nullptr, startNode, endNode);
-			}
 
 		private:
 			std::vector<TcpStreamSeqPart> m_Parts;

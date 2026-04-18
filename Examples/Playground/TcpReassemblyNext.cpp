@@ -22,7 +22,7 @@ namespace pcpp
 				// The reorder buffer is empty.
 				// Create a new part and fill it.
 
-				TcpStreamSeqPart* newPart = getFreePart();
+				TcpStreamSeqPart* newPart = takeFreePart();
 				PCPP_ASSERT(newPart != nullptr, "Failed to get free part from the pool");
 				uint32_t index = getPartId(newPart);
 
@@ -156,7 +156,7 @@ namespace pcpp
 							uint32_t nextId = getPartId(nextPart);
 
 							// Add the new part to the OOS buffer and link it to its neighbors.
-							TcpStreamSeqPart* newPart = getFreePart();
+							TcpStreamSeqPart* newPart = takeFreePart();
 							uint32_t newId = getPartId(newPart);
 
 							// Restore the pointers after possible reallocation.
@@ -209,7 +209,7 @@ namespace pcpp
 			uint32_t nextId = getPartId(nextPart);
 
 			// Add the new part to the OOS buffer and link it to its neighbors.
-			TcpStreamSeqPart* newPart = getFreePart();
+			TcpStreamSeqPart* newPart = takeFreePart();
 			uint32_t newId = getPartId(newPart);
 
 			// Restore the pointers after possible reallocation.
@@ -476,6 +476,33 @@ namespace pcpp
 			// Unlink the extracted nodes.
 			startNode->prevId = TcpStreamSeqPart::INVALID_PART_ID;
 			endNode->nextId = TcpStreamSeqPart::INVALID_PART_ID;
+		}
+
+		TcpStreamSeqPart* TcpByteStream::takeFreePart()
+		{
+			if (m_FreeSlotsList.head == TcpStreamSeqPart::INVALID_PART_ID)
+			{
+				// Using emplace back to utilize the automatic growth of the vector.
+				if (m_Parts.size() == std::numeric_limits<uint32_t>::max())
+				{
+					throw std::overflow_error("Reached maximum number of parts");
+				}
+
+				m_Parts.emplace_back();
+				return &m_Parts.back();
+			}
+
+			PCPP_ASSERT(m_FreeSlotsList.head < m_Parts.size(), "Free part id is out of range of the parts vector");
+			TcpStreamSeqPart* newPart = nullptr;
+			newPart = &m_Parts[m_FreeSlotsList.head];
+
+			// When parts are not in use, they are linked together with other free parts using the nextId
+			// attribute. This makes the logical free list of parts, and allows us to reuse parts without
+			// having to search for them or maintain a separate free list.
+			m_FreeSlotsList.head = newPart->nextId;
+			newPart->nextId = TcpStreamSeqPart::INVALID_PART_ID;
+			newPart->prevId = TcpStreamSeqPart::INVALID_PART_ID;
+			return newPart;
 		}
 
 		TcpByteStream::HOLUnblockResult TcpByteStream::tryUnblockHeadOfLine(NodeIndexList& list, uint32_t expSeqNum)
