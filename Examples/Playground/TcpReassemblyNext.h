@@ -305,11 +305,11 @@ namespace pcpp
 					// Both the pre-first part overlap, and post-last part overlap.
 					//
 					// Example:
-					// 
+					//
 					// HeadOfLine ->!
 					// Buffered:    !    [ 100 : 150 ),          [ 170 : 200 )
 					// Incoming:    !----[ 80 : 190 )------------------
-					// 
+					//
 					// In this case the incomming overlapping part must be delivered only once.
 					// A possible solution is to drop all nodes that are fully behind the nextSeqNum.
 
@@ -388,7 +388,7 @@ namespace pcpp
 				// Pops all parts that are prior to the new seqNum.
 				uint32_t headId;
 				uint32_t nextSeqNum;
-				auto result = forceUnblockHeadOfLineTo(seqNum);
+				auto result = tryUnblockHeadOfLine(seqNum);
 				if (result.head == nullptr)
 				{
 					m_ExpectedSeqNum = seqNum;
@@ -554,38 +554,25 @@ namespace pcpp
 			/// @param[in] flags Flags related to the sequence part, such as SYN and FIN flags.
 			void insertSeqToReorderBuffer(uint32_t seqNum, uint8_t const* data, size_t dataLen, SeqFlags flags);
 
-			/// @brief Attempts to unblock the head of line of the given list if the head part has the expected sequence
-			/// number.
+			/// @brief Attempts to unblock the head of line of the reorder buffer.
 			///
-			/// If the head of line is at the expected sequence number, the operation will extract and return
-			/// a sublist of contigous parts starting from the head of line, which can now be considered in-order.
-			///
+			/// The method will return a chain of all buffered parts that:
+			/// - Have a sequence number that is less than or equal to the given expected sequence number.
+			/// - Are contiguous in sequence numbers w.r.t the expected sequence number.
+			/// 
+			/// Parts that have sequence number less than the seqNum to unblock on may contain gaps in between.
+			/// Those gaps are due to missing data that has not been buffered into the reorder buffer.
+			/// 
 			/// The next expected sequence number after the unblocked chain can be calculated using the returned tail
 			/// part's nextSeqNum() function.
+			/// 
+			/// @warning No implicit HOL update
+			/// This method does not update the m_ExpectedSeqNum. The caller should update the sequence number after the
+			/// unblocked chain is handled.
 			///
-			/// @param[in] expSeqNum The expected sequence number of the head part. If the head part does not have this
-			/// sequence number, the unblock operation will fail.
+			/// @param[in] seqNum The expected sequence number to unblock on.
 			/// @return A HOLUnblockResult struct containing the result of the operation.
-			HOLUnblockResult tryUnblockHeadOfLine(uint32_t expSeqNum);
-
-			/// @brief Forces the unblock of the head of line of the given list to the given sequence number.
-			///
-			/// The function is similar to tryUnblockHeadOfLine, but it will unblock non-contiguous parts if necessary
-			/// to unblock the line until the expected sequence number is reached. Afterwards, it will proceed the
-			/// unblocking operation as tryUnblockHeadOfLine would, but with the new head of line after the forced
-			/// unblock.
-			///
-			/// This function is intended to be used to consider all gaps prior to the expected sequence number as
-			/// missing data, and unblock the line until the expected sequence number as if the missing data was
-			/// received, even if it wasn't.
-			///
-			/// The resulting list of unblocked parts may contain gaps in the sequence numbers, which should be handled
-			/// as missing data by the caller. The next expected sequence number after the unblocked chain can be
-			/// calculated using the returned tail part's nextSeqNum() function.
-			///
-			/// @param[in] expSeqNum The expected sequence number to unblock to.
-			/// @return A HOLUnblockResult struct containing the result of the operation.
-			HOLUnblockResult forceUnblockHeadOfLineTo(uint32_t expSeqNum);
+			HOLUnblockResult tryUnblockHeadOfLine(uint32_t seqNum);
 
 #pragma endregion Reorder Buffer API
 

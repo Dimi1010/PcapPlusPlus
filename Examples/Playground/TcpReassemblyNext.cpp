@@ -505,20 +505,27 @@ namespace pcpp
 			insertNodeAfter(m_ReorderList, prevPart, newPart);
 		}
 
-		TcpByteStream::HOLUnblockResult TcpByteStream::tryUnblockHeadOfLine(uint32_t expSeqNum)
+		TcpByteStream::HOLUnblockResult TcpByteStream::tryUnblockHeadOfLine(uint32_t seqNum)
 		{
 			TcpStreamSeqPart* head = getPart(m_ReorderList.head);
-
-			PCPP_ASSERT(head != nullptr, "The head part must be valid.");
-			if (head == nullptr || internal::compareSeqNum(head->seqNum, expSeqNum) != 0)
+			if (head == nullptr || internal::compareSeqNum(head->seqNum, seqNum) > 0)
 			{
-				// The head part does not have the expected sequence number, so we cannot unlink an ordered chain.
+				// The HOL sequence number is still higher than the sequence number we want to unblock on, so we cannot
+				// unblock anything.
 				return HOLUnblockResult();
 			}
 
 			TcpStreamSeqPart* current = head;
 			TcpStreamSeqPart* next = getPart(current->nextId);
 
+			// Advance until the first element that is past the unblocking sequence number.
+			while (next != nullptr && internal::compareSeqNum(current->nextSeqNum(), seqNum) <= 0)
+			{
+				current = next;
+				next = getPart(current->nextId);
+			}
+
+			// Advance until the first element that is not contiguous with the part that is after the head of line.
 			while (next != nullptr && internal::compareSeqNum(current->nextSeqNum(), next->seqNum) == 0)
 			{
 				current = next;
@@ -539,11 +546,6 @@ namespace pcpp
 			result.tail = current;
 			result.headId = headId;
 			return result;
-		}
-
-		TcpByteStream::HOLUnblockResult TcpByteStream::forceUnblockHeadOfLineTo(uint32_t expSeqNum)
-		{
-			return HOLUnblockResult();
 		}
 	}  // namespace internal
 
