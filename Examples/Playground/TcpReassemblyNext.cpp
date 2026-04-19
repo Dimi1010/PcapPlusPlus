@@ -596,7 +596,8 @@ namespace pcpp
 			return ReassemblyStatus::Ignore_PacketWithNoData;
 		}
 
-		FlowKey flowKey = 0;  // TODO: Calculate flow key based on srcIP, dstIP, srcPort, dstPort.
+		// Calculate flow key based on srcIP, dstIP, srcPort, dstPort.
+		FlowKey flowKey = hash5Tuple(&packet);
 
 		// Find connection by flow key. If not found, create a new connection.
 		auto it = m_Connections.find(flowKey);
