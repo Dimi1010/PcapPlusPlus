@@ -26,7 +26,8 @@ namespace pcpp
 			}
 
 			auto partId = part - &m_Parts[0];
-			PCPP_ASSERT(partId >= 0 && partId < m_Parts.size(), "Part pointer is out of range of the parts vector");
+			PCPP_ASSERT(partId >= 0 && static_cast<size_t>(partId) < m_Parts.size(),
+			            "Part pointer is out of range of the parts vector");
 			return partId;
 		}
 
