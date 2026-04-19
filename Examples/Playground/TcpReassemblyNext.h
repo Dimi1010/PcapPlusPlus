@@ -64,6 +64,7 @@ namespace pcpp
 		struct TcpStreamSeqPart
 		{
 			using PartId = uint32_t;
+			using HiResTimepoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 			static constexpr PartId INVALID_PART_ID = std::numeric_limits<PartId>::max();
 
@@ -341,13 +342,13 @@ namespace pcpp
 							current = getPart(current->nextId);
 						}
 
-						// If current is nullptr, that means that all buffered parts are fully overlapped by the new part,
-						// and can be ignored.
+						// If current is nullptr, that means that all buffered parts are fully overlapped by the new
+						// part, and can be ignored.
 						if (current != nullptr)
 						{
 							// Clamp the new part to the start of the first non-fully overlapped part;
 							tempPart.dataLen = current->seqNum - calcTrueSeqNum(seqNum, flags);
-							
+
 							// Link the new part to the first non-fully overlapped part, since it is now in-order.
 							tempPart.nextId = currentId;
 							nextExpectedSeqNum = result.tail->nextSeqNum();
@@ -367,7 +368,7 @@ namespace pcpp
 					onDataReady(view);  // TODO: Strengthen exception safety.
 
 					// Release the unlinked parts back to the free list.
-					if(result.head != nullptr)
+					if (result.head != nullptr)
 					{
 						returnFreePartRange(result.head, result.tail);
 					}
@@ -587,13 +588,13 @@ namespace pcpp
 			/// The method will return a chain of all buffered parts that:
 			/// - Have a sequence number that is less than or equal to the given expected sequence number.
 			/// - Are contiguous in sequence numbers w.r.t the expected sequence number.
-			/// 
+			///
 			/// Parts that have sequence number less than the seqNum to unblock on may contain gaps in between.
 			/// Those gaps are due to missing data that has not been buffered into the reorder buffer.
-			/// 
+			///
 			/// The next expected sequence number after the unblocked chain can be calculated using the returned tail
 			/// part's nextSeqNum() function.
-			/// 
+			///
 			/// @warning No implicit HOL update
 			/// This method does not update the m_ExpectedSeqNum. The caller should update the sequence number after the
 			/// unblocked chain is handled.
@@ -620,7 +621,7 @@ namespace pcpp
 		};
 	}  // namespace internal
 
-	class TcpByteStreamData
+	class TcpStreamDataV2
 	{
 	public:
 		uint8_t const* m_Data;
@@ -633,17 +634,18 @@ namespace pcpp
 	/// When following a TCP connection, the reassembly engine reorders and deduplicates the received TCP segments into
 	/// an ordered byte stream to be submitted to the user application.
 	///
-	class TcpStreamDataBatch
+	class TcpStreamDataV2Batch
 	{
 	public:
-		class Iterator
-		{
-		};
+		class Iterator;
 
 		Iterator begin() const;
 		Iterator end() const;
 
-		ConnectionData const& getConnection() const;
+		ConnectionData const& getConnection() const
+		{
+			return m_Connection;
+		}
 
 	private:
 		ConnectionData m_Connection;
@@ -681,7 +683,7 @@ namespace pcpp
 		/// @param[in] tcpData The TCP data itself + connection information
 		/// @param[in] ctx A context object.
 		using OnTcpDataReady =
-		    std::function<void(int8_t side, const TcpStreamDataBatch& tcpData, TcpDataReadyCtx& ctx)>;
+		    std::function<void(int8_t side, const TcpStreamDataV2Batch& tcpData, TcpDataReadyCtx& ctx)>;
 
 		/// @brief A callback invoked when a new TCP connection is identified.
 		///
