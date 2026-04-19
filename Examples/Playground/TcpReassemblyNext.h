@@ -365,7 +365,14 @@ namespace pcpp
 
 					// Construct a view over the ordered parts and send it to the callback.
 					TcpStreamPartsRange view(tempPart, m_Parts);
-					onDataReady(view);  // TODO: Strengthen exception safety.
+					try
+					{
+						onDataReady(view);
+					}
+					catch (std::exception const& ex)
+					{
+						// TODO: Log callback error
+					}
 
 					// Release the unlinked parts back to the free list.
 					if (result.head != nullptr)
@@ -425,7 +432,14 @@ namespace pcpp
 				}
 
 				TcpStreamPartsRange view(*result.head, m_Parts);
-				onDataReady(view);  // TODO: Strengthen exception safety.
+				try
+				{
+					onDataReady(view);
+				}
+				catch (std::exception const& ex)
+				{
+					// TODO: Log callback error.
+				}
 
 				returnFreePartRange(result.head, result.tail);
 
