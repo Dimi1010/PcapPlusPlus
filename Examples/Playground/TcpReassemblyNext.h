@@ -757,7 +757,7 @@ namespace pcpp
 		struct TcpConnection
 		{
 			ConnectionData metadata;
-			std::array<TcpConnectionSide, 2> side;
+			std::array<TcpConnectionSide, 2> sides;
 			int8_t openStreamSides = 0;
 			int8_t lastReceivedSide = -1;
 			bool closed = false;

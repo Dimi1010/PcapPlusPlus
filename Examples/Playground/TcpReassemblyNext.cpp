@@ -624,14 +624,75 @@ namespace pcpp
 			return ReassemblyStatus::Ignore_PacketOfClosedFlow;
 		}
 
-		// Establish tcpConn side.
+		// Establish tcpConn sides.
+		uint32_t srcPort = tcpLayer->getSrcPort();
 
-		auto onDataReady = [this, &tcpConn](internal::TcpStreamPartsRange const& rawView) {
+		auto sourceEquals = [](TcpConnectionSide const& side, IPAddress const& ip, uint16_t port) -> bool {
+			return side.srcIP == ip && side.srcPort == port;
+		};
+
+		// Find the side of the connection that matches the packet, if any.
+		TcpConnectionSide* currentSide = nullptr;
+		for (int i = 0; i < tcpConn.openStreamSides; i++)
+		{
+			if (sourceEquals(tcpConn.sides[i], srcIP, srcPort))
+			{
+				currentSide = &tcpConn.sides[i];
+				break;
+			}
+		}
+
+		bool openedNewSide = false;
+		if (currentSide == nullptr)
+		{
+			// We have a flow error, if we have 2 open sides and we did not match.
+			if (tcpConn.openStreamSides >= 2)
+			{
+				PCPP_LOG_ERROR("Error occurred - packet doesn't match either side of the connection!!");
+				return ReassemblyStatus::Error_PacketDoesNotMatchFlow;
+			}
+
+			// We have an unknown side, but we still have room to open a new one, so we can open it.
+			PCPP_LOG_DEBUG("Found new stream side for flow, opening new side. "
+			               "[Flow="
+			               << std::hex << flowKey << "; Stream=" << tcpConn.openStreamSides << "]");
+
+			currentSide = &tcpConn.sides[tcpConn.openStreamSides++];
+			currentSide->srcIP = srcIP;
+			currentSide->srcPort = srcPort;
+			// currentSide->stream.reset();
+
+			openedNewSide = true;
+		}
+
+		PCPP_ASSERT(currentSide != nullptr, "Current side should have been identified by this point");
+
+		uint32_t seqNum = be32toh(tcpLayer->getTcpHeader()->sequenceNumber);
+		uint8_t const* payloadData = tcpLayer->getLayerPayload();
+		size_t payloadLen = tcpLayer->getLayerPayloadSize();
+		SeqFlags flags;
+		flags.synFlag = tcpLayer->getTcpHeader()->synFlag == 1;
+		flags.finFlag = tcpLayer->getTcpHeader()->finFlag == 1;
+
+		// Insert the packet payload into the reassembly stream.
+		auto onDataReady = [this, &tcpConn, currentSide](internal::TcpStreamPartsRange const& rawView) {
+			int x = 1;
+
+			for(auto& part : rawView)
+			{
+				PCPP_LOG_DEBUG("Data ready callback: part with SEQ " << part.seqNum << " and length " << part.dataLen);
+			}
+
 			// m_OnMessageReady();
 		};
 
-		auto& activeSide = tcpConn.side[0];
-		activeSide.stream.insertSeq(onDataReady, 0, nullptr, 0, {});
+		// TODO: If we have an ACK number, flush the opposite side to that ACK number.
+		// We are unlikely to receive packets that contain ACKed data, so we can mark the gaps as missing.
+
+		currentSide->stream.insertSeq(onDataReady, seqNum, payloadData, payloadLen, flags);
+
+		// TODO: Check if the stream closed. E.g. a FIN flag was processed.
+		// TODO: Check if we have RST. Force close stream.
 
 		return ReassemblyStatus();
 	}
