@@ -301,36 +301,61 @@ namespace pcpp
 					PCPP_LOG_DEBUG("[IN-ORDER] Received SEQ=" << seqNum << " with LEN=" << dataLen << " bytes. SYN="
 					                                          << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
 
-					// TODO: Handle the case where the new part overlaps with the buffered out-of-order parts.
-					// Both the pre-first part overlap, and post-last part overlap.
-					//
-					// Example:
-					//
-					// HeadOfLine ->!
-					// Buffered:    !    [ 100 : 150 ),          [ 170 : 200 )
-					// Incoming:    !----[ 80 : 190 )------------------
-					//
-					// In this case the incomming overlapping part must be delivered only once.
-					// A possible solution is to drop all nodes that are fully behind the nextSeqNum.
-
-					// Attempt to unlink any buffered out-of-order parts that would be in-order after the new part.
-					auto result = tryUnblockHeadOfLine(nextSeqNum);
-
+					// Temp part representing the new in-order part.
 					TcpStreamSeqPart tempPart;
 					tempPart.data = data;
 					tempPart.dataLen = dataLen;
 					tempPart.seqNum = seqNum;
 					tempPart.seqFlags = flags;
 
-					// If there are any buffered out-of-order parts that are now in-order, link them after the new part.
-					// The linking is only forward link, due to inability to generate a valid PartID for the temporary
-					// part representing the new in-order part.
+					// Fetch any buffered out-of-order parts that are now either past-head-of-line or in-order as a
+					// result of the new head of line being at nextSeqNum.
+					auto result = tryUnblockHeadOfLine(nextSeqNum);
 
 					uint32_t nextExpectedSeqNum;
 					if (result.head != nullptr)
 					{
-						tempPart.nextId = result.headId;
-						nextExpectedSeqNum = result.tail->nextSeqNum();
+						// Handle edge case where the new part is in-order , but it overlaps with dequeued buffered
+						// segments.
+						//
+						// Example:
+						// HeadOfLine ->|<-
+						// Next SEQ:    |                                ->|<-
+						// New HOL:     |                                  |    ->|<-
+						// Buffered:    |    [ 100 : 150 ),          [ 170 : 200 )|
+						// Incoming:    |-----------[ 80 : 190 )-----------|      |
+						//
+						// In this case, we must remove all segments that are fully overlapped by the new segment,
+						// and then trim the new segment to not overlap with any partially overlapped buffered segments.
+
+						// If there are any buffered out-of-order parts that are now in-order, link them after the new
+						// part. The linking is only forward link, due to inability to generate a valid PartID for the
+						// temporary part representing the new in-order part.
+
+						// Advance until we are past all parts that are fully inside the new segment.
+						uint32_t currentId = result.headId;
+						TcpStreamSeqPart* current = result.head;
+						while (current != nullptr && compareSeqNum(current->nextSeqNum(), nextSeqNum) < 0)
+						{
+							currentId = current->nextId;
+							current = getPart(current->nextId);
+						}
+
+						// If current is nullptr, that means that all buffered parts are fully overlapped by the new part,
+						// and can be ignored.
+						if (current != nullptr)
+						{
+							// Clamp the new part to the start of the first non-fully overlapped part;
+							tempPart.dataLen = current->seqNum - calcTrueSeqNum(seqNum, flags);
+							
+							// Link the new part to the first non-fully overlapped part, since it is now in-order.
+							tempPart.nextId = currentId;
+							nextExpectedSeqNum = result.tail->nextSeqNum();
+						}
+						else
+						{
+							nextExpectedSeqNum = nextSeqNum;
+						}
 					}
 					else
 					{
