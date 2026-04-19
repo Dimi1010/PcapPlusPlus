@@ -300,7 +300,7 @@ namespace pcpp
 				if (c <= 0)
 				{
 					PCPP_LOG_DEBUG("[IN-ORDER] Received SEQ=" << seqNum << " with LEN=" << dataLen << " bytes. SYN="
-					                                          << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
+					                                          << flags.synFlag << ";FIN=" << flags.finFlag);
 
 					// Temp part representing the new in-order part.
 					TcpStreamSeqPart tempPart;
@@ -393,7 +393,7 @@ namespace pcpp
 				{
 					PCPP_LOG_DEBUG("[OOS] Received SEQ=" << seqNum << " with LEN=" << dataLen
 					                                     << " bytes, but expected SEQ=" << m_ExpectedSeqNum << ". SYN="
-					                                     << flags.synFlag << ";FIN=" << flags.finFlag << '\n');
+					                                     << flags.synFlag << ";FIN=" << flags.finFlag);
 					insertSeqToReorderBuffer(seqNum, data, dataLen, flags);
 				}
 			}
@@ -422,8 +422,6 @@ namespace pcpp
 				// Use the new seqNum as the reference to unblock on.
 
 				// Pops all parts that are prior to the new seqNum.
-				uint32_t headId;
-				uint32_t nextSeqNum;
 				auto result = tryUnblockHeadOfLine(seqNum);
 				if (result.head == nullptr)
 				{
@@ -441,6 +439,7 @@ namespace pcpp
 					// TODO: Log callback error.
 				}
 
+				uint32_t nextSeqNum = result.tail->nextSeqNum();
 				returnFreePartRange(result.head, result.tail);
 
 				m_ExpectedSeqNum = nextSeqNum;
