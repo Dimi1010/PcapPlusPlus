@@ -9,6 +9,9 @@
 #include "PacketUtils.h"
 
 #define PCPP_LOG_DEBUG(m) std::cerr << m << '\n';
+#define PCPP_LOG_INFO(m) std::cerr << m << '\n';
+#define PCPP_LOG_WARN(m) std::cerr << m << '\n';
+#define PCPP_LOG_ERROR(m) std::cerr << m << '\n';
 
 namespace pcpp
 {
