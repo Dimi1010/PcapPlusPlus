@@ -753,13 +753,31 @@ namespace pcpp
 		{
 		};
 
-		/// @brief A callback invoked when new data arrives on a connection
+		/// @brief A callback function type invoked when TCP data is ready for processing.
+		///
+		/// This signature receives a single TCP stream data segment that is ready for processing.
+		/// If multiple segments are unblocked at once, this callback will be invoked multiple times in order, once for
+		/// each segment.
+		///
+		/// See OnTcpDataReadyBatch for a callback signature that receives a batch of segments at once.
 		///
 		/// @param[in] side The side this data belongs to (MachineA->MachineB or vice versa). The value is 0 or 1 where
-		/// 0 is the first side seen in the connection and 1 is the second side seen
-		/// @param[in] tcpData The TCP data itself + connection information
-		/// @param[in] ctx A context object.
-		using OnTcpDataReady =
+		/// 0 is the first side seen in the connection and 1 is the second side seen.
+		/// @param[in] tcpData The TCP data itself + connection information.
+		/// @param[in] ctx A context object. Reserved for future use.
+		using OnTcpDataReady = std::function<void(int8_t side, const TcpStreamData& tcpData, TcpDataReadyCtx& ctx)>;
+
+		/// @brief A callback function type invoked when TCP data is ready for processing.
+		///
+		/// This signature receives a batch of TCP stream data segments that are ready for processing, instead of a
+		/// single segment. This should allow for more efficient procesing of segments, when multiple buffered segments
+		/// are unblocked at once.
+		///
+		/// @param[in] side The side this data belongs to (MachineA->MachineB or vice versa). The value is 0 or 1 where
+		/// 0 is the first side seen in the connection and 1 is the second side seen.
+		/// @param[in] tcpData A batch of TCP data segments that are ready for processing + connection information.
+		/// @param[in] ctx A context object. Reserved for future use.
+		using OnTcpDataReadyBatch =
 		    std::function<void(int8_t side, const TcpStreamDataV2Batch& tcpData, TcpDataReadyCtx& ctx)>;
 
 		/// @brief A callback invoked when a new TCP connection is identified.
@@ -796,6 +814,12 @@ namespace pcpp
 			Closed,
 		};
 
+		void setOnConnectionStartCallback(OnTcpConnectionStart callback);
+		void setOnConnectionEndCallback(OnTcpConnectionEnd callback);
+
+		void setOnDataReadyCallback(OnTcpDataReady callback);
+		void setOnDataReadyCallback(OnTcpDataReadyBatch callback);
+
 		ReassemblyStatus reassemblePacket(Packet& packet);
 		ReassemblyStatus reassemblePacket(RawPacket& rawPacket);
 
@@ -830,10 +854,71 @@ namespace pcpp
 		using ConnectionMap = std::unordered_map<FlowKey, TcpConnection>;
 		// using ConnectionInfoMap = std::unordered_map<FlowKey, ConnectionData>;
 
+		// TODO: C++17 update - Replace with std::variant.
+		class DataReadyCallback
+		{
+		public:
+			enum class Type
+			{
+				Single,
+				Batch
+			};
+
+			DataReadyCallback() : m_Type(Type::Single), m_SingleCallback()
+			{}
+			DataReadyCallback(OnTcpDataReady callback) : m_Type(Type::Single), m_SingleCallback(std::move(callback))
+			{}
+			DataReadyCallback(OnTcpDataReadyBatch callback) : m_Type(Type::Batch), m_BatchCallback(std::move(callback))
+			{}
+
+			~DataReadyCallback()
+			{
+				destroyActiveMem();
+			}
+
+			Type getType() const
+			{
+				return m_Type;
+			}
+
+			void setCallback(OnTcpDataReady callback)
+			{
+				swapToType(Type::Single);
+				m_SingleCallback = std::move(callback);
+			}
+			void setCallback(OnTcpDataReadyBatch callback)
+			{
+				swapToType(Type::Batch);
+				m_BatchCallback = std::move(callback);
+			}
+
+			OnTcpDataReady const* getSingleCallback() const
+			{
+				return m_Type == Type::Single ? &m_SingleCallback : nullptr;
+			}
+			OnTcpDataReadyBatch const* getBatchCallback() const
+			{
+				return m_Type == Type::Batch ? &m_BatchCallback : nullptr;
+			}
+
+		private:
+			/// @brief Activates the given type in the union, destroying the active member if needed.
+			void swapToType(Type newType) noexcept;
+
+			/// @brief Manually call the destructor of the active member in the union.
+			/// The caller should initialize a new union member immediately after this call.
+			void destroyActiveMem() noexcept;
+
+			Type m_Type = Type::Single;
+			union {
+				OnTcpDataReady m_SingleCallback;
+				OnTcpDataReadyBatch m_BatchCallback;
+			};
+		};
+
 		Config m_Config;
 		ConnectionMap m_Connections;
-
-		OnTcpDataReady m_OnMessageReady;
+		DataReadyCallback m_OnDataReady;
 		OnTcpConnectionStart m_OnConnectionStart;
 		OnTcpConnectionEnd m_OnConnectionEnd;
 	};

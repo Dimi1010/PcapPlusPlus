@@ -676,14 +676,26 @@ namespace pcpp
 
 		// Insert the packet payload into the reassembly stream.
 		auto onDataReady = [this, &tcpConn, currentSide](internal::TcpByteStreamDataReadyEvent const& event) {
-			int x = 1;
-
-			for(auto& part : rawView)
+			switch (m_OnDataReady.getType())
 			{
-				PCPP_LOG_DEBUG("Data ready callback: part with SEQ " << part.seqNum << " and length " << part.dataLen);
+				case DataReadyCallback::Type::Single: 
+				{
+				    auto* cb = m_OnDataReady.getSingleCallback();
+				    PCPP_ASSERT(cb != nullptr, "Single callback should not be null");
+					for (auto& part : event.partsRange)
+					{
+					    PCPP_LOG_DEBUG("Invoking single callback for part with SEQ=" << part.seqNum << ";LEN=" << part.dataLen);
+					}
+					break;
+				}
+				case DataReadyCallback::Type::Batch: 
+				{
+				    auto* cb = m_OnDataReady.getBatchCallback();
+				    PCPP_ASSERT(cb != nullptr, "Batch callback should not be null");
+				    PCPP_LOG_DEBUG("Invoking batch callback.");
+					break;
+				}
 			}
-
-			// m_OnMessageReady();
 		};
 
 		// TODO: If we have an ACK number, flush the opposite side to that ACK number.
@@ -695,5 +707,43 @@ namespace pcpp
 		// TODO: Check if we have RST. Force close stream.
 
 		return ReassemblyStatus();
+	}
+
+	void TcpReassemblyV2::DataReadyCallback::swapToType(Type newType) noexcept
+	{
+		if (newType == m_Type)
+		{
+			return;
+		}
+
+		destroyActiveMem();
+
+		switch (newType)
+		{
+		case Type::Single:
+			new (&m_SingleCallback) OnTcpDataReady();
+			break;
+		case Type::Batch:
+			new (&m_BatchCallback) OnTcpDataReadyBatch();
+			break;
+		default:
+			throw std::logic_error("Invalid callback type");
+		}
+		m_Type = newType;
+	}
+
+	void TcpReassemblyV2::DataReadyCallback::destroyActiveMem() noexcept
+	{
+		switch (m_Type)
+		{
+		case Type::Single:
+			m_SingleCallback.~OnTcpDataReady();
+			break;
+		case Type::Batch:
+			m_BatchCallback.~OnTcpDataReadyBatch();
+			break;
+		default:
+			throw std::logic_error("Invalid callback type");
+		}
 	}
 }  // namespace pcpp
