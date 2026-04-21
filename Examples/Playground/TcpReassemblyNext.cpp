@@ -675,7 +675,7 @@ namespace pcpp
 		flags.finFlag = tcpLayer->getTcpHeader()->finFlag == 1;
 
 		// Insert the packet payload into the reassembly stream.
-		auto onDataReady = [this, &tcpConn, currentSide](internal::TcpStreamPartsRange const& rawView) {
+		auto onDataReady = [this, &tcpConn, currentSide](internal::TcpByteStreamDataReadyEvent const& event) {
 			int x = 1;
 
 			for(auto& part : rawView)

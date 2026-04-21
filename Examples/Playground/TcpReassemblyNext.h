@@ -32,12 +32,23 @@ namespace pcpp
 
 	namespace internal
 	{
+		/// @brief The relative distance between two sequence numbers, accounting for wraparound.
+		/// @param seqNum1 The first sequence number.
+		/// @param seqNum2 The second sequence number.
+		/// @return The relative distance between the two sequence numbers.
+		inline int32_t relativeDistanceSeqNum(uint32_t seqNum1, uint32_t seqNum2)
+		{
+			// TODO: Handle 0x80000000 distance case, which is ambiguous.
+			return seqNum1 - seqNum2;
+		}
+
 		/// @brief Compares two sequence numbers using modular arithmetic to handle wraparound.
 		/// @param seqNum1 The first sequence number to compare.
 		/// @param seqNum2 The second sequence number to compare.
 		/// @return A negative value if seqNum1 < seqNum2, zero if equal, or a positive value if seqNum1 > seqNum2.
-		inline int compareSeqNum(uint32_t seqNum1, uint32_t seqNum2)
+		inline int32_t compareSeqNum(uint32_t seqNum1, uint32_t seqNum2)
 		{
+			// TODO: Handle 0x80000000 distance case, which is ambiguous.
 			return seqNum1 - seqNum2;
 		}
 
@@ -200,9 +211,54 @@ namespace pcpp
 				return Iterator(this, nullptr);
 			}
 
+			/// @brief Calculates the number of missing bytes in the stream between two parts, if any.
+			///
+			/// The gap is determined by the difference between the next expected sequence number
+			/// of the first part and the sequence number of the second part.
+			///
+			/// @param part The current part in the stream.
+			/// @param nextPart The next part in the stream.
+			/// @return The number of missing bytes.
+			static size_t getGapBytes(TcpStreamSeqPart const& part, TcpStreamSeqPart const& nextPart)
+			{
+				auto rel = internal::relativeDistanceSeqNum(nextPart.seqNum, part.nextSeqNum());
+				return rel > 0 ? rel : 0;
+			}
+
 		private:
 			TcpStreamSeqPart m_FirstPart;
 			ScalarBuffer<TcpStreamSeqPart const> m_PartsBuffer;
+		};
+
+		/// @brief Event data provided to the user when new in-order data is ready in the TCP byte stream.
+		struct TcpByteStreamDataReadyEvent
+		{
+			/// @brief An ordered range of parts that are now ready for processing.
+			///
+			/// The range may contain gaps in the sequence numbers of the parts if
+			/// there are missing segments in the stream due to packet loss.
+			TcpStreamPartsRange partsRange;
+
+			/// @brief The starting sequence number of the event.
+			///
+			/// This is the sequence number of the stream when the event was triggered.
+			/// It isn't nessesarily the sequence number of the first part in the parts range,
+			/// as there may be gaps in the parts range.
+			uint32_t startSeqNum = 0;
+
+			/// @brief The missing bytes in the stream before the first part in the parts range, if any.
+			/// @return The number of missing bytes.
+			size_t getLeadingMissingBytes() const
+			{
+				if (partsRange.getFirstPart() == nullptr)
+				{
+					return 0;
+				}
+
+				// Negative relative distance shouldn't really happen.
+				auto rel = internal::relativeDistanceSeqNum(partsRange.getFirstPart()->seqNum, startSeqNum);
+				return rel <= 0 ? 0 : rel;
+			}
 		};
 
 		/// @brief A class that handles a singular unidirectional TCP byte stream reassembly.
@@ -239,9 +295,8 @@ namespace pcpp
 			///
 			/// @tparam OnDataReadyCallback A callback functor type that is invoked when new in-order data is ready.
 			///
-			/// The callback should have the signature `void(TcpStreamPartsRange)`, where the parameter is a view over
-			/// the newly available in-order data parts. The range is only valid for the duration of the callback
-			/// and should not be stored or used after the callback returns.
+			/// The callback should have the signature `void(TcpByteStreamDataReadyEvent)`, where the parameter is the
+			/// event data that contains the new in-order data segments.
 			///
 			/// @param[in] seqNum The sequence number of the segment.
 			///
@@ -367,14 +422,17 @@ namespace pcpp
 					}
 
 					// Construct a view over the ordered parts and send it to the callback.
-					TcpStreamPartsRange view(tempPart, m_Parts);
+					// The current seqNum is sent to calculate the gap between the expected byte and the actual first byte.
+					TcpByteStreamDataReadyEvent event{ TcpStreamPartsRange(tempPart, m_Parts), m_ExpectedSeqNum };
 					try
 					{
-						onDataReady(view);
+						// Cast to const& to prevent sending non-const reference to the user.
+						onDataReady(static_cast<TcpByteStreamDataReadyEvent const&>(event));
 					}
 					catch (std::exception const& ex)
 					{
 						// TODO: Log callback error
+						PCPP_LOG_ERROR(ex.what());
 					}
 
 					// Release the unlinked parts back to the free list.
@@ -432,14 +490,17 @@ namespace pcpp
 					return;
 				}
 
-				TcpStreamPartsRange view(*result.head, m_Parts);
+				// The current seqNum is sent to calculate the gap between the expected byte and the actual first byte.
+				TcpByteStreamDataReadyEvent event{ TcpStreamPartsRange(*result.head, m_Parts), m_ExpectedSeqNum };
 				try
 				{
-					onDataReady(view);
+					// Cast to const& to prevent sending non-const reference to the user.
+					onDataReady(static_cast<TcpByteStreamDataReadyEvent const&>(event));
 				}
 				catch (std::exception const& ex)
 				{
 					// TODO: Log callback error.
+					PCPP_LOG_ERROR(ex.what());
 				}
 
 				uint32_t nextSeqNum = result.tail->nextSeqNum();
@@ -665,7 +726,7 @@ namespace pcpp
 
 	private:
 		ConnectionData m_Connection;
-		internal::TcpStreamPartsRange m_StreamPartsView;
+		internal::TcpByteStreamDataReadyEvent m_InternalEvent;
 	};
 
 	class TcpReassemblyV2
