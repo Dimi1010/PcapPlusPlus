@@ -190,7 +190,7 @@ namespace pcpp
 			TcpStreamBufferedPartsRange(TcpStreamBufferedPart::PartId firstId,
 			                            std::vector<TcpStreamBufferedPart> const& buffer)
 			    : TcpStreamBufferedPartsRange(firstId, ScalarBuffer<TcpStreamBufferedPart const>{
-			          buffer.size() > 0 ? buffer.data() : nullptr, buffer.size() })
+			                                               buffer.size() > 0 ? buffer.data() : nullptr, buffer.size() })
 			{}
 
 			TcpStreamBufferedPartsRange(TcpStreamBufferedPart::PartId firstId,
@@ -292,6 +292,8 @@ namespace pcpp
 		/// notify the user when new in-order data is ready.
 		class TcpByteStream
 		{
+			using PartBufferList = std::list<TcpStreamBufferedPart>;
+
 		public:
 			/// @brief Inserts a new part into the stream. The part is defined by its sequence number and data length.
 			///
@@ -387,7 +389,7 @@ namespace pcpp
 
 					// Temp part representing the new in-order part.
 					TcpStreamBufferedPart tempPart;
-					tempPart.data = data;
+					tempPart.data = const_cast<uint8_t*>(data);
 					tempPart.dataLen = dataLen;
 					tempPart.seqNum = seqNum;
 					tempPart.seqFlags = flags;
@@ -395,9 +397,14 @@ namespace pcpp
 					// Fetch any buffered out-of-order parts that are now either past-head-of-line or in-order as a
 					// result of the new head of line being at nextSeqNum.
 					auto result = tryUnblockHeadOfLine(nextSeqNum);
+					auto& unblockedParts = result.unblockedParts;
+
+					// Fully overlapped parts won't be sent to the user,
+					// but need to be stored to be released to the free list.
+					PartBufferList overlappedParts;
 
 					uint32_t nextExpectedSeqNum;
-					if (result.head != nullptr)
+					if (!unblockedParts.empty())
 					{
 						// Handle edge case where the new part is in-order , but it overlaps with dequeued buffered
 						// segments.
@@ -417,27 +424,31 @@ namespace pcpp
 						// temporary part representing the new in-order part.
 
 						// Advance until we are past all parts that are fully inside the new segment.
-						uint32_t currentId = result.headId;
-						TcpStreamBufferedPart* current = result.head;
-						while (current != nullptr && compareSeqNum(current->nextSeqNum(), nextSeqNum) < 0)
+						auto currentIt = unblockedParts.begin();
+						while (currentIt != unblockedParts.end() &&
+						       compareSeqNum(currentIt->nextSeqNum(), nextSeqNum) < 0)
 						{
-							currentId = current->nextId;
-							current = getPart(current->nextId);
+							++currentIt;
 						}
 
 						// If current is nullptr, that means that all buffered parts are fully overlapped by the new
 						// part, and can be ignored.
-						if (current != nullptr)
+						if (currentIt != unblockedParts.end())
 						{
 							// Clamp the new part to the start of the first non-fully overlapped part;
-							tempPart.dataLen = current->seqNum - calcTrueSeqNum(seqNum, flags);
+							tempPart.dataLen = currentIt->seqNum - calcTrueSeqNum(seqNum, flags);
 
-							// Link the new part to the first non-fully overlapped part, since it is now in-order.
-							tempPart.nextId = currentId;
-							nextExpectedSeqNum = result.tail->nextSeqNum();
+							// Transfer all fully overlapped parts to the overlapped list to be released back to the
+							// free list later.
+							overlappedParts.splice(overlappedParts.begin(), unblockedParts, unblockedParts.begin(),
+							                       currentIt);
+
+							nextExpectedSeqNum = unblockedParts.back().nextSeqNum();
 						}
 						else
 						{
+							// All buffered parts are fully overlapped by the new part, so we can ignore them.
+							overlappedParts.splice(overlappedParts.begin(), unblockedParts);
 							nextExpectedSeqNum = nextSeqNum;
 						}
 					}
@@ -446,29 +457,30 @@ namespace pcpp
 						nextExpectedSeqNum = nextSeqNum;
 					}
 
+					// TODO: Push to user.
+					/*
 					// Construct a view over the ordered parts and send it to the callback.
 					// The current seqNum is sent to calculate the gap between the expected byte and the actual first
 					// byte.
 					TcpByteStreamDataReadyEvent event{ TcpStreamBufferedPartsRange(tempPart, m_Parts),
-						                               m_ExpectedSeqNum };
+					                                   m_ExpectedSeqNum };
 					try
 					{
-						// Cast to const& to prevent sending non-const reference to the user.
-						onDataReady(static_cast<TcpByteStreamDataReadyEvent const&>(event));
+					    // Cast to const& to prevent sending non-const reference to the user.
+					    onDataReady(static_cast<TcpByteStreamDataReadyEvent const&>(event));
 					}
 					catch (std::exception const& ex)
 					{
-						// TODO: Log callback error
-						PCPP_LOG_ERROR(ex.what());
+					    // TODO: Log callback error
+					    PCPP_LOG_ERROR(ex.what());
 					}
+					*/
 
 					// Check if FIN flag has been handled.
 
 					// Release the unlinked parts back to the free list.
-					if (result.head != nullptr)
-					{
-						returnFreePartRange(result.head, result.tail);
-					}
+					returnFreeParts(overlappedParts);
+					returnFreeParts(unblockedParts);
 
 					// Update the head of line to the next expected sequence number.
 					// That being the end of the unblocked chain of in-order parts.
@@ -513,29 +525,31 @@ namespace pcpp
 
 				// Pops all parts that are prior to the new seqNum.
 				auto result = tryUnblockHeadOfLine(seqNum);
-				if (result.head == nullptr)
+				if (result.unblockedParts.empty())
 				{
 					m_ExpectedSeqNum = seqNum;
 					return;
 				}
 
+				// TODO: Push to user.
+				/*
 				// The current seqNum is sent to calculate the gap between the expected byte and the actual first byte.
 				TcpByteStreamDataReadyEvent event{ TcpStreamBufferedPartsRange(*result.head, m_Parts),
-					                               m_ExpectedSeqNum };
+				                                   m_ExpectedSeqNum };
 				try
 				{
-					// Cast to const& to prevent sending non-const reference to the user.
-					onDataReady(static_cast<TcpByteStreamDataReadyEvent const&>(event));
+				    // Cast to const& to prevent sending non-const reference to the user.
+				    onDataReady(static_cast<TcpByteStreamDataReadyEvent const&>(event));
 				}
 				catch (std::exception const& ex)
 				{
-					// TODO: Log callback error.
-					PCPP_LOG_ERROR(ex.what());
+				    // TODO: Log callback error.
+				    PCPP_LOG_ERROR(ex.what());
 				}
+				*/
 
-				uint32_t nextSeqNum = result.tail->nextSeqNum();
-				returnFreePartRange(result.head, result.tail);
-
+				uint32_t nextSeqNum = result.unblockedParts.back().nextSeqNum();
+				returnFreeParts(result.unblockedParts);
 				m_ExpectedSeqNum = nextSeqNum;
 			}
 
@@ -564,142 +578,25 @@ namespace pcpp
 				return m_ExpectedSeqNum;
 			}
 
-			void reserveReorderBuffer(size_t numParts)
-			{
-				// Clamps the maximum buffer to the maximum number of parts that can be indexed by the PartId type.
-				numParts = std::min(numParts, static_cast<size_t>(std::numeric_limits<PartId>::max()));
-				m_Parts.reserve(numParts);
-			}
-
 		private:
-			using PartId = TcpStreamBufferedPart::PartId;
-#pragma region Buffered Parts Indexing
-			/// @brief Get a pointer to a part by its id. Returns nullptr if the partId is invalid.
-			/// @param[in] partId The id of the part to get.
-			/// @return A pointer to the part with the given id, or nullptr if the partId is invalid.
-			TcpStreamBufferedPart* getPart(PartId partId);
-
-			/// @brief Get the id of a part from its pointer. Returns INVALID_PART_ID if the part pointer is null.
-			///
-			/// The pointer MUST BE a pointer to an element of the m_Parts vector or nullptr.
-			///
-			/// @param[in] part A pointer to the part.
-			/// @return The id of the part, or INVALID_PART_ID if the part pointer is null.
-			PartId getPartId(TcpStreamBufferedPart const* part) const;
-#pragma endregion
-
-#pragma region Intrusive Index List API
-			struct NodeIndexList
-			{
-				PartId head = TcpStreamBufferedPart::INVALID_PART_ID;
-			};
-
-			/// @brief Insert a new node into the list after a given previous node.
-			///
-			/// See the overload that takes a previous node pointer for details.
-			void insertNodeAfter(NodeIndexList& list, TcpStreamBufferedPart::PartId prevId,
-			                     TcpStreamBufferedPart* newNode);
-
-			/// @brief Insert a new node into the list after a given previous node.
-			///
-			/// If the previous node is null, the new node is inserted at the head of the list.
-			/// Otherwise it is inserted after the previous node.
-			///
-			/// @param[in] list The list to insert the new node into.
-			/// @param[in] prevNode The previous node to insert after, or null to insert at the head of the list.
-			/// @param[in] newNode The new node to insert. Must not be linked in any list.
-			void insertNodeAfter(NodeIndexList& list, TcpStreamBufferedPart* prevNode, TcpStreamBufferedPart* newNode);
-
-			// void insertNodeBefore(NodeIndexList& list, TcpStreamBufferedPart* newNode, TcpStreamBufferedPart::PartId
-			// nextId); void insertNodeBefore(NodeIndexList& list, TcpStreamBufferedPart* newNode,
-			// TcpStreamBufferedPart* nextNode);
-
-			/// @brief Insert a range of nodes into the list after a given previous node.
-			///
-			/// See the overload that takes a previous node pointer for details.
-			void insertNodeRangeAfter(NodeIndexList& list, TcpStreamBufferedPart::PartId prevId,
-			                          TcpStreamBufferedPart* startNode, TcpStreamBufferedPart* endNode);
-
-			/// @brief Inserts a range of nodes into the list after a given previous node.
-			///
-			/// If the previous node is null, the new nodes are inserted at the head of the list.
-			/// Otherwise they are inserted after the previous node.
-			///
-			/// The node range MUST fufill the following conditions:
-			///  - The nodes in the range MUST be allocated on the m_Parts buffer.
-			///  - The nodes in the range MUST be linked together as a chain, and not be linked to any other list.
-			///  - The endNode must be reachable from the startNode by following the nextId links
-			///  - The startNode must be reachable from the endNode by following the prevId links.
-			///
-			/// In practice this is used to insert a list of nodes into another list.
-			///
-			/// @param[in] list The list to insert the new nodes into.
-			/// @param[in] prevNode The previous node to insert after, or null to insert at the head of the list.
-			/// @param[in] startNode The first node in the range to insert.
-			/// @param[in] endNode The last node in the range to insert.
-			void insertNodeRangeAfter(NodeIndexList& list, TcpStreamBufferedPart* prevNode,
-			                          TcpStreamBufferedPart* startNode, TcpStreamBufferedPart* endNode);
-
-			/// @brief Extracts a node from the list, unlinking it from its previous and next nodes.
-			/// @param[in] list The list to extract the node from.
-			/// @param[in] node The node to extract. Must be currently linked in the list.
-			void extractNode(NodeIndexList& list, TcpStreamBufferedPart* node);
-
-			/// @brief Extracts a range of nodes from the list, unlinking them from their previous and next nodes.
-			///
-			/// The nodes are still kept linked together as a chain, but the chain is unlinked from the list and can be
-			/// re-linked elsewhere.
-			///
-			/// @param[in] list The list to extract the nodes from.
-			/// @param[in] startNode The first node in the range to extract. Must be currently linked in the list.
-			/// @param[in] endNode The last node in the range to extract. Must be currently linked in the list, and must
-			/// be after the startNode.
-			void extractNodeRange(NodeIndexList& list, TcpStreamBufferedPart* startNode,
-			                      TcpStreamBufferedPart* endNode);
-#pragma endregion Intrusive Index List API
-
 #pragma region Free List API
-			/// @brief Take a part from the unused parts pool and bring it in-use.
-			/// @return A pointer to the part.
-			TcpStreamBufferedPart* takeFreePart();
 
-			/// @brief Take a range of parts from the unused parts pool and bring them in-use.
-			/// @param[in] count The number of parts to get.
-			/// @return A pair of startNode and endNode of the range.
-			std::pair<TcpStreamBufferedPart*, TcpStreamBufferedPart*> takeFreePartRange(size_t count);
+			/// @brief Takes up to count parts from the unused parts pool and returns them as a list.
+			/// @param count The number of parts to take.
+			/// @return A list of parts taken from the unused parts pool.
+			PartBufferList takeFreeParts(size_t count);
 
-			/// @brief Return a part to the unused parts pool.
-			/// @param part A pointer to the part.
-			void returnFreePart(TcpStreamBufferedPart* part)
-			{
-				// When parts are not in use, they are linked together with other free parts using the nextId
-				// attribute. This makes the logical free list of parts, and allows us to reuse parts without
-				// having to search for them or maintain a separate free list.
-				insertNodeAfter(m_FreeSlotsList, nullptr, part);
-			}
-
-			/// @brief Return a range of parts to the unused parts pool.
-			///
-			/// The entire range MUST fuil the requirements of insertNodeRange.
-			///
-			/// @param startNode The first node in the range.
-			/// @param endNode The last node in the range.
-			void returnFreePartRange(TcpStreamBufferedPart* startNode, TcpStreamBufferedPart* endNode)
-			{
-				insertNodeRangeAfter(m_FreeSlotsList, nullptr, startNode, endNode);
-			}
+			/// @brief Returns a list of parts to the unused parts pool.
+			/// @param parts A lvalue reference to a list of parts to return. The list will be empty after the call.
+			void returnFreeParts(PartBufferList& parts);
 #pragma endregion
 
 #pragma region Reorder Buffer API
 			/// @brief Represents the result of a Head-of-Line (HOL) unblock operation on a TCP stream sequence.
 			struct HOLUnblockResult
 			{
-				/// @brief A pointer to the head part of the unblocked chain of sequence parts.
-				TcpStreamBufferedPart* head = nullptr;
-				/// @brief A pointer to the tail part of the unblocked chain of sequence parts.
-				TcpStreamBufferedPart* tail = nullptr;
-				/// @brief The PartId of the head part of the unblocked chain, if the head part is valid.
-				uint32_t headId = TcpStreamBufferedPart::INVALID_PART_ID;
+				/// @brief A list of buffered parts that are now in-order.
+				PartBufferList unblockedParts;
 			};
 
 			/// @brief Inserts a new part into the reorder buffer.
@@ -736,14 +633,14 @@ namespace pcpp
 #pragma endregion Reorder Buffer API
 
 		private:
-			std::vector<TcpStreamBufferedPart> m_Parts;
+			/// @brief A list of buffered out-of-order parts, ordered by sequence number.
+			PartBufferList m_ReorderBuffer;
 
-			/// @brief The index of the first part in the out-of-order stream.
+			/// @brief A list of free parts that can be used for buffering new out-of-order segments.
 			///
-			/// This is the part with the sequence number closest to the expected sequence number, and is the first part
-			/// that should be checked for merging when a new part is inserted.
-			NodeIndexList m_ReorderList;
-			NodeIndexList m_FreeSlotsList;
+			/// This is used to avoid dynamic memory allocation for each new out-of-order segment,
+			/// by reusing parts that have previously been used and are now free.
+			PartBufferList m_FreeListCache;
 
 			uint32_t m_ExpectedSeqNum = 0;
 			/// @brief Stream is considered closed if a FIN flag has been received.
