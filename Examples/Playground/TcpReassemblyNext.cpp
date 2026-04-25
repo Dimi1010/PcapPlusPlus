@@ -467,7 +467,7 @@ namespace pcpp
 				PCPP_ASSERT(cb != nullptr, "Single callback should not be null");
 
 				size_t missingBytes = event.getLeadingMissingBytes();
-				for (auto& part : event.extraPartsRange)
+				for (auto& part : event.extraParts)
 				{
 					PCPP_LOG_DEBUG("Invoking single callback for part with SEQ=" << part.seqNum
 					                                                             << ";LEN=" << part.dataLen);

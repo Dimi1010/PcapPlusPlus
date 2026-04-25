@@ -82,22 +82,13 @@ namespace pcpp
 		/// use cases.
 		struct TcpStreamBufferedPart
 		{
-			using PartId = uint32_t;
 			using HiResTimepoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
-			static constexpr PartId INVALID_PART_ID = std::numeric_limits<PartId>::max();
-
-			uint8_t* data = nullptr;  //< The pointer to the data buffer.
-			uint32_t dataLen = 0;     //< The used capacity of the data buffer.
-			uint32_t dataCap = 0;     //< The total capacity of the data buffer.
-			uint32_t seqNum = 0;
-
-			/// @brief The index of the next part in the chain. INVALID_PART_ID for no next part.
-			/// @remarks Also used to indicate the next free part when the part is not in use.
-			PartId nextId = INVALID_PART_ID;
-
-			/// @brief The index of the prev part in the chain. INVALID_PART_ID for no prev part.
-			PartId prevId = INVALID_PART_ID;
+			HiResTimepoint timestamp;  //< The timestamp when this part was received.
+			uint8_t* data = nullptr;   //< The pointer to the data buffer.
+			uint32_t dataLen = 0;      //< The used capacity of the data buffer.
+			uint32_t dataCap = 0;      //< The total capacity of the data buffer.
+			uint32_t seqNum = 0;       //< The sequence number of the data buffer.
 
 			/// @brief Additional flags related to the sequence part, such as SYN and FIN flags.
 			SeqFlags seqFlags;
@@ -126,143 +117,25 @@ namespace pcpp
 			}
 		};
 
-		/// @brief A non-owning range view over a list of TcpStreamBufferedPart instances.
-		///
-		/// This class provides API for iterating over partial buffers of a TCP byte stream, which may be non-contiguous
-		/// in memory due to out-of-order segment arrival.
-		class TcpStreamBufferedPartsRange
-		{
-		public:
-#pragma region Iterators
-			class Iterator
-			{
-			public:
-				using iterator_category = std::forward_iterator_tag;
-				using value_type = TcpStreamBufferedPart const;
-				using difference_type = std::ptrdiff_t;
-				using pointer = TcpStreamBufferedPart const*;
-				using reference = TcpStreamBufferedPart const&;
-
-				Iterator() : m_View(nullptr), m_Current(nullptr)
-				{}
-
-				Iterator(TcpStreamBufferedPartsRange const* view, TcpStreamBufferedPart const* current)
-				    : m_View(view), m_Current(current)
-				{}
-
-				reference operator*() const
-				{
-					return *m_Current;
-				}
-				pointer operator->() const
-				{
-					return m_Current;
-				}
-
-				Iterator& operator++()
-				{
-					m_Current = m_View->getNextPart(m_Current);
-					return *this;
-				}
-
-				Iterator operator++(int)
-				{
-					Iterator tmp = *this;
-					++(*this);
-					return tmp;
-				}
-
-				bool operator==(Iterator const& other) const
-				{
-					return m_Current == other.m_Current;
-				}
-				bool operator!=(Iterator const& other) const
-				{
-					return !(*this == other);
-				}
-
-			private:
-				TcpStreamBufferedPartsRange const* m_View;
-				TcpStreamBufferedPart const* m_Current;
-			};
-#pragma endregion Iterators
-
-			TcpStreamBufferedPartsRange(TcpStreamBufferedPart::PartId firstId,
-			                            std::vector<TcpStreamBufferedPart> const& buffer)
-			    : TcpStreamBufferedPartsRange(firstId, ScalarBuffer<TcpStreamBufferedPart const>{
-			                                               buffer.size() > 0 ? buffer.data() : nullptr, buffer.size() })
-			{}
-
-			TcpStreamBufferedPartsRange(TcpStreamBufferedPart::PartId firstId,
-			                            ScalarBuffer<TcpStreamBufferedPart const> partsBuffer)
-			    : m_PartsBuffer(std::move(partsBuffer)), m_FirstPartId(firstId)
-			{}
-
-			TcpStreamBufferedPart const* getFirstPart() const
-			{
-				if (m_FirstPartId == TcpStreamBufferedPart::INVALID_PART_ID)
-				{
-					return nullptr;
-				}
-				return m_PartsBuffer.buffer + m_FirstPartId;
-			}
-
-			TcpStreamBufferedPart const* getNextPart(TcpStreamBufferedPart const* part) const
-			{
-				if (part->nextId == TcpStreamBufferedPart::INVALID_PART_ID)
-				{
-					return nullptr;
-				}
-
-				PCPP_ASSERT(part->nextId < m_PartsBuffer.len, "Part out of bounds");
-				if (part->nextId >= m_PartsBuffer.len)
-				{
-					return nullptr;
-				}
-
-				auto* ptr = m_PartsBuffer.buffer + part->nextId;
-				return ptr;
-			}
-
-			Iterator begin() const
-			{
-				return Iterator(this, getFirstPart());
-			}
-
-			Iterator end() const
-			{
-				return Iterator(this, nullptr);
-			}
-
-			/// @brief Calculates the number of missing bytes in the stream between two parts, if any.
-			///
-			/// The gap is determined by the difference between the next expected sequence number
-			/// of the first part and the sequence number of the second part.
-			///
-			/// @param part The current part in the stream.
-			/// @param nextPart The next part in the stream.
-			/// @return The number of missing bytes.
-			static size_t getGapBytes(TcpStreamBufferedPart const& part, TcpStreamBufferedPart const& nextPart)
-			{
-				auto rel = internal::relativeDistanceSeqNum(nextPart.seqNum, part.nextSeqNum());
-				return rel > 0 ? rel : 0;
-			}
-
-		private:
-			ScalarBuffer<TcpStreamBufferedPart const> m_PartsBuffer;
-			TcpStreamBufferedPart::PartId m_FirstPartId = TcpStreamBufferedPart::INVALID_PART_ID;
-		};
-
 		/// @brief Event data provided to the user when new in-order data is ready in the TCP byte stream.
 		struct TcpByteStreamDataReadyEvent
 		{
-			bool hasStackPart = false;
-			int stackPart;
+			using HiResTimepoint = TcpStreamBufferedPart::HiResTimepoint;
 
-			/// @brief Additional parts that were dequeued
-			///
-			///
-			TcpStreamBufferedPartsRange extraPartsRange;
+			struct MainPart
+			{
+				HiResTimepoint timestamp;  //< The timestamp when the main part was received.
+				uint8_t const* data;       //< The pointer to the main part of the data buffer that triggered the event.
+				uint32_t dataLen;          //< The length of the main part of the data buffer
+				uint32_t seqNum;           //< The sequence number of the main part of the data buffer.
+				SeqFlags seqFlags;  //< The sequence flags associated with the main part, such as SYN and FIN flags.
+			};
+
+			/// @brief This is the part of incoming data that triggered the event. If any.
+			MainPart mainPart;
+
+			/// @brief Additional parts that were dequeued from the reorder buffer after the main part.
+			std::list<TcpStreamBufferedPart> extraParts;
 
 			/// @brief The starting sequence number of the event.
 			///
@@ -271,17 +144,28 @@ namespace pcpp
 			/// as there may be gaps in the parts range.
 			uint32_t startSeqNum = 0;
 
+			/// @brief If this is true, the event contains a main part.
+			/// Otherwise, the event only contains extra parts that were unblocked from the reorder buffer by another
+			/// operation.
+			bool hasMainPart = false;
+
 			/// @brief The missing bytes in the stream before the first part in the parts range, if any.
 			/// @return The number of missing bytes.
 			size_t getLeadingMissingBytes() const
 			{
-				if (extraPartsRange.getFirstPart() == nullptr)
+				if (hasMainPart)
+				{
+					auto rel = internal::relativeDistanceSeqNum(mainPart.seqNum, startSeqNum);
+					return rel <= 0 ? 0 : rel;
+				}
+
+				if (extraParts.empty())
 				{
 					return 0;
 				}
 
 				// Negative relative distance shouldn't really happen.
-				auto rel = internal::relativeDistanceSeqNum(extraPartsRange.getFirstPart()->seqNum, startSeqNum);
+				auto rel = internal::relativeDistanceSeqNum(extraParts.front().seqNum, startSeqNum);
 				return rel <= 0 ? 0 : rel;
 			}
 		};
@@ -387,13 +271,6 @@ namespace pcpp
 					PCPP_LOG_DEBUG("[IN-ORDER] Received SEQ=" << seqNum << " with LEN=" << dataLen << " bytes. SYN="
 					                                          << flags.synFlag << ";FIN=" << flags.finFlag);
 
-					// Temp part representing the new in-order part.
-					TcpStreamBufferedPart tempPart;
-					tempPart.data = const_cast<uint8_t*>(data);
-					tempPart.dataLen = dataLen;
-					tempPart.seqNum = seqNum;
-					tempPart.seqFlags = flags;
-
 					// Fetch any buffered out-of-order parts that are now either past-head-of-line or in-order as a
 					// result of the new head of line being at nextSeqNum.
 					auto result = tryUnblockHeadOfLine(nextSeqNum);
@@ -436,7 +313,7 @@ namespace pcpp
 						if (currentIt != unblockedParts.end())
 						{
 							// Clamp the new part to the start of the first non-fully overlapped part;
-							tempPart.dataLen = currentIt->seqNum - calcTrueSeqNum(seqNum, flags);
+							dataLen = currentIt->seqNum - calcTrueSeqNum(seqNum, flags);
 
 							// Transfer all fully overlapped parts to the overlapped list to be released back to the
 							// free list later.
@@ -457,30 +334,35 @@ namespace pcpp
 						nextExpectedSeqNum = nextSeqNum;
 					}
 
-					// TODO: Push to user.
-					/*
-					// Construct a view over the ordered parts and send it to the callback.
-					// The current seqNum is sent to calculate the gap between the expected byte and the actual first
-					// byte.
-					TcpByteStreamDataReadyEvent event{ TcpStreamBufferedPartsRange(tempPart, m_Parts),
-					                                   m_ExpectedSeqNum };
+					// Compose the event to be pushed.
+					TcpByteStreamDataReadyEvent event;
+					event.hasMainPart = true;
+					event.mainPart.data = data;
+					event.mainPart.dataLen = dataLen;
+					event.mainPart.seqNum = seqNum;
+					event.mainPart.seqFlags = flags;
+
+					event.extraParts = std::move(unblockedParts);
+
+					// The seq num of the stream when the event was triggered.
+					event.startSeqNum = m_ExpectedSeqNum;
+
 					try
 					{
-					    // Cast to const& to prevent sending non-const reference to the user.
-					    onDataReady(static_cast<TcpByteStreamDataReadyEvent const&>(event));
+						// Cast to const& to prevent sending non-const reference to the user.
+						onDataReady(static_cast<TcpByteStreamDataReadyEvent const&>(event));
 					}
 					catch (std::exception const& ex)
 					{
-					    // TODO: Log callback error
-					    PCPP_LOG_ERROR(ex.what());
+						// TODO: Log callback error
+						PCPP_LOG_ERROR(ex.what());
 					}
-					*/
 
 					// Check if FIN flag has been handled.
 
 					// Release the unlinked parts back to the free list.
 					returnFreeParts(overlappedParts);
-					returnFreeParts(unblockedParts);
+					returnFreeParts(event.extraParts);
 
 					// Update the head of line to the next expected sequence number.
 					// That being the end of the unblocked chain of in-order parts.
