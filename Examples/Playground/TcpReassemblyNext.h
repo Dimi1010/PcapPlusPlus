@@ -168,6 +168,21 @@ namespace pcpp
 				auto rel = internal::relativeDistanceSeqNum(extraParts.front().seqNum, startSeqNum);
 				return rel <= 0 ? 0 : rel;
 			}
+
+			uint32_t nextSeqPart() const
+			{
+				if(!extraParts.empty())
+				{
+					return extraParts.back().nextSeqNum();
+				}
+
+				if(hasMainPart)
+				{
+					return calcNextSeqNum(mainPart.seqNum, mainPart.dataLen, mainPart.seqFlags);
+				}
+
+				return startSeqNum;
+			}
 		};
 
 		/// @brief A class that handles a singular unidirectional TCP byte stream reassembly.
