@@ -229,7 +229,7 @@ namespace pcpp
 							PCPP_ASSERT(newPart.dataLen > 0, "Adding 0 data sequence is pointless.");
 
 							// Transfer the new part to the reorder buffer between prevPart and nextPart.
-							m_ReorderBuffer.splice(prevPartIt, newPartsList);
+							m_ReorderBuffer.splice(nextPartIt, newPartsList);
 						}
 
 						// Advance parts and redo check.
@@ -287,7 +287,7 @@ namespace pcpp
 			newPart.seqFlags = flags;
 
 			// Insert the new part between prevPart and nextPart.
-			m_ReorderBuffer.splice(prevPartIt, newPartsList);
+			m_ReorderBuffer.splice(nextPartIt, newPartsList);
 		}
 
 		TcpByteStream::HOLUnblockResult TcpByteStream::tryUnblockHeadOfLine(uint32_t seqNum)
