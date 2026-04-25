@@ -13,8 +13,7 @@ namespace pcpp
 		void TcpByteStream::reset(uint32_t seqNum)
 		{
 			// Clear all data in the reorder buffer.
-			// TODO: Free Data Buffers on nodes?
-			m_FreeListCache.splice(m_FreeListCache.begin(), m_ReorderBuffer);
+			returnFreeParts(m_ReorderBuffer);
 			m_ExpectedSeqNum = seqNum;
 		}
 
@@ -39,6 +38,8 @@ namespace pcpp
 
 		void TcpByteStream::returnFreeParts(PartBufferList& parts)
 		{
+			// TODO: Free data buffer on nodes?
+
 			// TODO: Profile verification needed.
 			// Link the parts to the start of the free list as they are probably hot in cache after being used, and we
 			// want to reuse them as soon as possible.
