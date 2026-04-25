@@ -428,11 +428,10 @@ namespace pcpp
 					return;
 				}
 
-				// TODO: Push to user.
-				/*
-				// The current seqNum is sent to calculate the gap between the expected byte and the actual first byte.
-				TcpByteStreamDataReadyEvent event{ TcpStreamBufferedPartsRange(*result.head, m_Parts),
-				                                   m_ExpectedSeqNum };
+				TcpByteStreamDataReadyEvent event;
+				event.hasMainPart = false;
+				event.extraParts = std::move(result.unblockedParts);
+				event.startSeqNum = m_ExpectedSeqNum;
 				try
 				{
 				    // Cast to const& to prevent sending non-const reference to the user.
@@ -443,10 +442,9 @@ namespace pcpp
 				    // TODO: Log callback error.
 				    PCPP_LOG_ERROR(ex.what());
 				}
-				*/
 
-				uint32_t nextSeqNum = result.unblockedParts.back().nextSeqNum();
-				returnFreeParts(result.unblockedParts);
+				uint32_t nextSeqNum = event.extraParts.back().nextSeqNum();
+				returnFreeParts(event.extraParts);
 				m_ExpectedSeqNum = nextSeqNum;
 			}
 
