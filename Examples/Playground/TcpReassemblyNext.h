@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <limits>
+#include <list>
 #include "TcpReassembly.h"
 #include "AssertionUtils.h"
 #include "PacketUtils.h"
@@ -75,15 +76,20 @@ namespace pcpp
 		};
 
 		/// @brief Part of a sequential data stream. Used for Out-of-order resolution.
-		struct TcpStreamSeqPart
+		///
+		/// The part uses 32-bit unsigned integer for buffer length and capacity, which means it can't represent buffers
+		/// larger than 4GB. Since this is intended to represent a TCP stream part, this should be sufficient for most
+		/// use cases.
+		struct TcpStreamBufferedPart
 		{
 			using PartId = uint32_t;
 			using HiResTimepoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 			static constexpr PartId INVALID_PART_ID = std::numeric_limits<PartId>::max();
 
-			uint8_t const* data = nullptr;
-			uint32_t dataLen = 0;
+			uint8_t* data = nullptr;  //< The pointer to the data buffer.
+			uint32_t dataLen = 0;     //< The used capacity of the data buffer.
+			uint32_t dataCap = 0;     //< The total capacity of the data buffer.
 			uint32_t seqNum = 0;
 
 			/// @brief The index of the next part in the chain. INVALID_PART_ID for no next part.
@@ -95,6 +101,17 @@ namespace pcpp
 
 			/// @brief Additional flags related to the sequence part, such as SYN and FIN flags.
 			SeqFlags seqFlags;
+
+			bool ownsData = false;  //< Indicates whether this part is responsible for freeing the data buffer.
+
+			~TcpStreamBufferedPart()
+			{
+				if (ownsData && data != nullptr)
+				{
+					delete[] data;
+					data = nullptr;
+				}
+			}
 
 			/// @brief Calculates the true sequence number of the payload.
 			uint32_t trueSeqNum() const
@@ -109,11 +126,11 @@ namespace pcpp
 			}
 		};
 
-		/// @brief A non-owning range view over a list of TcpStreamSeqPart instances.
+		/// @brief A non-owning range view over a list of TcpStreamBufferedPart instances.
 		///
 		/// This class provides API for iterating over partial buffers of a TCP byte stream, which may be non-contiguous
 		/// in memory due to out-of-order segment arrival.
-		class TcpStreamPartsRange
+		class TcpStreamBufferedPartsRange
 		{
 		public:
 #pragma region Iterators
@@ -121,15 +138,15 @@ namespace pcpp
 			{
 			public:
 				using iterator_category = std::forward_iterator_tag;
-				using value_type = TcpStreamSeqPart const;
+				using value_type = TcpStreamBufferedPart const;
 				using difference_type = std::ptrdiff_t;
-				using pointer = TcpStreamSeqPart const*;
-				using reference = TcpStreamSeqPart const&;
+				using pointer = TcpStreamBufferedPart const*;
+				using reference = TcpStreamBufferedPart const&;
 
 				Iterator() : m_View(nullptr), m_Current(nullptr)
 				{}
 
-				Iterator(TcpStreamPartsRange const* view, TcpStreamSeqPart const* current)
+				Iterator(TcpStreamBufferedPartsRange const* view, TcpStreamBufferedPart const* current)
 				    : m_View(view), m_Current(current)
 				{}
 
@@ -165,28 +182,34 @@ namespace pcpp
 				}
 
 			private:
-				TcpStreamPartsRange const* m_View;
-				TcpStreamSeqPart const* m_Current;
+				TcpStreamBufferedPartsRange const* m_View;
+				TcpStreamBufferedPart const* m_Current;
 			};
 #pragma endregion Iterators
 
-			TcpStreamPartsRange(TcpStreamSeqPart head, std::vector<TcpStreamSeqPart> const& buffer)
-			    : TcpStreamPartsRange(std::move(head), ScalarBuffer<TcpStreamSeqPart const>{
-			                                               buffer.size() > 0 ? buffer.data() : nullptr, buffer.size() })
+			TcpStreamBufferedPartsRange(TcpStreamBufferedPart::PartId firstId,
+			                            std::vector<TcpStreamBufferedPart> const& buffer)
+			    : TcpStreamBufferedPartsRange(firstId, ScalarBuffer<TcpStreamBufferedPart const>{
+			          buffer.size() > 0 ? buffer.data() : nullptr, buffer.size() })
 			{}
 
-			TcpStreamPartsRange(TcpStreamSeqPart head, ScalarBuffer<TcpStreamSeqPart const> partsBuffer)
-			    : m_FirstPart(std::move(head)), m_PartsBuffer(std::move(partsBuffer))
+			TcpStreamBufferedPartsRange(TcpStreamBufferedPart::PartId firstId,
+			                            ScalarBuffer<TcpStreamBufferedPart const> partsBuffer)
+			    : m_PartsBuffer(std::move(partsBuffer)), m_FirstPartId(firstId)
 			{}
 
-			TcpStreamSeqPart const* getFirstPart() const
+			TcpStreamBufferedPart const* getFirstPart() const
 			{
-				return &m_FirstPart;
+				if (m_FirstPartId == TcpStreamBufferedPart::INVALID_PART_ID)
+				{
+					return nullptr;
+				}
+				return m_PartsBuffer.buffer + m_FirstPartId;
 			}
 
-			TcpStreamSeqPart const* getNextPart(TcpStreamSeqPart const* part) const
+			TcpStreamBufferedPart const* getNextPart(TcpStreamBufferedPart const* part) const
 			{
-				if (part->nextId == TcpStreamSeqPart::INVALID_PART_ID)
+				if (part->nextId == TcpStreamBufferedPart::INVALID_PART_ID)
 				{
 					return nullptr;
 				}
@@ -219,25 +242,27 @@ namespace pcpp
 			/// @param part The current part in the stream.
 			/// @param nextPart The next part in the stream.
 			/// @return The number of missing bytes.
-			static size_t getGapBytes(TcpStreamSeqPart const& part, TcpStreamSeqPart const& nextPart)
+			static size_t getGapBytes(TcpStreamBufferedPart const& part, TcpStreamBufferedPart const& nextPart)
 			{
 				auto rel = internal::relativeDistanceSeqNum(nextPart.seqNum, part.nextSeqNum());
 				return rel > 0 ? rel : 0;
 			}
 
 		private:
-			TcpStreamSeqPart m_FirstPart;
-			ScalarBuffer<TcpStreamSeqPart const> m_PartsBuffer;
+			ScalarBuffer<TcpStreamBufferedPart const> m_PartsBuffer;
+			TcpStreamBufferedPart::PartId m_FirstPartId = TcpStreamBufferedPart::INVALID_PART_ID;
 		};
 
 		/// @brief Event data provided to the user when new in-order data is ready in the TCP byte stream.
 		struct TcpByteStreamDataReadyEvent
 		{
-			/// @brief An ordered range of parts that are now ready for processing.
+			bool hasStackPart = false;
+			int stackPart;
+
+			/// @brief Additional parts that were dequeued
 			///
-			/// The range may contain gaps in the sequence numbers of the parts if
-			/// there are missing segments in the stream due to packet loss.
-			TcpStreamPartsRange partsRange;
+			///
+			TcpStreamBufferedPartsRange extraPartsRange;
 
 			/// @brief The starting sequence number of the event.
 			///
@@ -250,13 +275,13 @@ namespace pcpp
 			/// @return The number of missing bytes.
 			size_t getLeadingMissingBytes() const
 			{
-				if (partsRange.getFirstPart() == nullptr)
+				if (extraPartsRange.getFirstPart() == nullptr)
 				{
 					return 0;
 				}
 
 				// Negative relative distance shouldn't really happen.
-				auto rel = internal::relativeDistanceSeqNum(partsRange.getFirstPart()->seqNum, startSeqNum);
+				auto rel = internal::relativeDistanceSeqNum(extraPartsRange.getFirstPart()->seqNum, startSeqNum);
 				return rel <= 0 ? 0 : rel;
 			}
 		};
@@ -361,7 +386,7 @@ namespace pcpp
 					                                          << flags.synFlag << ";FIN=" << flags.finFlag);
 
 					// Temp part representing the new in-order part.
-					TcpStreamSeqPart tempPart;
+					TcpStreamBufferedPart tempPart;
 					tempPart.data = data;
 					tempPart.dataLen = dataLen;
 					tempPart.seqNum = seqNum;
@@ -393,7 +418,7 @@ namespace pcpp
 
 						// Advance until we are past all parts that are fully inside the new segment.
 						uint32_t currentId = result.headId;
-						TcpStreamSeqPart* current = result.head;
+						TcpStreamBufferedPart* current = result.head;
 						while (current != nullptr && compareSeqNum(current->nextSeqNum(), nextSeqNum) < 0)
 						{
 							currentId = current->nextId;
@@ -422,8 +447,10 @@ namespace pcpp
 					}
 
 					// Construct a view over the ordered parts and send it to the callback.
-					// The current seqNum is sent to calculate the gap between the expected byte and the actual first byte.
-					TcpByteStreamDataReadyEvent event{ TcpStreamPartsRange(tempPart, m_Parts), m_ExpectedSeqNum };
+					// The current seqNum is sent to calculate the gap between the expected byte and the actual first
+					// byte.
+					TcpByteStreamDataReadyEvent event{ TcpStreamBufferedPartsRange(tempPart, m_Parts),
+						                               m_ExpectedSeqNum };
 					try
 					{
 						// Cast to const& to prevent sending non-const reference to the user.
@@ -434,6 +461,8 @@ namespace pcpp
 						// TODO: Log callback error
 						PCPP_LOG_ERROR(ex.what());
 					}
+
+					// Check if FIN flag has been handled.
 
 					// Release the unlinked parts back to the free list.
 					if (result.head != nullptr)
@@ -453,8 +482,8 @@ namespace pcpp
 				if (c > 0)
 				{
 					PCPP_LOG_DEBUG("[OOS] Received SEQ=" << seqNum << " with LEN=" << dataLen
-					                                     << " bytes, but expected SEQ=" << m_ExpectedSeqNum << ". SYN="
-					                                     << flags.synFlag << ";FIN=" << flags.finFlag);
+					                                     << " bytes, but expected SEQ=" << m_ExpectedSeqNum
+					                                     << ". SYN=" << flags.synFlag << ";FIN=" << flags.finFlag);
 					insertSeqToReorderBuffer(seqNum, data, dataLen, flags);
 				}
 			}
@@ -491,7 +520,8 @@ namespace pcpp
 				}
 
 				// The current seqNum is sent to calculate the gap between the expected byte and the actual first byte.
-				TcpByteStreamDataReadyEvent event{ TcpStreamPartsRange(*result.head, m_Parts), m_ExpectedSeqNum };
+				TcpByteStreamDataReadyEvent event{ TcpStreamBufferedPartsRange(*result.head, m_Parts),
+					                               m_ExpectedSeqNum };
 				try
 				{
 					// Cast to const& to prevent sending non-const reference to the user.
@@ -509,6 +539,26 @@ namespace pcpp
 				m_ExpectedSeqNum = nextSeqNum;
 			}
 
+			/// @brief Reset the stream, clearing all buffered out-of-order parts and setting a new HOL sequence number.
+			///
+			/// This operation is typically called when the byte stream is to be reused for a new TCP connection.
+			///
+			/// No callbacks are invoked as a result of this operation, and all buffered data is discarded.
+			/// If callbacks are desired, use setSeqHeadAndFlush instead.
+			///
+			/// @param[in] seqNum The initial sequence number that is expected on the new stream. Default is 0.
+			void reset(uint32_t seqNum = 0);
+
+			/// @brief Gets the status of the stream.
+			///
+			/// A stream is considered closed if a FIN or RST packet has been received.
+			///
+			/// @return True if the stream is open, false otherwise.
+			bool isOpen() const
+			{
+				return m_StreamOpen;
+			}
+
 			uint32_t expectedSeq() const
 			{
 				return m_ExpectedSeqNum;
@@ -522,12 +572,12 @@ namespace pcpp
 			}
 
 		private:
-			using PartId = TcpStreamSeqPart::PartId;
+			using PartId = TcpStreamBufferedPart::PartId;
 #pragma region Buffered Parts Indexing
 			/// @brief Get a pointer to a part by its id. Returns nullptr if the partId is invalid.
 			/// @param[in] partId The id of the part to get.
 			/// @return A pointer to the part with the given id, or nullptr if the partId is invalid.
-			TcpStreamSeqPart* getPart(PartId partId);
+			TcpStreamBufferedPart* getPart(PartId partId);
 
 			/// @brief Get the id of a part from its pointer. Returns INVALID_PART_ID if the part pointer is null.
 			///
@@ -535,19 +585,20 @@ namespace pcpp
 			///
 			/// @param[in] part A pointer to the part.
 			/// @return The id of the part, or INVALID_PART_ID if the part pointer is null.
-			PartId getPartId(TcpStreamSeqPart const* part) const;
+			PartId getPartId(TcpStreamBufferedPart const* part) const;
 #pragma endregion
 
 #pragma region Intrusive Index List API
 			struct NodeIndexList
 			{
-				PartId head = TcpStreamSeqPart::INVALID_PART_ID;
+				PartId head = TcpStreamBufferedPart::INVALID_PART_ID;
 			};
 
 			/// @brief Insert a new node into the list after a given previous node.
 			///
 			/// See the overload that takes a previous node pointer for details.
-			void insertNodeAfter(NodeIndexList& list, TcpStreamSeqPart::PartId prevId, TcpStreamSeqPart* newNode);
+			void insertNodeAfter(NodeIndexList& list, TcpStreamBufferedPart::PartId prevId,
+			                     TcpStreamBufferedPart* newNode);
 
 			/// @brief Insert a new node into the list after a given previous node.
 			///
@@ -557,16 +608,17 @@ namespace pcpp
 			/// @param[in] list The list to insert the new node into.
 			/// @param[in] prevNode The previous node to insert after, or null to insert at the head of the list.
 			/// @param[in] newNode The new node to insert. Must not be linked in any list.
-			void insertNodeAfter(NodeIndexList& list, TcpStreamSeqPart* prevNode, TcpStreamSeqPart* newNode);
+			void insertNodeAfter(NodeIndexList& list, TcpStreamBufferedPart* prevNode, TcpStreamBufferedPart* newNode);
 
-			// void insertNodeBefore(NodeIndexList& list, TcpStreamSeqPart* newNode, TcpStreamSeqPart::PartId nextId);
-			// void insertNodeBefore(NodeIndexList& list, TcpStreamSeqPart* newNode, TcpStreamSeqPart* nextNode);
+			// void insertNodeBefore(NodeIndexList& list, TcpStreamBufferedPart* newNode, TcpStreamBufferedPart::PartId
+			// nextId); void insertNodeBefore(NodeIndexList& list, TcpStreamBufferedPart* newNode,
+			// TcpStreamBufferedPart* nextNode);
 
 			/// @brief Insert a range of nodes into the list after a given previous node.
 			///
 			/// See the overload that takes a previous node pointer for details.
-			void insertNodeRangeAfter(NodeIndexList& list, TcpStreamSeqPart::PartId prevId, TcpStreamSeqPart* startNode,
-			                          TcpStreamSeqPart* endNode);
+			void insertNodeRangeAfter(NodeIndexList& list, TcpStreamBufferedPart::PartId prevId,
+			                          TcpStreamBufferedPart* startNode, TcpStreamBufferedPart* endNode);
 
 			/// @brief Inserts a range of nodes into the list after a given previous node.
 			///
@@ -585,13 +637,13 @@ namespace pcpp
 			/// @param[in] prevNode The previous node to insert after, or null to insert at the head of the list.
 			/// @param[in] startNode The first node in the range to insert.
 			/// @param[in] endNode The last node in the range to insert.
-			void insertNodeRangeAfter(NodeIndexList& list, TcpStreamSeqPart* prevNode, TcpStreamSeqPart* startNode,
-			                          TcpStreamSeqPart* endNode);
+			void insertNodeRangeAfter(NodeIndexList& list, TcpStreamBufferedPart* prevNode,
+			                          TcpStreamBufferedPart* startNode, TcpStreamBufferedPart* endNode);
 
 			/// @brief Extracts a node from the list, unlinking it from its previous and next nodes.
 			/// @param[in] list The list to extract the node from.
 			/// @param[in] node The node to extract. Must be currently linked in the list.
-			void extractNode(NodeIndexList& list, TcpStreamSeqPart* node);
+			void extractNode(NodeIndexList& list, TcpStreamBufferedPart* node);
 
 			/// @brief Extracts a range of nodes from the list, unlinking them from their previous and next nodes.
 			///
@@ -602,22 +654,23 @@ namespace pcpp
 			/// @param[in] startNode The first node in the range to extract. Must be currently linked in the list.
 			/// @param[in] endNode The last node in the range to extract. Must be currently linked in the list, and must
 			/// be after the startNode.
-			void extractNodeRange(NodeIndexList& list, TcpStreamSeqPart* startNode, TcpStreamSeqPart* endNode);
+			void extractNodeRange(NodeIndexList& list, TcpStreamBufferedPart* startNode,
+			                      TcpStreamBufferedPart* endNode);
 #pragma endregion Intrusive Index List API
 
 #pragma region Free List API
 			/// @brief Take a part from the unused parts pool and bring it in-use.
 			/// @return A pointer to the part.
-			TcpStreamSeqPart* takeFreePart();
+			TcpStreamBufferedPart* takeFreePart();
 
 			/// @brief Take a range of parts from the unused parts pool and bring them in-use.
 			/// @param[in] count The number of parts to get.
 			/// @return A pair of startNode and endNode of the range.
-			std::pair<TcpStreamSeqPart*, TcpStreamSeqPart*> takeFreePartRange(size_t count);
+			std::pair<TcpStreamBufferedPart*, TcpStreamBufferedPart*> takeFreePartRange(size_t count);
 
 			/// @brief Return a part to the unused parts pool.
 			/// @param part A pointer to the part.
-			void returnFreePart(TcpStreamSeqPart* part)
+			void returnFreePart(TcpStreamBufferedPart* part)
 			{
 				// When parts are not in use, they are linked together with other free parts using the nextId
 				// attribute. This makes the logical free list of parts, and allows us to reuse parts without
@@ -631,7 +684,7 @@ namespace pcpp
 			///
 			/// @param startNode The first node in the range.
 			/// @param endNode The last node in the range.
-			void returnFreePartRange(TcpStreamSeqPart* startNode, TcpStreamSeqPart* endNode)
+			void returnFreePartRange(TcpStreamBufferedPart* startNode, TcpStreamBufferedPart* endNode)
 			{
 				insertNodeRangeAfter(m_FreeSlotsList, nullptr, startNode, endNode);
 			}
@@ -642,11 +695,11 @@ namespace pcpp
 			struct HOLUnblockResult
 			{
 				/// @brief A pointer to the head part of the unblocked chain of sequence parts.
-				TcpStreamSeqPart* head = nullptr;
+				TcpStreamBufferedPart* head = nullptr;
 				/// @brief A pointer to the tail part of the unblocked chain of sequence parts.
-				TcpStreamSeqPart* tail = nullptr;
+				TcpStreamBufferedPart* tail = nullptr;
 				/// @brief The PartId of the head part of the unblocked chain, if the head part is valid.
-				uint32_t headId = TcpStreamSeqPart::INVALID_PART_ID;
+				uint32_t headId = TcpStreamBufferedPart::INVALID_PART_ID;
 			};
 
 			/// @brief Inserts a new part into the reorder buffer.
@@ -683,7 +736,7 @@ namespace pcpp
 #pragma endregion Reorder Buffer API
 
 		private:
-			std::vector<TcpStreamSeqPart> m_Parts;
+			std::vector<TcpStreamBufferedPart> m_Parts;
 
 			/// @brief The index of the first part in the out-of-order stream.
 			///
@@ -693,8 +746,8 @@ namespace pcpp
 			NodeIndexList m_FreeSlotsList;
 
 			uint32_t m_ExpectedSeqNum = 0;
-			/// @brief Close the stream when a fin flag is reached.
-			bool m_StreamClosed = false;
+			/// @brief Stream is considered closed if a FIN flag has been received.
+			bool m_StreamOpen = true;
 		};
 	}  // namespace internal
 
@@ -765,7 +818,7 @@ namespace pcpp
 		/// 0 is the first side seen in the connection and 1 is the second side seen.
 		/// @param[in] tcpData The TCP data itself + connection information.
 		/// @param[in] ctx A context object. Reserved for future use.
-		using OnTcpDataReady = std::function<void(int8_t side, const TcpStreamData& tcpData, TcpDataReadyCtx& ctx)>;
+		using OnTcpDataReady = std::function<void(int8_t side, const TcpStreamDataV2& tcpData, TcpDataReadyCtx& ctx)>;
 
 		/// @brief A callback function type invoked when TCP data is ready for processing.
 		///
@@ -922,6 +975,11 @@ namespace pcpp
 		OnTcpConnectionStart m_OnConnectionStart;
 		OnTcpConnectionEnd m_OnConnectionEnd;
 	};
+
+	inline void testTcpReass()
+	{
+		TcpReassemblyV2 v2;
+	}
 
 	/*
 	class TcpReassemblyV2::ConnectionsProxy

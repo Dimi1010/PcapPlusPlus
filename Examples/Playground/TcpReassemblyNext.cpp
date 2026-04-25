@@ -2,14 +2,39 @@
 
 #include "IPLayer.h"
 #include "TcpLayer.h"
+#include "EndianPortable.h"
+#include <list>
 
 namespace pcpp
 {
 	namespace internal
 	{
-		inline TcpStreamSeqPart* TcpByteStream::getPart(PartId partId)
+		void TcpByteStream::reset(uint32_t seqNum)
 		{
-			if (partId == TcpStreamSeqPart::INVALID_PART_ID)
+			// Clear all data in the reorder buffer.
+			TcpStreamBufferedPart* head = getPart(m_ReorderList.head);
+			if (head != nullptr)
+			{
+				TcpStreamBufferedPart* tail = head;
+
+				while (tail->nextId != TcpStreamBufferedPart::INVALID_PART_ID)
+				{
+					tail = getPart(tail->nextId);
+				}
+
+				extractNodeRange(m_ReorderList, head, tail);
+
+				// TODO: Free Data Buffers on nodes?
+
+				insertNodeRangeAfter(m_FreeSlotsList, nullptr, head, tail);
+			}
+
+			m_ExpectedSeqNum = seqNum;
+		}
+
+		inline TcpStreamBufferedPart* TcpByteStream::getPart(PartId partId)
+		{
+			if (partId == TcpStreamBufferedPart::INVALID_PART_ID)
 			{
 				return nullptr;
 			}
@@ -18,11 +43,11 @@ namespace pcpp
 			return &m_Parts[partId];
 		}
 
-		inline TcpByteStream::PartId TcpByteStream::getPartId(TcpStreamSeqPart const* part) const
+		inline TcpByteStream::PartId TcpByteStream::getPartId(TcpStreamBufferedPart const* part) const
 		{
 			if (part == nullptr)
 			{
-				return TcpStreamSeqPart::INVALID_PART_ID;
+				return TcpStreamBufferedPart::INVALID_PART_ID;
 			}
 
 			auto partId = part - &m_Parts[0];
@@ -31,32 +56,32 @@ namespace pcpp
 			return partId;
 		}
 
-		void TcpByteStream::insertNodeAfter(NodeIndexList& list, TcpStreamSeqPart::PartId prevId,
-		                                    TcpStreamSeqPart* newNode)
+		void TcpByteStream::insertNodeAfter(NodeIndexList& list, TcpStreamBufferedPart::PartId prevId,
+		                                    TcpStreamBufferedPart* newNode)
 		{
 			return insertNodeAfter(list, getPart(prevId), newNode);
 		}
 
-		void TcpByteStream::insertNodeAfter(NodeIndexList& list, TcpStreamSeqPart* prevNode, TcpStreamSeqPart* newNode)
+		void TcpByteStream::insertNodeAfter(NodeIndexList& list, TcpStreamBufferedPart* prevNode, TcpStreamBufferedPart* newNode)
 		{
 			PCPP_ASSERT(newNode != nullptr, "New node to link cannot be null");
 			PCPP_ASSERT(prevNode == nullptr || newNode != prevNode, "New node cannot be linked to itself as previous");
-			PCPP_ASSERT(newNode->nextId == TcpStreamSeqPart::INVALID_PART_ID &&
-			                newNode->prevId == TcpStreamSeqPart::INVALID_PART_ID,
+			PCPP_ASSERT(newNode->nextId == TcpStreamBufferedPart::INVALID_PART_ID &&
+			                newNode->prevId == TcpStreamBufferedPart::INVALID_PART_ID,
 			            "New node must be unlinked.");
 
 			PartId newNodeId = getPartId(newNode);
 			PartId prevId = getPartId(prevNode);
 
-			PCPP_ASSERT(newNodeId != TcpStreamSeqPart::INVALID_PART_ID, "New node must have a valid id");
-			PCPP_ASSERT(prevNode == nullptr || prevId != TcpStreamSeqPart::INVALID_PART_ID,
+			PCPP_ASSERT(newNodeId != TcpStreamBufferedPart::INVALID_PART_ID, "New node must have a valid id");
+			PCPP_ASSERT(prevNode == nullptr || prevId != TcpStreamBufferedPart::INVALID_PART_ID,
 			            "Prev must have a valid id");
 
 			if (prevNode == nullptr)
 			{
 				// Inserting at the head.
 				PartId nextNodeId = list.head;
-				TcpStreamSeqPart* nextNode = getPart(nextNodeId);
+				TcpStreamBufferedPart* nextNode = getPart(nextNodeId);
 
 				if (nextNode != nullptr)
 				{
@@ -64,14 +89,14 @@ namespace pcpp
 				}
 
 				newNode->nextId = nextNodeId;
-				newNode->prevId = TcpStreamSeqPart::INVALID_PART_ID;
+				newNode->prevId = TcpStreamBufferedPart::INVALID_PART_ID;
 				list.head = newNodeId;
 				return;
 			}
 
 			// Inserting at position.
 			PartId nextId = prevNode->nextId;
-			TcpStreamSeqPart* nextNode = getPart(nextId);
+			TcpStreamBufferedPart* nextNode = getPart(nextId);
 
 			if (nextNode != nullptr)
 			{
@@ -82,26 +107,29 @@ namespace pcpp
 			else
 			{
 				// Inserting at the tail, no next node.
-				newNode->nextId = TcpStreamSeqPart::INVALID_PART_ID;
+				newNode->nextId = TcpStreamBufferedPart::INVALID_PART_ID;
 			}
+
+			std::list<int> x;
+			auto y = x.begin();
 
 			newNode->prevId = prevId;
 			prevNode->nextId = newNodeId;
 		}
 
-		void TcpByteStream::insertNodeRangeAfter(NodeIndexList& list, TcpStreamSeqPart::PartId prevId,
-		                                         TcpStreamSeqPart* startNode, TcpStreamSeqPart* endNode)
+		void TcpByteStream::insertNodeRangeAfter(NodeIndexList& list, TcpStreamBufferedPart::PartId prevId,
+		                                         TcpStreamBufferedPart* startNode, TcpStreamBufferedPart* endNode)
 		{
 			return insertNodeRangeAfter(list, getPart(prevId), startNode, endNode);
 		}
 
-		void TcpByteStream::insertNodeRangeAfter(NodeIndexList& list, TcpStreamSeqPart* prevNode,
-		                                         TcpStreamSeqPart* startNode, TcpStreamSeqPart* endNode)
+		void TcpByteStream::insertNodeRangeAfter(NodeIndexList& list, TcpStreamBufferedPart* prevNode,
+		                                         TcpStreamBufferedPart* startNode, TcpStreamBufferedPart* endNode)
 		{
 			PCPP_ASSERT(startNode != nullptr && endNode != nullptr, "Start and end nodes cannot be null");
-			PCPP_ASSERT(startNode->prevId == TcpStreamSeqPart::INVALID_PART_ID,
+			PCPP_ASSERT(startNode->prevId == TcpStreamBufferedPart::INVALID_PART_ID,
 			            "Start node must not be preceeded by a node.");
-			PCPP_ASSERT(endNode->nextId == TcpStreamSeqPart::INVALID_PART_ID,
+			PCPP_ASSERT(endNode->nextId == TcpStreamBufferedPart::INVALID_PART_ID,
 			            "End node must not be followed by a node.");
 
 			// Single node range.
@@ -112,7 +140,7 @@ namespace pcpp
 			}
 
 			auto debugCanReachTail = [=]() -> bool {
-				TcpStreamSeqPart* current = startNode;
+				TcpStreamBufferedPart* current = startNode;
 				while (current != nullptr)
 				{
 					if (current == endNode)
@@ -130,14 +158,14 @@ namespace pcpp
 				// Inserting at the head, we need to update the head pointer.
 				PartId nextNodeId = list.head;
 
-				TcpStreamSeqPart* nextNode = getPart(nextNodeId);
+				TcpStreamBufferedPart* nextNode = getPart(nextNodeId);
 				if (nextNode != nullptr)
 				{
 					nextNode->prevId = getPartId(endNode);
 				}
 
 				endNode->nextId = nextNodeId;
-				startNode->prevId = TcpStreamSeqPart::INVALID_PART_ID;
+				startNode->prevId = TcpStreamBufferedPart::INVALID_PART_ID;
 				list.head = getPartId(startNode);
 				return;
 			}
@@ -145,7 +173,7 @@ namespace pcpp
 			// Inserting at position.
 
 			PartId nextNodeId = prevNode->nextId;
-			TcpStreamSeqPart* nextNode = getPart(nextNodeId);
+			TcpStreamBufferedPart* nextNode = getPart(nextNodeId);
 
 			// Link the end node to the next node, if it exists.
 			if (nextNode != nullptr)
@@ -157,7 +185,7 @@ namespace pcpp
 			else
 			{
 				// Inserting at the tail, no next node.
-				endNode->nextId = TcpStreamSeqPart::INVALID_PART_ID;
+				endNode->nextId = TcpStreamBufferedPart::INVALID_PART_ID;
 			}
 
 			// Link the start node to the previous node.
@@ -165,19 +193,19 @@ namespace pcpp
 			prevNode->nextId = getPartId(startNode);
 		}
 
-		void TcpByteStream::extractNode(NodeIndexList& list, TcpStreamSeqPart* node)
+		void TcpByteStream::extractNode(NodeIndexList& list, TcpStreamBufferedPart* node)
 		{
 			PCPP_ASSERT(node != nullptr, "Node to extract cannot be null");
 
 			PartId nodeId = getPartId(node);
-			PCPP_ASSERT(nodeId != TcpStreamSeqPart::INVALID_PART_ID, "Node to extract must have a valid id");
+			PCPP_ASSERT(nodeId != TcpStreamBufferedPart::INVALID_PART_ID, "Node to extract must have a valid id");
 
 			PartId prevId = node->prevId;
 			PartId nextId = node->nextId;
 
-			if (prevId != TcpStreamSeqPart::INVALID_PART_ID)
+			if (prevId != TcpStreamBufferedPart::INVALID_PART_ID)
 			{
-				TcpStreamSeqPart* prevNode = getPart(prevId);
+				TcpStreamBufferedPart* prevNode = getPart(prevId);
 				prevNode->nextId = nextId;
 			}
 			else
@@ -186,27 +214,27 @@ namespace pcpp
 				list.head = nextId;
 			}
 
-			if (nextId != TcpStreamSeqPart::INVALID_PART_ID)
+			if (nextId != TcpStreamBufferedPart::INVALID_PART_ID)
 			{
-				TcpStreamSeqPart* nextNode = getPart(nextId);
+				TcpStreamBufferedPart* nextNode = getPart(nextId);
 				nextNode->prevId = prevId;
 			}
 
 			// Unlink the extracted node.
-			node->prevId = TcpStreamSeqPart::INVALID_PART_ID;
-			node->nextId = TcpStreamSeqPart::INVALID_PART_ID;
+			node->prevId = TcpStreamBufferedPart::INVALID_PART_ID;
+			node->nextId = TcpStreamBufferedPart::INVALID_PART_ID;
 		}
 
-		void TcpByteStream::extractNodeRange(NodeIndexList& list, TcpStreamSeqPart* startNode,
-		                                     TcpStreamSeqPart* endNode)
+		void TcpByteStream::extractNodeRange(NodeIndexList& list, TcpStreamBufferedPart* startNode,
+		                                     TcpStreamBufferedPart* endNode)
 		{
 			PCPP_ASSERT(startNode != nullptr && endNode != nullptr, "Start and end nodes cannot be null");
 
 			PartId startNodeId = getPartId(startNode);
 			PartId endNodeId = getPartId(endNode);
 
-			PCPP_ASSERT(startNodeId != TcpStreamSeqPart::INVALID_PART_ID &&
-			                endNodeId != TcpStreamSeqPart::INVALID_PART_ID,
+			PCPP_ASSERT(startNodeId != TcpStreamBufferedPart::INVALID_PART_ID &&
+			                endNodeId != TcpStreamBufferedPart::INVALID_PART_ID,
 			            "Start and end nodes must have valid ids");
 
 			if (startNodeId == endNodeId)
@@ -217,7 +245,7 @@ namespace pcpp
 			}
 
 			auto debugCanReachTail = [=]() -> bool {
-				TcpStreamSeqPart* current = startNode;
+				TcpStreamBufferedPart* current = startNode;
 				while (current != nullptr)
 				{
 					if (current == endNode)
@@ -241,26 +269,26 @@ namespace pcpp
 			}
 			else
 			{
-				TcpStreamSeqPart* prevNode = getPart(prevId);
+				TcpStreamBufferedPart* prevNode = getPart(prevId);
 				PCPP_ASSERT(prevNode != nullptr, "Previous node must be valid if start node is not head");
 				prevNode->nextId = nextId;
 			}
 
-			if (nextId != TcpStreamSeqPart::INVALID_PART_ID)
+			if (nextId != TcpStreamBufferedPart::INVALID_PART_ID)
 			{
-				TcpStreamSeqPart* nextNode = getPart(nextId);
+				TcpStreamBufferedPart* nextNode = getPart(nextId);
 				PCPP_ASSERT(nextNode != nullptr, "Next node must be valid if end node is not tail");
 				nextNode->prevId = prevId;
 			}
 
 			// Unlink the extracted nodes.
-			startNode->prevId = TcpStreamSeqPart::INVALID_PART_ID;
-			endNode->nextId = TcpStreamSeqPart::INVALID_PART_ID;
+			startNode->prevId = TcpStreamBufferedPart::INVALID_PART_ID;
+			endNode->nextId = TcpStreamBufferedPart::INVALID_PART_ID;
 		}
 
-		TcpStreamSeqPart* TcpByteStream::takeFreePart()
+		TcpStreamBufferedPart* TcpByteStream::takeFreePart()
 		{
-			if (m_FreeSlotsList.head == TcpStreamSeqPart::INVALID_PART_ID)
+			if (m_FreeSlotsList.head == TcpStreamBufferedPart::INVALID_PART_ID)
 			{
 				// Using emplace back to utilize the automatic growth of the vector.
 				if (m_Parts.size() == std::numeric_limits<uint32_t>::max())
@@ -273,15 +301,15 @@ namespace pcpp
 			}
 
 			PCPP_ASSERT(m_FreeSlotsList.head < m_Parts.size(), "Free part id is out of range of the parts vector");
-			TcpStreamSeqPart* newPart = nullptr;
+			TcpStreamBufferedPart* newPart = nullptr;
 			newPart = &m_Parts[m_FreeSlotsList.head];
 
 			// When parts are not in use, they are linked together with other free parts using the nextId
 			// attribute. This makes the logical free list of parts, and allows us to reuse parts without
 			// having to search for them or maintain a separate free list.
 			m_FreeSlotsList.head = newPart->nextId;
-			newPart->nextId = TcpStreamSeqPart::INVALID_PART_ID;
-			newPart->prevId = TcpStreamSeqPart::INVALID_PART_ID;
+			newPart->nextId = TcpStreamBufferedPart::INVALID_PART_ID;
+			newPart->prevId = TcpStreamBufferedPart::INVALID_PART_ID;
 			return newPart;
 		}
 
@@ -300,11 +328,25 @@ namespace pcpp
 				// The reorder buffer is empty.
 				// Create a new part and fill it.
 
-				TcpStreamSeqPart* newPart = takeFreePart();
+				TcpStreamBufferedPart* newPart = takeFreePart();
 				PCPP_ASSERT(newPart != nullptr, "Failed to get free part from the pool");
 				uint32_t index = getPartId(newPart);
 
-				newPart->data = data;
+				// TODO: Extract to a procedure.
+				// Allocate and copy the data for the new part.
+				if (newPart->dataCap < dataLen)
+				{
+					if(newPart->ownsData)
+					{
+						delete[] newPart->data;
+					}
+
+					newPart->data = new uint8_t[dataLen];
+					newPart->dataCap = dataLen;
+					newPart->ownsData = true;
+				}
+
+				std::memcpy(newPart->data, data, dataLen);
 				newPart->dataLen = dataLen;
 				newPart->seqNum = seqNum;
 				newPart->seqFlags = flags;
@@ -318,8 +360,8 @@ namespace pcpp
 			// Insert the new part into the reorder buffer and link it to its closest neighbors in the stream.
 			PCPP_ASSERT(firstPart != nullptr, "Reorder buffer should not be empty");
 
-			TcpStreamSeqPart* nextPart = firstPart;
-			TcpStreamSeqPart* prevPart = nullptr;
+			TcpStreamBufferedPart* nextPart = firstPart;
+			TcpStreamBufferedPart* prevPart = nullptr;
 
 			// Find the first part that starts after or at the sequence number of the new part, if any.
 			while (nextPart != nullptr && internal::compareSeqNum(nextPart->seqNum, seqNum) < 0)
@@ -434,7 +476,7 @@ namespace pcpp
 							uint32_t nextId = getPartId(nextPart);
 
 							// Add the new part to the OOS buffer and link it to its neighbors.
-							TcpStreamSeqPart* newPart = takeFreePart();
+							TcpStreamBufferedPart* newPart = takeFreePart();
 							uint32_t newId = getPartId(newPart);
 
 							// Restore the pointers after possible reallocation.
@@ -442,7 +484,20 @@ namespace pcpp
 							nextPart = getPart(nextId);
 
 							// Populate the new node.
-							newPart->data = data;
+							// Allocate and copy the data for the new part.
+							// TODO: Extract to a procedure.
+							if (newPart->dataCap < trimLen)
+							{
+								if(newPart->ownsData)
+								{
+									delete[] newPart->data;
+								}
+								newPart->data = new uint8_t[trimLen];
+								newPart->dataCap = trimLen;
+								newPart->ownsData = true;
+							}
+
+							std::memcpy(newPart->data, data, trimLen);
 							newPart->dataLen = trimLen;
 							newPart->seqNum = seqNum;
 							newPart->seqFlags = trimFlags;
@@ -487,28 +542,41 @@ namespace pcpp
 			uint32_t nextId = getPartId(nextPart);
 
 			// Add the new part to the OOS buffer and link it to its neighbors.
-			TcpStreamSeqPart* newPart = takeFreePart();
+			TcpStreamBufferedPart* newPart = takeFreePart();
 			uint32_t newId = getPartId(newPart);
 
 			// Restore the pointers after possible reallocation.
 			prevPart = getPart(prevId);
 			nextPart = getPart(nextId);
 
-			// Populate the new node.
+			// TODO Edge: If a SYN or FIN flag is added without data, possibly merge it to a nearby fragment.
+			PCPP_ASSERT(dataLen > 0, "Adding 0 data sequence is pointless.");
 
-			newPart->data = data;
+			// Populate the new node.
+			// TODO: Extract to a procedure.
+			if (newPart->dataCap < dataLen)
+			{
+				if(newPart->ownsData)
+				{
+					delete[] newPart->data;
+				}
+				newPart->data = new uint8_t[dataLen];
+				newPart->dataCap = dataLen;
+				newPart->ownsData = true;
+			}
+
+			std::memcpy(newPart->data, data, dataLen);
 			newPart->dataLen = dataLen;
 			newPart->seqNum = seqNum;
 			newPart->seqFlags = flags;
 
-			// TODO Edge: If a SYN or FIN flag is added without data, possibly merge it to a nearby fragment.
-			PCPP_ASSERT(newPart->dataLen > 0, "Adding 0 data sequence is pointless.");
+			
 			insertNodeAfter(m_ReorderList, prevPart, newPart);
 		}
 
 		TcpByteStream::HOLUnblockResult TcpByteStream::tryUnblockHeadOfLine(uint32_t seqNum)
 		{
-			TcpStreamSeqPart* head = getPart(m_ReorderList.head);
+			TcpStreamBufferedPart* head = getPart(m_ReorderList.head);
 			if (head == nullptr || internal::compareSeqNum(head->seqNum, seqNum) > 0)
 			{
 				// The HOL sequence number is still higher than the sequence number we want to unblock on, so we cannot
@@ -516,8 +584,8 @@ namespace pcpp
 				return HOLUnblockResult();
 			}
 
-			TcpStreamSeqPart* current = head;
-			TcpStreamSeqPart* next = getPart(current->nextId);
+			TcpStreamBufferedPart* current = head;
+			TcpStreamBufferedPart* next = getPart(current->nextId);
 
 			// Advance until the first element that is past the unblocking sequence number.
 			while (next != nullptr && internal::compareSeqNum(current->nextSeqNum(), seqNum) <= 0)
@@ -676,15 +744,27 @@ namespace pcpp
 
 		// Insert the packet payload into the reassembly stream.
 		auto onDataReady = [this, &tcpConn, currentSide](internal::TcpByteStreamDataReadyEvent const& event) {
+			int8_t sideIndex = currentSide - tcpConn.sides.data();
+
 			switch (m_OnDataReady.getType())
 			{
 				case DataReadyCallback::Type::Single: 
 				{
 				    auto* cb = m_OnDataReady.getSingleCallback();
 				    PCPP_ASSERT(cb != nullptr, "Single callback should not be null");
-					for (auto& part : event.partsRange)
+
+					size_t missingBytes = event.getLeadingMissingBytes();
+					for (auto& part : event.extraPartsRange)
 					{
 					    PCPP_LOG_DEBUG("Invoking single callback for part with SEQ=" << part.seqNum << ";LEN=" << part.dataLen);
+					    TcpStreamData sd(part.data, part.dataLen, missingBytes, tcpConn.metadata, {});
+					    TcpDataReadyCtx ctx;
+
+						auto& func = *cb;
+						if(func)
+						{
+							func(sideIndex, sd, ctx);
+						}
 					}
 					break;
 				}
