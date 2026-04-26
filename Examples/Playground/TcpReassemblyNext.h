@@ -171,12 +171,12 @@ namespace pcpp
 
 			uint32_t nextSeqPart() const
 			{
-				if(!extraParts.empty())
+				if (!extraParts.empty())
 				{
 					return extraParts.back().nextSeqNum();
 				}
 
-				if(hasMainPart)
+				if (hasMainPart)
 				{
 					return calcNextSeqNum(mainPart.seqNum, mainPart.dataLen, mainPart.seqFlags);
 				}
@@ -434,13 +434,13 @@ namespace pcpp
 				event.startSeqNum = m_ExpectedSeqNum;
 				try
 				{
-				    // Cast to const& to prevent sending non-const reference to the user.
-				    onDataReady(static_cast<TcpByteStreamDataReadyEvent const&>(event));
+					// Cast to const& to prevent sending non-const reference to the user.
+					onDataReady(static_cast<TcpByteStreamDataReadyEvent const&>(event));
 				}
 				catch (std::exception const& ex)
 				{
-				    // TODO: Log callback error.
-				    PCPP_LOG_ERROR(ex.what());
+					// TODO: Log callback error.
+					PCPP_LOG_ERROR(ex.what());
 				}
 
 				uint32_t nextSeqNum = event.extraParts.back().nextSeqNum();
@@ -546,9 +546,22 @@ namespace pcpp
 	class TcpStreamDataV2
 	{
 	public:
+		using HiResTimepoint = internal::TcpStreamBufferedPart::HiResTimepoint;
+
+		/// @brief A pointer to the TCP data buffer that is ready for processing.
 		uint8_t const* m_Data;
+		/// @brief The length of the data buffer.
 		size_t dataLen = 0;
+		/// @brief Leading missing bytes in the stream before this data segment, if any.
 		size_t missingBytes = 0;
+
+		/// @brief The timestamp when this data segment was received.
+		///
+		/// This field contains the timestamp of the packet containing this TCP data segment.
+		///
+		/// @par Timestamp preservation
+		/// TODO: Add explanation on timestamp preservation.
+		HiResTimepoint timestamp;
 	};
 
 	/// @brief This class represents a batch of TCP stream data segments.
@@ -564,13 +577,7 @@ namespace pcpp
 		Iterator begin() const;
 		Iterator end() const;
 
-		ConnectionData const& getConnection() const
-		{
-			return m_Connection;
-		}
-
 	private:
-		ConnectionData m_Connection;
 		internal::TcpByteStreamDataReadyEvent m_InternalEvent;
 	};
 
@@ -579,6 +586,14 @@ namespace pcpp
 		struct TcpConnection;
 
 	public:
+		struct Config
+		{
+			/// @brief Controls if the reassembly engine should preserve the original timestamps of each TCP segment.
+			///
+			///
+			// bool preservePreciseTimestamps = true;
+		};
+
 		enum class ConnectionEndReason
 		{
 			FinPacket,
@@ -588,14 +603,23 @@ namespace pcpp
 
 		class TcpDataReadyCtx
 		{
+		public:
+			// private:
+			Config const& engineConfig;
 		};
 
 		class TcpConnectionStartCtx
 		{
+		public:
+			// private:
+			Config const& engineConfig;
 		};
 
 		class TcpConnectionEndCtx
 		{
+		public:
+			// private:
+			Config const& engineConfig;
 		};
 
 		/// @brief A callback function type invoked when TCP data is ready for processing.
@@ -609,8 +633,10 @@ namespace pcpp
 		/// @param[in] side The side this data belongs to (MachineA->MachineB or vice versa). The value is 0 or 1 where
 		/// 0 is the first side seen in the connection and 1 is the second side seen.
 		/// @param[in] tcpData The TCP data itself + connection information.
+		/// @param[in] conn The connection metadata for the connection this data belongs to.
 		/// @param[in] ctx A context object. Reserved for future use.
-		using OnTcpDataReady = std::function<void(int8_t side, const TcpStreamDataV2& tcpData, TcpDataReadyCtx& ctx)>;
+		using OnTcpDataReady = std::function<void(int8_t side, const TcpStreamDataV2& tcpData,
+		                                          const ConnectionData& conn, TcpDataReadyCtx& ctx)>;
 
 		/// @brief A callback function type invoked when TCP data is ready for processing.
 		///
@@ -621,9 +647,10 @@ namespace pcpp
 		/// @param[in] side The side this data belongs to (MachineA->MachineB or vice versa). The value is 0 or 1 where
 		/// 0 is the first side seen in the connection and 1 is the second side seen.
 		/// @param[in] tcpData A batch of TCP data segments that are ready for processing + connection information.
+		/// @param[in] conn The connection metadata for the connection this data belongs to.
 		/// @param[in] ctx A context object. Reserved for future use.
-		using OnTcpDataReadyBatch =
-		    std::function<void(int8_t side, const TcpStreamDataV2Batch& tcpData, TcpDataReadyCtx& ctx)>;
+		using OnTcpDataReadyBatch = std::function<void(int8_t side, const TcpStreamDataV2Batch& tcpData,
+		                                               const ConnectionData& conn, TcpDataReadyCtx& ctx)>;
 
 		/// @brief A callback invoked when a new TCP connection is identified.
 		///
@@ -650,7 +677,7 @@ namespace pcpp
 		using ReassemblyStatus = TcpReassembly::ReassemblyStatus;
 
 		/// @brief A connections proxy that provides an interface for accessing connection data information.
-		class ConnectionsProxy;
+		class ConnectionsProxyView;
 
 		enum class ConnectionState
 		{
@@ -676,10 +703,6 @@ namespace pcpp
 		uint32_t purgeClosedConnections(uint32_t maxCount = 0);
 
 	private:
-		struct Config
-		{
-		};
-
 		struct TcpConnectionSide
 		{
 			internal::TcpByteStream stream;

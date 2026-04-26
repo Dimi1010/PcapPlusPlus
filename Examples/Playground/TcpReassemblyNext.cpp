@@ -112,7 +112,7 @@ namespace pcpp
 			// No full overlap is possible, since prevPart starts before newPart.
 			// Otherwise the loop would have stopped when prevPart was nextPart.
 
-			if (prevPartIt != m_ReorderBuffer.end()) // <- checks with the sentinel assigned earlier.
+			if (prevPartIt != m_ReorderBuffer.end())  // <- checks with the sentinel assigned earlier.
 			{
 				if (internal::compareSeqNum(prevPartIt->nextSeqNum(), seqNum) > 0)
 				{
@@ -465,20 +465,20 @@ namespace pcpp
 			{
 				auto* cb = m_OnDataReady.getSingleCallback();
 				PCPP_ASSERT(cb != nullptr, "Single callback should not be null");
+				if (*cb == nullptr)
+				{
+					PCPP_LOG_DEBUG("No single callback registered, skipping data ready event.");
+					return;
+				}
 
 				size_t missingBytes = event.getLeadingMissingBytes();
 				for (auto& part : event.extraParts)
 				{
 					PCPP_LOG_DEBUG("Invoking single callback for part with SEQ=" << part.seqNum
 					                                                             << ";LEN=" << part.dataLen);
-					TcpStreamData sd(part.data, part.dataLen, missingBytes, tcpConn.metadata, {});
-					TcpDataReadyCtx ctx;
-
-					auto& func = *cb;
-					if (func)
-					{
-						// func(sideIndex, sd, ctx);
-					}
+					TcpStreamDataV2 sd(part.data, part.dataLen, missingBytes, {});
+					TcpDataReadyCtx ctx{ m_Config };
+					(*cb)(sideIndex, sd, tcpConn.metadata, ctx);
 				}
 				break;
 			}
@@ -486,7 +486,17 @@ namespace pcpp
 			{
 				auto* cb = m_OnDataReady.getBatchCallback();
 				PCPP_ASSERT(cb != nullptr, "Batch callback should not be null");
+				if (*cb == nullptr)
+				{
+					PCPP_LOG_DEBUG("No batch callback registered, skipping data ready event.");
+					return;
+				}
+
 				PCPP_LOG_DEBUG("Invoking batch callback.");
+
+				TcpStreamDataV2Batch batch;
+				TcpDataReadyCtx ctx{ m_Config };
+				(*cb)(sideIndex, batch, tcpConn.metadata, ctx);
 				break;
 			}
 			}
