@@ -375,6 +375,11 @@ namespace pcpp
 					}
 
 					// Check if FIN flag has been handled.
+					SeqFlags lastPartFlags = event.extraParts.empty() ? flags : event.extraParts.back().seqFlags;
+					if (lastPartFlags.finFlag)
+					{
+						// TODO: Handle stream closure.
+					}
 
 					// Release the unlinked parts back to the free list.
 					returnFreeParts(overlappedParts);
