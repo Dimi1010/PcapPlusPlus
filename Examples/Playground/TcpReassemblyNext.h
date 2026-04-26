@@ -120,6 +120,7 @@ namespace pcpp
 		/// @brief Event data provided to the user when new in-order data is ready in the TCP byte stream.
 		struct TcpByteStreamDataReadyEvent
 		{
+			using PartBufferList = std::list<TcpStreamBufferedPart>;
 			using HiResTimepoint = TcpStreamBufferedPart::HiResTimepoint;
 
 			struct MainPart
@@ -135,7 +136,7 @@ namespace pcpp
 			MainPart mainPart;
 
 			/// @brief Additional parts that were dequeued from the reorder buffer after the main part.
-			std::list<TcpStreamBufferedPart> extraParts;
+			PartBufferList extraParts;
 
 			/// @brief The starting sequence number of the event.
 			///
