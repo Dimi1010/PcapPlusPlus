@@ -276,7 +276,7 @@ namespace pcpp
 					data += m_ExpectedSeqNum - seqNum;
 					dataLen = nextSeqNum - m_ExpectedSeqNum;
 					seqNum = m_ExpectedSeqNum;
-					flags.synFlag = false;  // Clear the SYN flag since we are trimming from the
+					flags.synFlag = false;  // Clear the SYN flag since we are trimming from the left.
 				}
 
 				// In-Order packet or post-trimmed Past OOS.B.
