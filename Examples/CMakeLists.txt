@@ -24,6 +24,7 @@ add_subdirectory(PcapPrinter)
 add_subdirectory(PcapSearch)
 add_subdirectory(PcapSplitter)
 add_subdirectory(X509Toolkit)
+add_subdirectory(Playground)
 
 if(PCAPPP_USE_PCAP)
   add_subdirectory(Arping)
