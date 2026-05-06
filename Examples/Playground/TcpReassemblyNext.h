@@ -195,6 +195,16 @@ namespace pcpp
 			using PartBufferList = std::list<TcpStreamBufferedPart>;
 
 		public:
+			enum class TcpStreamStatus
+			{
+				HandledOk,
+				HandledOk_StreamClosing,
+
+				SentToReorderBuffer,
+
+				IgnoredRetransmission,
+			};
+
 			/// @brief Inserts a new part into the stream. The part is defined by its sequence number and data length.
 			///
 			/// The main method of the byte stream.
@@ -236,8 +246,8 @@ namespace pcpp
 			/// @param[in] seqNumExtraLen An optional parameter that can be used to specify extra length used to
 			/// calculate the logical end sequence number.
 			template <typename OnDataReadyCallback>
-			void insertSeq(OnDataReadyCallback onDataReady, uint32_t seqNum, uint8_t const* data, size_t dataLen,
-			               SeqFlags flags = {})
+			TcpStreamStatus insertSeq(OnDataReadyCallback onDataReady, uint32_t seqNum, uint8_t const* data,
+			                          size_t dataLen, SeqFlags flags = {})
 			{
 				PCPP_ASSERT(dataLen <= std::numeric_limits<uint32_t>::max(),
 				            "Fragment dataLen field is only 32bit wide.");
@@ -265,7 +275,7 @@ namespace pcpp
 					{
 						// FULL RETRANSMISSON:
 						// The head of line is past the end of this segment. Ignore it.
-						return;
+						return TcpStreamStatus::IgnoredRetransmission;
 					}
 
 					// PARTIAL RETRANSMISSION:
@@ -374,11 +384,18 @@ namespace pcpp
 						PCPP_LOG_ERROR(ex.what());
 					}
 
+					TcpStreamStatus status = TcpStreamStatus::HandledOk;
+
 					// Check if FIN flag has been handled.
 					SeqFlags lastPartFlags = event.extraParts.empty() ? flags : event.extraParts.back().seqFlags;
 					if (lastPartFlags.finFlag)
 					{
 						// TODO: Handle stream closure.
+						// - Set closed flag.
+						// - (Possibly) Dump all other buffered parts since they are irrelevant after the FIN.
+						//   - Reorder buffer shouldn't allow inserts after the FIN marker.
+
+						status = TcpStreamStatus::HandledOk_StreamClosing;
 					}
 
 					// Release the unlinked parts back to the free list.
@@ -388,18 +405,19 @@ namespace pcpp
 					// Update the head of line to the next expected sequence number.
 					// That being the end of the unblocked chain of in-order parts.
 					m_ExpectedSeqNum = nextExpectedSeqNum;
-					return;
+					return status;
 				}
 
 				// Future OOS: The new part is after the next expected sequence number.
 				//  - We need to buffer it until the missing part(s) arrive.
 				//  - We also need to try to merge with other Future OOS parts if they are contiguous.
-				if (c > 0)
+				else /* if (c > 0) */
 				{
 					PCPP_LOG_DEBUG("[OOS] Received SEQ=" << seqNum << " with LEN=" << dataLen
 					                                     << " bytes, but expected SEQ=" << m_ExpectedSeqNum
 					                                     << ". SYN=" << flags.synFlag << ";FIN=" << flags.finFlag);
 					insertSeqToReorderBuffer(seqNum, data, dataLen, flags);
+					return TcpStreamStatus::SentToReorderBuffer;
 				}
 			}
 

@@ -513,6 +513,12 @@ namespace pcpp
 		return ReassemblyStatus();
 	}
 
+	TcpReassemblyV2::ReassemblyStatus TcpReassemblyV2::reassemblePacket(RawPacket& rawPacket)
+	{
+		Packet packet(&rawPacket);
+		return reassemblePacket(packet);
+	}
+
 	void TcpReassemblyV2::DataReadyCallback::swapToType(Type newType) noexcept
 	{
 		if (newType == m_Type)
