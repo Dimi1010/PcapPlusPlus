@@ -559,6 +559,34 @@ namespace pcpp
 		{
 			return data != nullptr && dataLen >= sizeof(T);
 		}
+
+		/// @brief Check if the data is large enough to reinterpret as a type and return a pointer to it if it is.
+		/// 
+		/// The data must be non-null and at least as large as the type to successfully reinterpret it.
+		/// If reinterpretation is not possible, the function returns nullptr.
+		/// 
+		/// @tparam T The type to reinterpret as
+		/// @param data Pointer to the start of the data to attempt to reinterpret
+		/// @param dataLen The length of the data to attempt to reinterpret
+		/// @return A pointer to the reinterpreted data if successful, or nullptr if the data is not large enough to
+		/// reinterpret as T.
+		template <typename T> static T const* tryReinterpretAs(const uint8_t* data, size_t dataLen)
+		{
+			if (canReinterpretAs<T>(data, dataLen))
+			{
+				return reinterpret_cast<const T*>(data);
+			}
+			return nullptr;
+		}
+
+		template <typename T> static T* tryReinterpretAs(uint8_t* data, size_t dataLen)
+		{
+			if (canReinterpretAs<T>(data, dataLen))
+			{
+				return reinterpret_cast<T*>(data);
+			}
+			return nullptr;
+		}
 	};
 
 	inline std::ostream& operator<<(std::ostream& os, const pcpp::Layer& layer)

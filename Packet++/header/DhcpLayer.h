@@ -591,10 +591,7 @@ namespace pcpp
 		/// A destructor for this layer
 		~DhcpLayer() override = default;
 
-		static bool isDataValid(uint8_t const* data, size_t dataLen)
-		{
-			return canReinterpretAs<dhcp_header>(data, dataLen);
-		}
+		static bool isDataValid(uint8_t const* data, size_t dataLen);
 
 		/// Get a pointer to the DHCP header. Notice this points directly to the data, so every change will change the
 		/// actual packet data

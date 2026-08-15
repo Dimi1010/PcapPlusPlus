@@ -56,6 +56,27 @@ namespace pcpp
 		initDhcpLayer(sizeof(dhcp_header));
 	}
 
+	bool DhcpLayer::isDataValid(uint8_t const* data, size_t dataLen)
+	{
+		auto dhcpHdr = tryReinterpretAs<dhcp_header>(data, dataLen);
+		if (dhcpHdr == nullptr)
+			return false;
+
+		switch (dhcpHdr->opCode)
+		{
+		case DHCP_BOOTREQUEST:
+		case DHCP_BOOTREPLY:
+			break;
+		default:
+			return false;
+		}
+
+		if (dhcpHdr->hardwareAddressLength > sizeof(dhcpHdr->clientHardwareAddress))
+			return false;
+
+		return true;
+	}
+
 	DhcpLayer::DhcpLayer(DhcpMessageType msgType, const MacAddress& clientMacAddr) : Layer()
 	{
 		initDhcpLayer(sizeof(dhcp_header) + 4 * sizeof(uint8_t));
